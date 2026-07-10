@@ -1,25 +1,31 @@
 # EasyRyde — Agent Configuration
 
+## Global Team System (MANDATORY)
+This project is registered with the global team orchestration system at `C:\team`.
+
+### Team ID
+- Project hash: `proj-9d69ee28e788`
+- Database: `C:\team\database\proj-9d69ee28e788\`
+
+### On Session Start
+1. Read `C:\team\SYSTEM.md` — coordination rules
+2. Read `C:\team\LEADER.md` — orchestrator manual (if you are the Leader)
+3. Check `C:\team\state\DASHBOARD.md` — current health
+4. Run `node C:\team\scripts\validate.mjs` to validate state
+5. Run `node C:\team\scripts\recover.mjs` to check for stale sessions
+
+### Task Workflow
+- Create tasks: `node C:\team\scripts\create-task.mjs --project proj-9d69ee28e788 --title "..." --type <type>`
+- Get routing advice: `node C:\team\scripts\route-task.mjs --project proj-9d69ee28e788 "description"`
+- Spawn members: `node C:\team\scripts\route-task.mjs --spawn <type> --project proj-9d69ee28e788`
+- Close tasks: `node C:\team\scripts\close-task.mjs --project proj-9d69ee28e788 <task-id>`
+
+### Member Types
+ceo, eng-manager, designer, builder, reviewer, debugger, qa-lead, release-engineer, doc-engineer, dev-ops
+
 ## Coverage Setup
 - PHP 8.4.22 NTS VS17 with pcov: `C:\php84\php.exe`
-- Herd-lite PHP (static) cannot load dynamic extensions — use `C:\php84` for coverage
 - Run coverage: `backend\coverage.cmd` or `C:\php84\php.exe artisan test --coverage`
 - Config: `backend\phpunit.xml` (main) / `backend\phpunit.coverage.xml` (coverage variant)
 - Reports: `backend/coverage/clover.xml`, `backend/coverage/html/`, `backend/coverage/coverage.txt`
-- All DLLs in `C:\php\ext` (compiled-in extension_dir for C:\php84)
 - Coverage: 46.0% overall (285/285 pass, 555 assertions)
-
-## Bootstrap Hook
-On session start, the Leader (eng-manager) MUST:
-1. Run `cd team/scripts && node validate.mjs` to validate all team files
-2. Run `cd team/scripts && node recover.mjs` to check for stale sessions
-3. Read `team/DASHBOARD.md`, `team/GAPS.md`, `team/Leader.md`, `team/SYSTEM.md`
-4. Read last 50 lines of `team/audit.log`
-5. Begin execution loop per SYSTEM.md
-
-## Team System
-- Orchestration: `team/SYSTEM.md` — sub-session architecture
-- Leader: `team/Leader.md` — orchestrator config
-- Members: `team/members/<id>/` — 16 members, 4 files each
-- Enforcement: `team/scripts/validate.mjs`, `team/scripts/enforce.mjs`, `team/scripts/recover.mjs`
-- CLI: `team\scripts\team-orch.cmd validate|enforce|recover`

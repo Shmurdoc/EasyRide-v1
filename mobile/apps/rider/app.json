@@ -20,16 +20,11 @@
       }
     },
     "android": {
-      "package": "za.co.easyryde.rider"
+      "package": "za.co.easyryde.rider",
+      "minSdkVersion": 23
     },
     "plugins": [
       "expo-location",
-      [
-        "react-native-maps",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Allow EasyRyde to use your location to find nearby rides."
-        }
-      ],
       "expo-notifications"
     ],
     "extra": {

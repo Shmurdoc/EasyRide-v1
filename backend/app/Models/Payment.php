@@ -33,7 +33,7 @@ class Payment extends Model
         'amount', 'platform_fee', 'driver_payout', 'status', 'paid_at', 'gateway_response',
         'refunded_at', 'refund_reason', 'refund_amount', 'refunded_by',
         'escrow_released', 'escrow_released_at', 'dispute_hold', 'dispute_hold_shortfall',
-        'held_until',
+        'held_until', 'idempotency_key',
         'cash_received', 'cash_discrepancy', 'cash_settled_at', 'cash_reconciled',
     ];
 
@@ -64,6 +64,11 @@ class Payment extends Model
     }
 
     public function payer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'payer_id');
+    }
+
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'payer_id');
     }

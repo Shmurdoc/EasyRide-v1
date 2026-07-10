@@ -33,22 +33,11 @@
 
             <div class="bg-white rounded-xl border border-gray-200 p-5">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Select Ride Type</h2>
-                <div class="space-y-3" x-data="{ selected: 'economy' }">
-                    <label class="flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors" :class="selected === 'economy' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'" x-on:click="selected = 'economy'">
-                        <input type="radio" name="ride_type" value="economy" class="sr-only">
-                        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <i data-lucide="car" class="w-5 h-5 text-gray-600"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-semibold text-gray-900">Economy</p>
-                            <p class="text-xs text-gray-500">Affordable rides, compact cars</p>
-                        </div>
-                        <p class="text-sm font-bold text-gray-900">$12.00</p>
-                    </label>
+                <div class="space-y-3" x-data="{ selected: 'standard' }">
                     <label class="flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors" :class="selected === 'standard' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'" x-on:click="selected = 'standard'">
                         <input type="radio" name="ride_type" value="standard" class="sr-only">
-                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <i data-lucide="car" class="w-5 h-5 text-blue-600"></i>
+                        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <i data-lucide="car" class="w-5 h-5 text-gray-600"></i>
                         </div>
                         <div class="flex-1">
                             <p class="text-sm font-semibold text-gray-900">Standard</p>
@@ -66,6 +55,28 @@
                             <p class="text-xs text-gray-500">Luxury vehicles, top drivers</p>
                         </div>
                         <p class="text-sm font-bold text-gray-900">$32.00</p>
+                    </label>
+                    <label class="flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors" :class="selected === 'minivan' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'" x-on:click="selected = 'minivan'">
+                        <input type="radio" name="ride_type" value="minivan" class="sr-only">
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i data-lucide="bus" class="w-5 h-5 text-green-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold text-gray-900">Minivan</p>
+                            <p class="text-xs text-gray-500">MPV/van, 6+ passengers</p>
+                        </div>
+                        <p class="text-sm font-bold text-gray-900">$24.00</p>
+                    </label>
+                    <label class="flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-colors" :class="selected === 'pets' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'" x-on:click="selected = 'pets'">
+                        <input type="radio" name="ride_type" value="pets" class="sr-only">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i data-lucide="heart" class="w-5 h-5 text-purple-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold text-gray-900">Pets</p>
+                            <p class="text-xs text-gray-500">Pet-friendly vehicles</p>
+                        </div>
+                        <p class="text-sm font-bold text-gray-900">$20.00</p>
                     </label>
                 </div>
             </div>

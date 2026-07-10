@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, FlatList, TouchableOpacity, Alert, Text, SafeAreaView, RefreshControl, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { drivers, COLORS, GRADIENTS, SPACING, RADIUS, RideStatusBadge, GlassCard, GradientText, Shimmer, GlowButton } from '@easyryde/shared';
+import { Ionicons } from '@expo/vector-icons';
+import { drivers } from '@easyryde/shared';
 import type { Ride } from '@easyryde/shared';
 
 export default function TripHistoryScreen() {
@@ -47,52 +48,146 @@ export default function TripHistoryScreen() {
     );
   }, []);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return '#16a34a';
+      case 'cancelled': return '#dc2626';
+      case 'in_progress': return '#3b82f6';
+      default: return '#98989d';
+    }
+  };
+
   if (loading) return (
-    <LinearGradient colors={[COLORS.bgGradientStart, COLORS.bgGradientEnd]} style={{ flex: 1, padding: SPACING.base }}>
-      <Shimmer height={32} width={200} borderRadius={RADIUS.sm} variant="gold" style={{ marginTop: 60, marginBottom: SPACING.lg }} />
-      <Shimmer height={120} borderRadius={RADIUS.lg} variant="gold" style={{ marginBottom: SPACING.md }} />
-      <Shimmer height={120} borderRadius={RADIUS.lg} variant="gold" style={{ marginBottom: SPACING.md }} />
-      <Shimmer height={120} borderRadius={RADIUS.lg} variant="gold" />
-    </LinearGradient>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient colors={['#16a34a', '#15803d']} style={styles.headerGradient}>
+        <Text style={styles.headerTitle}>Trip History</Text>
+      </LinearGradient>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading trips...</Text>
+      </View>
+    </SafeAreaView>
   );
 
   if (error) return (
-    <LinearGradient colors={[COLORS.bgGradientStart, COLORS.bgGradientEnd]} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.base }}>
-      <GradientText colors={GRADIENTS.primary} style={{ fontSize: 16, textAlign: 'center', marginBottom: SPACING.md }}>{error}</GradientText>
-      <GlowButton title="Retry" onPress={() => { setLoading(true); loadTrips(); }} size="md" />
-    </LinearGradient>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient colors={['#16a34a', '#15803d']} style={styles.headerGradient}>
+        <Text style={styles.headerTitle}>Trip History</Text>
+      </LinearGradient>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => { setLoading(true); loadTrips(); }}>
+          <Text style={styles.retryBtnText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 
   return (
-    <LinearGradient colors={[COLORS.bgGradientStart, COLORS.bgGradientEnd]} style={{ flex: 1 }}>
-      <GradientText colors={GRADIENTS.primary} style={{ fontSize: 26, fontWeight: '700', lineHeight: 34, letterSpacing: -0.3, padding: SPACING.base, paddingBottom: SPACING.sm }}>
-        Trip History
-      </GradientText>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient colors={['#16a34a', '#15803d']} style={styles.headerGradient}>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Trip History</Text>
+          <Ionicons name="time" size={24} color="rgba(255,255,255,0.6)" />
+        </View>
+        <Text style={styles.headerSubtitle}>{trips.length} trips completed</Text>
+      </LinearGradient>
+
       <FlatList
         data={trips}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: SPACING.base }}
+        contentContainerStyle={styles.listContent}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        ListEmptyComponent={<GradientText colors={GRADIENTS.primary} style={{ fontSize: 18, fontWeight: '400', lineHeight: 27, textAlign: 'center', marginTop: 40 }}>No trips yet</GradientText>}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="car-outline" size={48} color="#666" />
+            <Text style={styles.emptyText}>No trips yet</Text>
+          </View>
+        }
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => showTripDetail(item)} activeOpacity={0.7}>
-            <GlassCard glow style={{ marginBottom: SPACING.md }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.sm }}>
-                <RideStatusBadge status={item.status} />
+            <View style={styles.tripCard}>
+              <View style={styles.tripHeader}>
+                <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(item.status)}20` }]}>
+                  <View style={[styles.statusDot, { backgroundColor: getStatusColor(item.status) }]} />
+                  <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status}</Text>
+                </View>
                 {item.created_at && (
-                  <GradientText colors={GRADIENTS.primary} style={{ fontSize: 11, lineHeight: 14 }}>{new Date(item.created_at).toLocaleDateString()}</GradientText>
+                  <Text style={styles.tripDate}>{new Date(item.created_at).toLocaleDateString()}</Text>
                 )}
               </View>
-              <GradientText colors={GRADIENTS.primary} style={{ fontSize: 18, fontWeight: '400', lineHeight: 27, marginBottom: SPACING.sm }}>{item.pickup_address} → {item.dropoff_address}</GradientText>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <GradientText colors={GRADIENTS.primary} style={{ fontSize: 11, lineHeight: 14 }}>{item.rider?.name || 'Rider'}</GradientText>
-                {item.total_fare != null && <GradientText colors={GRADIENTS.primary} style={{ fontSize: 18, fontWeight: '600', lineHeight: 27 }}>R {item.total_fare.toFixed(2)}</GradientText>}
+
+              <View style={styles.tripLocations}>
+                <View style={styles.tripLocationRow}>
+                  <View style={styles.tripDot} />
+                  <Text style={styles.tripLocationText}>{item.pickup_address}</Text>
+                </View>
+                <View style={styles.tripLocationRow}>
+                  <View style={styles.tripPin}>
+                    <Ionicons name="location" size={10} color="#FFAD7A" />
+                  </View>
+                  <Text style={styles.tripLocationText}>{item.dropoff_address}</Text>
+                </View>
               </View>
-            </GlassCard>
+
+              <View style={styles.tripFooter}>
+                <Text style={styles.tripRider}>{item.rider?.name || 'Rider'}</Text>
+                {item.total_fare != null && (
+                  <Text style={styles.tripFare}>R {item.total_fare.toFixed(2)}</Text>
+                )}
+              </View>
+            </View>
           </TouchableOpacity>
         )}
       />
-    </LinearGradient>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#1c1c1e' },
+  headerGradient: {
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20,
+    borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
+  },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerTitle: { fontSize: 28, fontWeight: '800', color: '#fff' },
+  headerSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+
+  listContent: { padding: 16, paddingBottom: 100 },
+
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { fontSize: 16, color: '#98989d' },
+  errorText: { fontSize: 16, color: '#98989d', marginBottom: 16, textAlign: 'center' },
+  retryBtn: { backgroundColor: '#16a34a', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  retryBtnText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+
+  tripCard: {
+    backgroundColor: '#242426', borderRadius: 16, padding: 16, marginBottom: 12,
+    borderWidth: 1, borderColor: '#3a3a3c',
+  },
+  tripHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: 12, fontWeight: '600' },
+  tripDate: { fontSize: 12, color: '#98989d' },
+
+  tripLocations: { gap: 8, marginBottom: 12 },
+  tripLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  tripDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#16a34a' },
+  tripPin: {
+    width: 16, height: 16, borderRadius: 4, backgroundColor: '#2c2c2e',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  tripLocationText: { fontSize: 14, color: '#fff', flex: 1 },
+
+  tripFooter: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    borderTopWidth: 1, borderTopColor: '#3a3a3c', paddingTop: 12,
+  },
+  tripRider: { fontSize: 13, color: '#98989d' },
+  tripFare: { fontSize: 16, fontWeight: '700', color: '#16a34a' },
+
+  emptyContainer: { alignItems: 'center', marginTop: 60 },
+  emptyText: { fontSize: 18, fontWeight: '600', color: '#fff', marginTop: 16 },
+});

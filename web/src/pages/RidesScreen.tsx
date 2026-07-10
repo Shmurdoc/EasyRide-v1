@@ -6,6 +6,7 @@ import Modal from '@/components/Modal';
 import Pagination from '@/components/Pagination';
 import client, { PaginatedResponse } from '@/api/client';
 import dayjs from 'dayjs';
+import { useToast } from '@/components/Toast';
 
 interface Ride {
   id: string;
@@ -30,7 +31,10 @@ export default function RidesScreen() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Ride | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
+  const [disputeReason, setDisputeReason] = useState('');
+  const [resolveReason, setResolveReason] = useState('');
+  const [actionType, setActionType] = useState<'dispute' | 'resolve' | null>(null);
+  const toast = useToast();
 
   const loadRides = useCallback(async () => {
     setLoading(true);
@@ -38,7 +42,7 @@ export default function RidesScreen() {
       const params: Record<string, string> = { page: String(page), per_page: '15' };
       if (statusFilter) params.status = statusFilter;
       if (search) params.search = search;
-      const { data } = await client.get<PaginatedResponse<Ride>>('/admin/rides', { params });
+      const { data } = await client.get<PaginatedResponse<Ride>>('/admin/manage/rides', { params });
       setRides(data.data);
       setMeta(data.meta);
     } catch {} finally { setLoading(false); }
@@ -46,14 +50,32 @@ export default function RidesScreen() {
 
   useEffect(() => { loadRides(); }, [loadRides]);
 
-  const cancelRide = async (id: string) => {
-    if (!cancelReason.trim()) return;
+  const disputeRide = async (id: string) => {
+    if (!disputeReason.trim()) return;
     try {
-      await client.post(`/admin/rides/${id}/cancel`, { cancellation_reason: cancelReason });
-      setCancelReason('');
+      await client.post(`/admin/manage/rides/${id}/dispute`, { reason: disputeReason });
+      toast.success('Ride disputed');
+      setDisputeReason('');
+      setActionType(null);
       setSelected(null);
       loadRides();
-    } catch {}
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to dispute ride');
+    }
+  };
+
+  const resolveRide = async (id: string) => {
+    if (!resolveReason.trim()) return;
+    try {
+      await client.post(`/admin/manage/rides/${id}/resolve`, { resolution: resolveReason });
+      toast.success('Ride dispute resolved');
+      setResolveReason('');
+      setActionType(null);
+      setSelected(null);
+      loadRides();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to resolve ride');
+    }
   };
 
   const columns = [
@@ -70,7 +92,7 @@ export default function RidesScreen() {
     {
       key: 'driver',
       label: 'Driver',
-      render: (r: Ride) => <span>{r.driver?.name || '—'}</span>,
+      render: (r: Ride) => <span>{r.driver?.name || 'Unassigned'}</span>,
     },
     {
       key: 'route',
@@ -90,7 +112,19 @@ export default function RidesScreen() {
 
   return (
     <div>
-      <PageHeader title="Rides" subtitle="Manage all ride requests and activity" />
+      <PageHeader 
+        title="Rides" 
+        subtitle="Manage all ride requests, disputes, and activity"
+        actions={
+          <button onClick={loadRides} className="btn-secondary btn-sm">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M23 4v6h-6M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            Refresh
+          </button>
+        }
+      />
 
       <div className="flex gap-4 mb-6">
         <input
@@ -111,6 +145,8 @@ export default function RidesScreen() {
           <option value="in_progress">In Progress</option>
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
+          <option value="disputed">Disputed</option>
+          <option value="resolved">Resolved</option>
         </select>
       </div>
 
@@ -124,7 +160,7 @@ export default function RidesScreen() {
 
       <Pagination currentPage={meta.current_page} lastPage={meta.last_page} onPageChange={setPage} />
 
-      <Modal isOpen={!!selected} onClose={() => setSelected(null)} title="Ride Details" size="lg">
+      <Modal isOpen={!!selected} onClose={() => { setSelected(null); setActionType(null); setDisputeReason(''); setResolveReason(''); }} title="Ride Details" size="lg">
         {selected && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -166,6 +202,62 @@ export default function RidesScreen() {
               <p className="text-xs text-gray-500">Created</p>
               <p className="text-sm">{dayjs(selected.created_at).format('DD MMM YYYY, HH:mm')}</p>
             </div>
+
+            {actionType === 'dispute' && (
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium mb-2">Dispute Reason</p>
+                <textarea
+                  className="input min-h-[80px]"
+                  placeholder="Enter reason for dispute..."
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                />
+                <div className="flex gap-3 mt-3">
+                  <button onClick={() => disputeRide(selected.id)} className="btn-danger" disabled={!disputeReason.trim()}>
+                    Submit Dispute
+                  </button>
+                  <button onClick={() => setActionType(null)} className="btn-secondary">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {actionType === 'resolve' && (
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium mb-2">Resolution Details</p>
+                <textarea
+                  className="input min-h-[80px]"
+                  placeholder="Enter resolution details..."
+                  value={resolveReason}
+                  onChange={(e) => setResolveReason(e.target.value)}
+                />
+                <div className="flex gap-3 mt-3">
+                  <button onClick={() => resolveRide(selected.id)} className="btn-accent" disabled={!resolveReason.trim()}>
+                    Resolve Dispute
+                  </button>
+                  <button onClick={() => setActionType(null)} className="btn-secondary">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {selected.status !== 'disputed' && selected.status !== 'resolved' && !actionType && (
+              <div className="flex gap-3 pt-4 border-t">
+                <button onClick={() => setActionType('dispute')} className="btn-danger">
+                  Dispute Ride
+                </button>
+              </div>
+            )}
+
+            {selected.status === 'disputed' && !actionType && (
+              <div className="flex gap-3 pt-4 border-t">
+                <button onClick={() => setActionType('resolve')} className="btn-accent">
+                  Resolve Dispute
+                </button>
+              </div>
+            )}
           </div>
         )}
       </Modal>

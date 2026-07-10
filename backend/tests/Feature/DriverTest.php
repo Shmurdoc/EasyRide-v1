@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,20 +14,23 @@ class DriverTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected Tenant $tenant;
+
     protected function setUp(): void
     {
         parent::setUp();
         Role::create(['name' => 'rider', 'guard_name' => 'web']);
         Role::create(['name' => 'driver', 'guard_name' => 'web']);
         Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $this->tenant = Tenant::create(['name' => 'Test Tenant', 'slug' => 'test-tenant', 'domain' => 'test.local']);
     }
 
     public function test_admin_can_approve_driver(): void
     {
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $admin->assignRole('admin');
 
-        $driver = User::factory()->create();
+        $driver = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $driver->assignRole('driver');
 
         $driver->driverProfile()->create([

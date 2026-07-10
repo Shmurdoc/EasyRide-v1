@@ -34,3 +34,5 @@ export { AnimatedCheckmark } from './AnimatedCheckmark';
 export { CategoryTile } from './CategoryTile';
 export { QuickActionButton } from './QuickActionButton';
 export { ActivityCard } from './ActivityCard';
+export { ReconnectionBanner } from './ReconnectionBanner';
+export { OfflineBanner } from './OfflineBanner';

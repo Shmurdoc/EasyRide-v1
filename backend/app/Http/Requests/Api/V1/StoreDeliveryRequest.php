@@ -27,6 +27,7 @@ class StoreDeliveryRequest extends FormRequest
             'item_description' => 'required|string|max:1000',
             'item_value' => 'nullable|numeric|min:0',
             'payment_method' => 'sometimes|string|in:wallet,cash,payfast,ozow',
+            'sender_name' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',
         ];
     }

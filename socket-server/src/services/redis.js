@@ -1,7 +1,7 @@
 const Redis = require('ioredis');
 const config = require('../config');
 
-function createRedisClient(label) {
+function createRedisClient(label, options = {}) {
   const client = new Redis({
     host: config.redis.host,
     port: config.redis.port,
@@ -11,7 +11,9 @@ function createRedisClient(label) {
       const delay = Math.min(times * 200, 5000);
       return delay;
     },
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: options.maxRetriesPerRequest ?? 3,
+    enableOfflineQueue: options.enableOfflineQueue ?? false,
+    ...options,
   });
 
   client.on('error', (err) => {
@@ -25,8 +27,9 @@ function createRedisClient(label) {
   return client;
 }
 
-const pubClient = createRedisClient('pub');
-const subClient = createRedisClient('sub');
+const pubClient = createRedisClient('pub', { enableOfflineQueue: true });
+const subClient = createRedisClient('sub', { enableOfflineQueue: true });
 const dataClient = createRedisClient('data');
+const relayClient = createRedisClient('relay', { enableOfflineQueue: true, maxRetriesPerRequest: null });
 
-module.exports = { pubClient, subClient, dataClient };
+module.exports = { pubClient, subClient, dataClient, relayClient };

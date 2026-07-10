@@ -16,7 +16,7 @@ class StoreRideRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category' => 'required|string|in:economy,standard,premium,xl,delivery',
+            'category' => 'required|string|in:standard,premium,minivan,pets,delivery',
             'pickup_address' => 'required|string|max:500',
             'pickup_lat' => 'required|numeric|between:-90,90',
             'pickup_lng' => 'required|numeric|between:-180,180',

@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Services\Notification\SmsService;
+use App\Services\SmsService;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Events\NewRideRequest;
+use App\Enums\RideStatus;
 use App\Models\Ride;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,7 +15,7 @@ class RideMatchingService
 {
     public function accept(Ride $ride, User $driver): array
     {
-        if ($ride->status !== 'searching') {
+        if ($ride->status !== RideStatus::SEARCHING) {
             return ['success' => false, 'message' => 'Ride is no longer available.'];
         }
 
@@ -47,7 +48,7 @@ class RideMatchingService
     public function assignDriver(Ride $ride, User $driver): Ride
     {
         return DB::transaction(function () use ($ride, $driver) {
-            $lockedRide = Ride::where('id', $ride->id)->where('status', 'searching')->lockForUpdate()->first();
+            $lockedRide = Ride::where('id', $ride->id)->where('status', 'searching')->first();
 
             if (! $lockedRide) {
                 throw new \RuntimeException('Ride is no longer available.');

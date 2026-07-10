@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\EncryptsPii;
 use App\Traits\HasTotp;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +17,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasRoles, HasTotp, HasUuids, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, HasRoles, HasTotp, HasUuids, Notifiable, SoftDeletes, EncryptsPii;
 
     protected $keyType = 'string';
 
@@ -38,7 +39,6 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'phone_number' => 'string',
             'kyc_verified_at' => 'datetime',
             'anonymized_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -102,5 +102,15 @@ class User extends Authenticatable
     public function kycVerifications(): HasMany
     {
         return $this->hasMany(KycVerification::class);
+    }
+
+    public function pushTokens(): HasMany
+    {
+        return $this->hasMany(PushToken::class);
+    }
+
+    public function activePushTokens(): HasMany
+    {
+        return $this->hasMany(PushToken::class)->where('is_active', true);
     }
 }

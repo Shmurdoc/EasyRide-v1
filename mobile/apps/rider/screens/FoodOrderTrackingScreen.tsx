@@ -2,27 +2,27 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { foodDelivery, COLORS, GRADIENTS, SPACING, RADIUS } from '@easyryde/shared';
+import { foodDelivery, COLORS, GRADIENTS, SPACING } from '@easyryde/shared';
 import { Typography, GlowButton, GlassCard, GradientText, ProgressBar, RideStatusBadge, LoadingOverlay } from '@easyryde/shared';
 import type { FoodOrder, RiderNav, RiderRoute } from '@easyryde/shared';
 
 const STEPS = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_transit', 'delivered'];
 const LABELS: Record<string, string> = { pending: 'Order Placed', confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready for Pickup', picked_up: 'Picked Up', in_transit: 'On the Way', delivered: 'Delivered', cancelled: 'Cancelled' };
-const COLORS_MAP: Record<string, string> = { pending: '#F59E0B', confirmed: '#3B82F6', preparing: '#8B5CF6', ready: '#10B981', picked_up: '#6366F1', in_transit: COLORS.primary, delivered: COLORS.success, cancelled: COLORS.error };
+const COLORS_MAP: Record<string, string> = { pending: COLORS.warning, confirmed: COLORS.info, preparing: '#8B5CF6', ready: COLORS.success, picked_up: '#6366F1', in_transit: COLORS.primary, delivered: COLORS.success, cancelled: COLORS.error };
 
 export default function FoodOrderTrackingScreen({ route, navigation }: { route: RiderRoute<'FoodOrderTracking'>; navigation: RiderNav }) {
   const { orderId } = route.params;
   const [order, setOrder] = useState<FoodOrder | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
 
-  const loadOrder = useCallback(async () => { try { setOrder(await foodDelivery.getOrder(orderId)); } catch {} }, [orderId]);
+  const loadOrder = useCallback(async () => { try { setOrder(await foodDelivery.getOrder(orderId)); } catch (err: any) { console.warn('Polling order failed', err?.message); } }, [orderId]);
 
   useEffect(() => { loadOrder(); const interval = setInterval(loadOrder, 10000); return () => clearInterval(interval); }, [loadOrder]);
 
   useEffect(() => { if (order) { const idx = STEPS.indexOf(order.status); setCurrentStep(idx >= 0 ? idx : 0); } }, [order]);
 
   const cancelOrder = () => {
-    Alert.alert('Cancel Order', 'Are you sure?', [{ text: 'No', style: 'cancel' }, { text: 'Yes, Cancel', style: 'destructive', onPress: async () => { try { await foodDelivery.cancelOrder(orderId); loadOrder(); } catch {} } }]);
+    Alert.alert('Cancel Order', 'Are you sure?', [{ text: 'No', style: 'cancel' }, { text: 'Yes, Cancel', style: 'destructive', onPress: async () => { try { await foodDelivery.cancelOrder(orderId); loadOrder(); } catch (err: any) { Alert.alert('Error', err?.message || 'Failed to cancel order'); } } }]);
   };
 
   if (!order) return <LoadingOverlay />;

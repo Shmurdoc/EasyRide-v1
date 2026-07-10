@@ -84,4 +84,11 @@ return [
         'redirect' => env('APPLE_REDIRECT_URI'),
     ],
 
+    'phbimh' => [
+        'base_url' => env('PHBIMH_BASE_URL', 'https://phbimh.co.za/api'),
+        'api_key' => env('PHBIMH_API_KEY', ''),
+        'webhook_secret' => env('PHBIMH_WEBHOOK_SECRET', ''),
+        'timeout' => 30,
+    ],
+
 ];

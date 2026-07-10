@@ -32,6 +32,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= 'password',
             'phone_number' => fake()->phoneNumber(),
             'remember_token' => Str::random(10),
+            'is_active' => true,
         ];
     }
 

@@ -1,6 +1,16 @@
 @echo off
 setlocal enabledelayedexpansion
 set SCRIPTS_DIR=%~dp0
+
+:: Resolve Node.js — check common locations if not on PATH
+where node >nul 2>nul
+if %ERRORLEVEL% EQU 0 goto :found_node
+if exist "C:\Users\madoc\AppData\Local\nvm\v22.16.0\node.exe" set "PATH=C:\Users\madoc\AppData\Local\nvm\v22.16.0;%PATH%" & goto :found_node
+if exist "C:\nvm4w\nodejs\node.exe" set "PATH=C:\nvm4w\nodejs;%PATH%" & goto :found_node
+echo ERROR: Node.js not found. Install Node.js or run: nvm use 22.16.0
+exit /b 1
+
+:found_node
 if "%1"=="" goto :help
 if /i "%1"=="validate" goto :validate
 if /i "%1"=="enforce" goto :enforce

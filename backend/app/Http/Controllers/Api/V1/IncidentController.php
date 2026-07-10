@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Incident\IncidentAssignRequest;
 use App\Http\Requests\Api\V1\Incident\IncidentResolveRequest;
 use App\Http\Requests\Api\V1\Incident\IncidentStoreRequest;
 use App\Models\IncidentReport;
@@ -78,7 +79,7 @@ class IncidentController extends Controller
         return response()->json(['incidents' => $incidents]);
     }
 
-    public function assign(Request $request, IncidentReport $incident): JsonResponse
+    public function assign(IncidentAssignRequest $request, IncidentReport $incident): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
             return response()->json(['message' => 'Unauthorized.'], 403);

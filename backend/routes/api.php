@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DriverController as AdminDriverController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\RideController as AdminRideController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\V1\AdminController;
 use App\Http\Controllers\Api\V1\Auth\SocialAuthController;
 use App\Http\Controllers\Api\V1\Auth\TotpController;
@@ -13,11 +18,18 @@ use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\FoodAdminController;
 use App\Http\Controllers\Api\V1\FoodDeliveryController;
 use App\Http\Controllers\Api\V1\HealthCheckController;
+use App\Http\Controllers\Api\V1\InspectorController;
 use App\Http\Controllers\Api\V1\IncidentController;
 use App\Http\Controllers\Api\V1\KycController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\AdminNotificationController;
+use App\Http\Controllers\Api\V1\NotificationPreferenceController;
 use App\Http\Controllers\Api\V1\PartnerWebhookController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\PhbimhWebhookController;
+use App\Http\Controllers\Api\V1\PeakHourController;
+use App\Http\Controllers\Api\V1\PoolController;
+use App\Http\Controllers\Api\V1\SurgeZoneController;
 use App\Http\Controllers\Api\V1\PlaceController;
 use App\Http\Controllers\Api\V1\PromoCodeController;
 use App\Http\Controllers\Api\V1\RatingController;
@@ -48,7 +60,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // Public promo validation
-    Route::post('promo-codes/validate', [PromoCodeController::class, 'validateCode']);
+    Route::post('promo-codes/validate', [PromoCodeController::class, 'validateCode'])->middleware('throttle:promo-apply');
 
     // Webhook routes (no auth)
     Route::prefix('webhooks')->group(function () {
@@ -60,6 +72,8 @@ Route::prefix('v1')->group(function () {
         Route::post('partner/status', [PartnerWebhookController::class, 'orderStatus']);
         Route::post('stripe', [PaymentController::class, 'stripeWebhook']);
         Route::post('twilio', [PaymentController::class, 'twilioWebhook']);
+        // PHBIMH Integration
+        Route::post('phbimh', [PhbimhWebhookController::class, 'handleWebhook'])->middleware('throttle:api');
     });
 
     // Public discovery routes
@@ -85,6 +99,7 @@ Route::prefix('v1')->group(function () {
             Route::post('{ride}/cancel', [RideController::class, 'cancel'])->middleware('throttle:ride-cancel');
             Route::post('{ride}/rate', [RideController::class, 'rate']);
             Route::post('{ride}/apply-promo', [RideController::class, 'applyPromo']);
+            Route::post('{ride}/no-show', [RideController::class, 'markNoShow']);
             Route::post('{ride}/driver-accept', [RideController::class, 'driverAccept'])->middleware('role:driver');
             Route::post('{ride}/driver-arrived', [RideController::class, 'driverArrived'])->middleware('role:driver');
             Route::post('{ride}/start', [RideController::class, 'startRide'])->middleware('role:driver');
@@ -101,6 +116,7 @@ Route::prefix('v1')->group(function () {
             Route::post('toggle-online', [DriverController::class, 'toggleOnline']);
             Route::get('earnings', [DriverController::class, 'earnings']);
             Route::get('trips', [DriverController::class, 'trips']);
+            Route::get('stats', [DriverController::class, 'stats']);
             Route::get('deliveries', [DeliveryController::class, 'driverDeliveries']);
         });
 
@@ -111,7 +127,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Driver location update (standalone)
-        Route::post('drivers/location', [DriverController::class, 'updateLocation'])->middleware('role:driver');
+        Route::post('drivers/location', [DriverController::class, 'updateLocation'])->middleware(['role:driver', 'throttle:driver-location']);
 
         // Payments
         Route::prefix('payments')->group(function () {
@@ -130,6 +146,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [WalletController::class, 'show']);
             Route::get('transactions', [WalletController::class, 'transactions']);
             Route::post('deposit', [WalletController::class, 'deposit'])->middleware('throttle:wallet-deposit');
+            Route::post('confirm', [WalletController::class, 'confirm']);
             Route::post('withdraw', [WalletController::class, 'withdraw'])->middleware('throttle:wallet-withdraw');
         });
 
@@ -142,7 +159,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Promo Codes
-        Route::prefix('promo-codes')->group(function () {
+        Route::prefix('promo-codes')->middleware('throttle:promo-crud')->group(function () {
             Route::get('/', [PromoCodeController::class, 'index']);
             Route::get('{promoCode}', [PromoCodeController::class, 'show']);
             Route::post('/', [PromoCodeController::class, 'store'])->middleware('role:admin|super-admin');
@@ -194,6 +211,10 @@ Route::prefix('v1')->group(function () {
             Route::post('unregister-token', [NotificationController::class, 'unregisterToken']);
         });
 
+        // Notification Preferences
+        Route::get('notifications/preferences', [NotificationPreferenceController::class, 'index']);
+        Route::put('notifications/preferences', [NotificationPreferenceController::class, 'update']);
+
         // Scheduled Rides
         Route::prefix('scheduled-rides')->group(function () {
             Route::get('/', [ScheduledRideController::class, 'index']);
@@ -209,7 +230,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // SOS
-        Route::prefix('sos')->group(function () {
+        Route::prefix('sos')->middleware('throttle:sos')->group(function () {
             Route::post('/', [SosController::class, 'trigger']);
             Route::post('{id}/cancel', [SosController::class, 'cancel']);
             Route::post('{id}/acknowledge', [SosController::class, 'acknowledge'])->middleware('role:admin|super-admin');
@@ -218,7 +239,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Chat
-        Route::prefix('chat')->group(function () {
+        Route::prefix('chat')->middleware('throttle:chat')->group(function () {
             Route::get('rides/{ride}/messages', [ChatController::class, 'messages']);
             Route::post('rides/{ride}/messages', [ChatController::class, 'send']);
             Route::get('rides/{ride}/unread', [ChatController::class, 'unread']);
@@ -274,6 +295,20 @@ Route::prefix('v1')->group(function () {
                 Route::post('{payout}/retry', [AdminController::class, 'retryPayout']);
             });
 
+            // Admin Notifications
+            Route::prefix('notifications')->group(function () {
+                Route::get('/', [AdminNotificationController::class, 'index']);
+                Route::post('/', [AdminNotificationController::class, 'send']);
+            });
+
+            // Peak Hours
+            Route::apiResource('peak-hours', PeakHourController::class);
+            Route::patch('peak-hours/{peak_hour}/toggle', [PeakHourController::class, 'toggle']);
+
+            // Surge Zones
+            Route::apiResource('surge-zones', SurgeZoneController::class);
+            Route::patch('surge-zones/{surge_zone}/toggle', [SurgeZoneController::class, 'toggle']);
+
             // Compliance Admin
             Route::prefix('compliance')->group(function () {
                 Route::get('kyc/pending', [KycController::class, 'pending']);
@@ -289,6 +324,64 @@ Route::prefix('v1')->group(function () {
                 Route::get('data-retention', [DataRetentionController::class, 'retentionInfo']);
                 Route::post('data-retention/cleanup', [DataRetentionController::class, 'runCleanup']);
             });
+
+            // Admin Dashboard (new dedicated controllers)
+            Route::prefix('dashboard')->group(function () {
+                Route::get('/', [AdminDashboardController::class, 'index']);
+                Route::get('revenue/{period}', [AdminDashboardController::class, 'revenue'])
+                    ->whereIn('period', ['day', 'week', 'month']);
+                Route::get('rides/{period}', [AdminDashboardController::class, 'rides'])
+                    ->whereIn('period', ['day', 'week', 'month']);
+            });
+
+            // Admin User Management
+            Route::prefix('manage/users')->group(function () {
+                Route::get('/', [AdminUserController::class, 'index']);
+                Route::get('{user}', [AdminUserController::class, 'show']);
+                Route::put('{user}', [AdminUserController::class, 'update']);
+                Route::post('{user}/suspend', [AdminUserController::class, 'suspend']);
+                Route::post('{user}/activate', [AdminUserController::class, 'activate']);
+            });
+
+            // Admin Driver Management
+            Route::prefix('manage/drivers')->group(function () {
+                Route::get('/', [AdminDriverController::class, 'index']);
+                Route::get('{driver}', [AdminDriverController::class, 'show']);
+                Route::post('{driver}/approve', [AdminDriverController::class, 'approve']);
+                Route::post('{driver}/reject', [AdminDriverController::class, 'reject']);
+                Route::post('{driver}/suspend', [AdminDriverController::class, 'suspend']);
+                Route::get('{driver}/documents', [AdminDriverController::class, 'verifyDocuments']);
+            });
+
+            // Admin Ride Management
+            Route::prefix('manage/rides')->group(function () {
+                Route::get('/', [AdminRideController::class, 'index']);
+                Route::get('{ride}', [AdminRideController::class, 'show']);
+                Route::post('{ride}/dispute', [AdminRideController::class, 'dispute']);
+                Route::post('{ride}/resolve', [AdminRideController::class, 'resolve']);
+            });
+
+            // Admin Payment Management
+            Route::prefix('manage/payments')->group(function () {
+                Route::get('/', [AdminPaymentController::class, 'index']);
+                Route::post('{payment}/refund', [AdminPaymentController::class, 'refund']);
+                Route::get('reconciliation', [AdminPaymentController::class, 'reconciliation']);
+            });
+        });
+
+        // Pool Rides
+        Route::prefix('pool')->group(function () {
+            Route::post('/join', [PoolController::class, 'join']);
+            Route::post('/leave', [PoolController::class, 'leave']);
+            Route::get('/{id}/status', [PoolController::class, 'status']);
+            Route::get('/matches', [PoolController::class, 'matches']);
+        });
+
+        // Pool Rides (Driver)
+        Route::middleware('role:driver')->prefix('driver')->group(function () {
+            Route::get('/pool/{id}/passengers', [PoolController::class, 'driverPassengers']);
+            Route::patch('/pool/{id}/passenger/{passengerId}/pickup', [PoolController::class, 'markPickup']);
+            Route::patch('/pool/{id}/passenger/{passengerId}/dropoff', [PoolController::class, 'markDropoff']);
         });
 
         // Consent
@@ -312,6 +405,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/my', [IncidentController::class, 'myIncidents']);
             Route::get('/{incident}', [IncidentController::class, 'show']);
             Route::get('/{incident}/evidence/{index}', [IncidentController::class, 'downloadEvidence']);
+        });
+
+        // Inspector (admin only - exposes operational metrics)
+        Route::prefix('inspector')->middleware('role:admin|super-admin')->group(function () {
+            Route::get('/api-stats', [InspectorController::class, 'apiStats']);
+            Route::get('/ride-flow', [InspectorController::class, 'rideFlow']);
+            Route::get('/queue-health', [InspectorController::class, 'queueHealth']);
+            Route::get('/my-stats', [InspectorController::class, 'myStats']);
         });
 
         // Data Rights (POPIA)

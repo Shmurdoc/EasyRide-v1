@@ -38,6 +38,7 @@ backend/debug_*.php
 backend/temp-test/
 *.local
 *.bak
+.worktrees/
 coverage/
 .nyc_output/
 .phpunit.result.cache
@@ -57,6 +58,23 @@ docs/
 setup/
 docker-compose.prod.blue.yml
 docker-compose.prod.green.yml
+
+# Test and build artifacts
+test-*.bat
+test-*.js
+test-*.php
+build.bat
+build_log.txt
+docker_build_backend.bat
+login-test.bat
+**/build_log*.txt
+**/build-release.bat
+**/build-gradle-only*.bat
+backend/test-final.txt
+backend/test-final2.txt
+backend/test-output.txt
+socket-server/test-socket-emit.js
+tests/load/
 
 # Backend build artifacts
 backend/.env.testing

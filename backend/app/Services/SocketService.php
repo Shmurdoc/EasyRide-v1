@@ -54,6 +54,30 @@ class SocketService
             'data' => $data,
         ]);
 
-        Redis::publish(self::$prefix.$channel, $payload);
+        $fullChannel = self::$prefix . $channel;
+
+        try {
+            $host = config('database.redis.default.host', 'redis');
+            $port = (int) config('database.redis.default.port', 6379);
+            $fp = @stream_socket_client("tcp://{$host}:{$port}", $errno, $errstr, 2);
+            if ($fp) {
+                $cmd = "*3\r\n\$7\r\nPUBLISH\r\n\$" . strlen($fullChannel) . "\r\n" . $fullChannel . "\r\n\$" . strlen($payload) . "\r\n" . $payload . "\r\n";
+                // Log the raw command bytes
+                \Log::info("SocketService::broadcast CMD", [
+                    'cmd_hex' => substr(bin2hex($cmd), 0, 200),
+                    'cmd_len' => strlen($cmd),
+                    'channel' => $fullChannel,
+                    'payload' => $payload,
+                ]);
+                fwrite($fp, $cmd);
+                $result = fgets($fp);
+                fclose($fp);
+                \Log::info("SocketService::broadcast OK", ['channel' => $fullChannel, 'event' => $event, 'result' => trim($result), 'payload_len' => strlen($payload)]);
+            } else {
+                \Log::error("SocketService::broadcast FAILED", ['channel' => $fullChannel, 'error' => "$errstr ($errno)"]);
+            }
+        } catch (\Throwable $e) {
+            \Log::error("SocketService::broadcast EXCEPTION", ['channel' => $fullChannel, 'error' => $e->getMessage()]);
+        }
     }
 }

@@ -10,6 +10,7 @@ use App\Models\Delivery;
 use App\Services\PartnerApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PartnerWebhookController extends Controller
 {
@@ -35,6 +36,12 @@ class PartnerWebhookController extends Controller
     public function orderStatus(OrderStatusRequest $request): JsonResponse
     {
         $validated = $request->validated();
+
+        if (! $this->partnerService->verifyWebhookSignature($request->all())) {
+            Log::warning('Partner status webhook: Invalid signature');
+
+            return response()->json(['message' => 'Invalid signature.'], 403);
+        }
 
         $delivery = Delivery::where('partner_reference', $validated['order_id'])->first();
 

@@ -1,7 +1,7 @@
 <?php
 
 use Monolog\Handler\NullHandler;
-use Monolog\Handler\SentryHandler;
+use Sentry\Laravel\SentryHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
@@ -96,6 +96,13 @@ return [
             'path' => storage_path('logs/performance.log'),
             'level' => 'info',
             'days' => 30,
+        ],
+
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => 'info',
+            'days' => 365,
         ],
     ],
 

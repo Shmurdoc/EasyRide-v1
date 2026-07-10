@@ -1,4 +1,4 @@
-const { subClient } = require('./redis');
+const { relayClient } = require('./redis');
 
 let ioRef = null;
 
@@ -47,30 +47,62 @@ module.exports = {
   init(io) {
     ioRef = io;
 
-    subClient.psubscribe('laravel_database_*', (err) => {
-      if (err) {
-        console.error('[LaravelRelay] psubscribe error:', err.message);
-      } else {
-        console.log('[LaravelRelay] Subscribed to Laravel broadcasts');
-      }
-    });
+    async function waitReady(client) {
+      if (client.status === 'ready') return;
+      return new Promise((resolve) => {
+        client.once('ready', resolve);
+      });
+    }
 
-    subClient.on('pmessage', (_pattern, channel, message) => {
+    async function startRelay() {
+      await waitReady(relayClient);
+      console.log('[LaravelRelay] relayClient is READY, subscribing...');
+      relayClient.psubscribe('laravel_database_*', (err) => {
+        if (err) {
+          console.error('[LaravelRelay] psubscribe error:', err.message);
+        } else {
+          console.log('[LaravelRelay] Subscribed to Laravel broadcasts (dedicated relay connection)');
+        }
+      });
+    }
+
+    startRelay();
+
+    relayClient.on('pmessage', (_pattern, channel, message) => {
+      const channelStr = String(channel);
+      const msgStr = String(message);
+      console.log('[LaravelRelay] RAW pmessage on channel:', channelStr.substring(0, 80), 'msg len:', msgStr.length);
       try {
-        const parsed = JSON.parse(message);
+        const parsed = JSON.parse(msgStr);
         const eventName = parsed.event;
         const eventData = parsed.data;
 
-        if (!eventName || !ioRef) return;
+        if (!eventName || !ioRef) {
+          console.log('[LaravelRelay] SKIP: eventName=', eventName, 'ioRef=', !!ioRef);
+          return;
+        }
 
-        const channelInfo = parseChannelName(channel);
+        const channelInfo = parseChannelName(channelStr);
         const room = resolveRoom(channelInfo);
+        console.log('[LaravelRelay] EMITTING', eventName, 'to room:', room, 'data keys:', Object.keys(eventData || {}));
 
         if (room) {
-          ioRef.to(room).emit(eventName, eventData);
+          const parts = room.split(':');
+          const targetUserId = parts[1];
+          const targetSocket = ioRef.connectedSockets?.get(targetUserId);
+          if (targetSocket && targetSocket.connected) {
+            targetSocket.emit(eventName, eventData);
+            console.log('[LaravelRelay] DIRECT EMIT OK to', targetUserId, 'event:', eventName);
+          } else {
+            console.log('[LaravelRelay] Socket not found for', targetUserId, '- falling back to room emit');
+            ioRef.to(room).emit(eventName, eventData);
+            console.log('[LaravelRelay] ROOM EMIT OK');
+          }
+        } else {
+          console.log('[LaravelRelay] SKIP: no room for channel', channelStr.substring(0, 60));
         }
       } catch (err) {
-        console.error('[LaravelRelay] Parse error:', err.message);
+        console.error('[LaravelRelay] Parse error:', err.message, 'raw:', msgStr.substring(0, 100));
       }
     });
   },

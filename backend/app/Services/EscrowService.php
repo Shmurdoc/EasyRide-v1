@@ -24,7 +24,7 @@ class EscrowService
     public function holdPayment(Ride $ride, string $method = 'wallet', array $gatewayData = []): Payment
     {
         $existingPayment = Payment::where('ride_id', $ride->id)
-            ->whereIn('status', [Payment::STATUS_PENDING, Payment::STATUS_COMPLETED, Payment::STATUS_HELD])
+            ->whereIn('status', [Payment::STATUS_PENDING, Payment::STATUS_COMPLETED, Payment::STATUS_ESCROW_HELD])
             ->first();
 
         if ($existingPayment) {
@@ -48,6 +48,13 @@ class EscrowService
 
                 $driverWallet->increment('pending_balance', (float) $payment->driver_payout);
             }
+
+            Log::info('EscrowService: Payment held', [
+                'payment_id' => $payment->id,
+                'ride_id' => $ride->id,
+                'method' => $method,
+                'amount' => $payment->amount,
+            ]);
 
             return $payment;
         });

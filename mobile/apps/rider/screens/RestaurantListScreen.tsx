@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FlatList, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { FlatList, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { foodDelivery, COLORS, GRADIENTS, SPACING, RADIUS } from '@easyryde/shared';
@@ -10,13 +10,16 @@ export default function RestaurantListScreen({ navigation }: { navigation: Rider
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => { loadRestaurants(); }, []);
 
   async function loadRestaurants() {
     try { const params: Record<string, string> = { per_page: '50' }; if (search) params.search = search; const data = await foodDelivery.restaurants(params); setRestaurants(data.data); }
-    catch {} finally { setLoading(false); }
+    catch (err: any) { Alert.alert('Error', err?.message || 'Failed to load restaurants'); } finally { setLoading(false); setRefreshing(false); }
   }
+
+  const onRefresh = React.useCallback(() => { setRefreshing(true); loadRestaurants(); }, []);
 
   if (loading) {
     return (
@@ -39,6 +42,8 @@ export default function RestaurantListScreen({ navigation }: { navigation: Rider
         data={restaurants}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: SPACING.base }}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
         ListEmptyComponent={<Typography variant="body" color={COLORS.textMuted} style={{ textAlign: 'center', marginTop: 40 }}>No restaurants found</Typography>}
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => navigation.navigate('RestaurantMenu', { restaurantId: item.id })}>

@@ -23,17 +23,30 @@
     "driver": "cd apps/driver && npx expo start",
     "admin": "cd apps/admin && npx expo start",
     "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "test:e2e": "detox test --config .detoxrc.js",
+    "test:e2e:rider": "detox test --config .detoxrc.js --configuration rider",
+    "test:e2e:driver": "detox test --config .detoxrc.js --configuration driver",
+    "test:e2e:admin": "detox test --config .detoxrc.js --configuration admin",
+    "test:e2e:build": "detox build --config .detoxrc.js"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "detox": "^20.27.2",
+    "ts-jest": "^29.4.11",
     "turbo": "^2.0.0",
     "typescript": "^5.5.0"
   },
   "dependencies": {
+    "@babel/runtime": "^8.0.0",
+    "expo-secure-store": "^13.0.2",
+    "expo-task-manager": "^11.8.2",
     "graphql": "^17.0.1",
     "md5-file": "^4.0.0",
     "nanoid": "^3.3.12",
     "react-native-maps": "^1.14.0",
+    "react-native-screens": "^3.31.0",
+    "react-native-svg": "^15.15.5",
     "sucrase": "^3.35.1"
   }
 }

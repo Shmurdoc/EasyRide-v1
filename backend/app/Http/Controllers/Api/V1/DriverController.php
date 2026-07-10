@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
@@ -7,80 +9,63 @@ use App\Http\Requests\Api\V1\Driver\ToggleOnlineRequest;
 use App\Http\Requests\Api\V1\Driver\VehicleRegisterRequest;
 use App\Http\Requests\Api\V1\Ride\UpdateLocationRequest;
 use App\Http\Requests\Api\V1\UpdateDriverProfileRequest;
-use App\Models\Ride;
-use App\Models\User;
-use App\Models\WalletTransaction;
+use App\Services\DriverService;
+use App\Services\RideService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DriverController extends Controller
 {
+    public function __construct(
+        protected DriverService $driverService,
+        protected RideService $rideService,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
-        $drivers = User::role('driver')
-            ->where('tenant_id', $request->user()->tenant_id)
-            ->when($request->is_online, fn ($q, $v) => $q->where('is_online', filter_var($v, FILTER_VALIDATE_BOOLEAN)))
-            ->when($request->is_approved, fn ($q, $v) => $q->whereHas('driverProfile', fn ($qp) => $qp->where('is_approved', filter_var($v, FILTER_VALIDATE_BOOLEAN))))
-            ->when($request->search, fn ($q, $v) => $q->where(function ($qq) use ($v) {
-                $qq->where('name', 'like', "%{$v}%")
-                    ->orWhere('email', 'like', "%{$v}%")
-                    ->orWhere('phone_number', 'like', "%{$v}%");
-            }))
-            ->with(['driverProfile', 'vehicle'])
-            ->paginate($request->per_page ?? 15);
+        $drivers = $this->driverService->listDrivers(
+            $request->user()->tenant_id,
+            $request->only(['is_online', 'is_approved', 'search']),
+            $request->per_page ?? 15,
+        );
 
         return response()->json($drivers);
     }
 
-    public function show(Request $request, User $driver): JsonResponse
+    public function show(Request $request, string $driverId): JsonResponse
     {
-        if ($driver->tenant_id !== $request->user()->tenant_id && ! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
+        $driver = $this->driverService->getDriver($driverId, $request->user());
+
+        if (! $driver) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        $driver->load(['driverProfile', 'vehicle', 'tenant']);
-
-        $averageRating = $driver->driverProfile?->average_rating ?? 0;
-        $ratingCount = $driver->driverProfile?->rating_count ?? 0;
-
         return response()->json([
             'user' => $driver,
-            'average_rating' => $averageRating,
-            'rating_count' => $ratingCount,
+            'average_rating' => $driver->driverProfile?->average_rating ?? 0,
+            'rating_count' => $driver->driverProfile?->rating_count ?? 0,
         ]);
     }
 
     public function updateProfile(UpdateDriverProfileRequest $request): JsonResponse
     {
-        $user = $request->user();
-        $profile = $user->driverProfile()->firstOrNew(['user_id' => $user->id]);
-        $profile->fill($request->validated());
-        $profile->save();
-
-        if ($request->hasAny(['make', 'model', 'year', 'color', 'license_plate', 'category'])) {
-            $user->vehicle()->updateOrCreate(
-                ['user_id' => $user->id],
-                $request->only(['make', 'model', 'year', 'color', 'license_plate', 'category']),
+        try {
+            $profile = $this->driverService->updateDriverProfile(
+                $request->user(),
+                $request->validated(),
             );
+
+            return response()->json($profile);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        if ($request->has('phone_number')) {
-            $user->update(['phone_number' => $request->phone_number]);
-        }
-
-        $profile->load('user.vehicle');
-
-        return response()->json($profile);
     }
 
     public function registerVehicle(VehicleRegisterRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-
-        $user = $request->user();
-        $vehicle = $user->vehicle()->updateOrCreate(
-            ['user_id' => $user->id],
-            $validated,
+        $vehicle = $this->driverService->registerVehicle(
+            $request->user(),
+            $request->validated(),
         );
 
         return response()->json($vehicle, 201);
@@ -88,70 +73,58 @@ class DriverController extends Controller
 
     public function toggleOnline(ToggleOnlineRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-        $user = $request->user();
-        $user->update([
-            'is_online' => $validated['is_online'],
-            'current_latitude' => $validated['current_latitude'] ?? $user->current_latitude,
-            'current_longitude' => $validated['current_longitude'] ?? $user->current_longitude,
-        ]);
+        try {
+            $result = $this->driverService->toggleOnline(
+                $request->user(),
+                $request->validated('is_online'),
+                $request->only(['current_latitude', 'current_longitude']),
+            );
 
-        return response()->json([
-            'is_online' => $user->fresh()->is_online,
-        ]);
+            return response()->json($result);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
     }
 
     public function updateLocation(UpdateLocationRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-        $user = $request->user();
-        $user->update([
-            'current_latitude' => $validated['latitude'],
-            'current_longitude' => $validated['longitude'],
-            'last_location_update' => now(),
-        ]);
+        try {
+            $this->driverService->updateLocation(
+                $request->user(),
+                (float) $request->validated('latitude'),
+                (float) $request->validated('longitude'),
+                $request->input('timestamp'),
+            );
 
-        return response()->json(['message' => 'Location updated.']);
+            return response()->json(['message' => 'Location updated.']);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
     public function earnings(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $earnings = $this->driverService->getEarnings($request->user());
 
-        $profile = $user->driverProfile;
-
-        $todayEarnings = Ride::where('driver_id', $user->id)
-            ->where('status', 'completed')
-            ->whereDate('completed_at', today())
-            ->sum('total_fare');
-
-        $pendingPayout = WalletTransaction::whereHas('wallet', fn ($q) => $q->where('user_id', $user->id))
-            ->where('type', 'pending_payout')
-            ->sum('amount');
-
-        $recentTransactions = WalletTransaction::whereHas('wallet', fn ($q) => $q->where('user_id', $user->id))
-            ->latest()
-            ->take(20)
-            ->get();
-
-        return response()->json([
-            'total_earnings' => (float) ($profile?->total_earnings ?? 0),
-            'today_earnings' => (float) $todayEarnings,
-            'pending_payout' => (float) $pendingPayout,
-            'total_trips' => (int) ($profile?->total_trips ?? 0),
-            'recent_transactions' => $recentTransactions,
-        ]);
+        return response()->json($earnings);
     }
 
     public function trips(Request $request): JsonResponse
     {
-        $rides = Ride::where('driver_id', $request->user()->id)
-            ->when($request->status, fn ($q, $v) => $q->where('status', $v))
-            ->with(['rider', 'payment', 'rating'])
-            ->latest()
-            ->paginate($request->per_page ?? 15);
+        $trips = $this->driverService->getTrips(
+            $request->user(),
+            $request->only(['status']),
+            $request->per_page ?? 15,
+        );
 
-        return response()->json($rides);
+        return response()->json($trips);
+    }
+
+    public function stats(Request $request): JsonResponse
+    {
+        $stats = $this->driverService->getStats($request->user());
+
+        return response()->json(['data' => $stats]);
     }
 
     public function nearbyRides(Request $request): JsonResponse
@@ -163,15 +136,12 @@ class DriverController extends Controller
             return response()->json(['message' => 'Location not set.'], 422);
         }
 
-        $rides = Ride::where('status', 'searching')
-            ->where('tenant_id', $request->user()->tenant_id)
-            ->whereRaw(
-                '(6371 * acos(cos(radians(?)) * cos(radians(pickup_latitude)) * cos(radians(pickup_longitude) - radians(?)) + sin(radians(?)) * sin(radians(pickup_latitude)))) <= ?',
-                [$latitude, $longitude, $latitude, $request->radius ?? 10]
-            )
-            ->with('rider')
-            ->latest()
-            ->get();
+        $rides = $this->rideService->findNearbyRides(
+            (float) $latitude,
+            (float) $longitude,
+            (float) ($request->radius ?? 10),
+            $request->user()->tenant_id,
+        );
 
         return response()->json($rides);
     }

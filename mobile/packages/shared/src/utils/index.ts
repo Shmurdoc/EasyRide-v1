@@ -27,21 +27,8 @@ export function formatDateTime(dateString: string): string {
   return `${formatDate(dateString)} ${formatTime(dateString)}`;
 }
 
-export function formatDistance(km: number): string {
-  if (km < 1) {
-    return `${Math.round(km * 1000)}m`;
-  }
-  return `${km.toFixed(1)}km`;
-}
-
-export function formatDuration(minutes: number): string {
-  if (minutes < 60) {
-    return `${Math.round(minutes)}min`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const mins = Math.round(minutes % 60);
-  return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
-}
+export { formatDistance, formatDuration, formatZAR, calculateDistance, generateRouteCoords, getGreeting } from './mapUtils';
+export type { } from './mapUtils';
 
 export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
@@ -93,3 +80,5 @@ export function decodePolyline(encoded: string): { latitude: number; longitude: 
 export function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
+
+// mapUtils exports are explicit above (line 30) to avoid duplicates

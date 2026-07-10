@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth, wallet, COLORS, SPACING, RADIUS, SHADOWS } from '@easyryde/shared';
@@ -19,6 +19,7 @@ export default function WalletScreen() {
   const [walletData, setWalletData] = useState<{ balance: number; pending_balance: number; currency: string } | null>(null);
   const [transactions, setTransactions] = useState<Array<{ id: string; type: string; amount: number; description: string; created_at: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
@@ -30,7 +31,7 @@ export default function WalletScreen() {
 
   async function fetchWalletData() {
     try {
-      setLoading(true);
+      if (!refreshing) setLoading(true);
       setError(null);
       const walletResponse = await wallet.get();
       setWalletData(walletResponse);
@@ -40,8 +41,11 @@ export default function WalletScreen() {
       setError(err.message || 'Failed to load wallet data');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
+
+  const onRefresh = useCallback(() => { setRefreshing(true); fetchWalletData(); }, []);
 
   async function handleDeposit() {
     const amount = parseFloat(depositAmount);
@@ -124,7 +128,7 @@ export default function WalletScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}>
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Total Balance</Text>
           <Text style={styles.balanceAmount}>R {balance.toFixed(2)}</Text>

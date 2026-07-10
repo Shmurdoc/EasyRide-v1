@@ -1,94 +1,104 @@
-import React, { useState, useEffect } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  View, Text, FlatList, StyleSheet, RefreshControl, TouchableOpacity,
+  TextInput, StatusBar,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { admin, COLORS, GRADIENTS, SPACING, RADIUS } from '@easyryde/shared';
-import { Typography } from '@easyryde/shared';
-import { Chip } from '@easyryde/shared';
-import { GlassCard } from '@easyryde/shared';
-import { GradientText } from '@easyryde/shared';
-import { Shimmer } from '@easyryde/shared';
-import { RideStatusBadge } from '@easyryde/shared';
-import type { Ride } from '@easyryde/shared';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ADMIN_COLORS, ADMIN_GRADIENTS } from '../constants/theme';
+import { useAdminRides } from '../hooks/useAdminRides';
+import RideCard from '../components/rides/RideCard';
+import FilterTabs from '../components/common/FilterTabs';
+import { SearchBar } from '../components/common/SearchBar';
+import EmptyState from '../components/common/EmptyState';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorState from '../components/common/ErrorState';
+
+type Nav = NativeStackNavigationProp<any>;
+
+const STATUS_FILTERS = ['all', 'pending', 'active', 'completed', 'cancelled'];
 
 export default function RidesScreen() {
-  const [ridesList, setRidesList] = useState<Ride[]>([]);
-  const [filter, setFilter] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<Nav>();
+  const { rides, loading, error, refreshing, refresh, loadMore, filter, setFilter, search, setSearch, hasMore } = useAdminRides();
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  useEffect(() => { loadRides(); }, [filter]);
-
-  async function loadRides() {
-    try { const params: Record<string, string> = { per_page: '50' }; if (filter) params.status = filter; const data = await admin.rides(params); setRidesList(data.data); }
-    catch (err) { console.warn('Failed to load rides:', err); } finally { setLoading(false); setRefreshing(false); }
-  }
-
-  const onRefresh = React.useCallback(() => { setRefreshing(true); loadRides(); }, [filter]);
-
-  const filters = ['all', 'searching', 'accepted', 'in_progress', 'completed', 'cancelled'];
-
-  const getStatusGlow = (status: string) => {
-    switch (status) {
-      case 'completed': return COLORS.successGlow;
-      case 'cancelled': return COLORS.errorGlow;
-      case 'in_progress': return COLORS.primaryGlow;
-      default: return 'rgba(255,255,255,0.05)';
-    }
-  };
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-        <Typography variant="h2" style={{ padding: SPACING.base, paddingBottom: SPACING.sm }}>Rides</Typography>
-        <View style={{ flexDirection: 'row', paddingHorizontal: SPACING.base, marginBottom: SPACING.base, gap: SPACING.sm }}>
-          {[1, 2, 3].map((i) => <Shimmer key={i} width={70} height={32} borderRadius={RADIUS.full} />)}
-        </View>
-        {[1, 2, 3].map((i) => (
-          <GlassCard key={i} style={{ marginHorizontal: SPACING.base, marginBottom: SPACING.sm }}>
-            <Shimmer width={80} height={20} style={{ marginBottom: SPACING.sm }} />
-            <Shimmer width="100%" height={16} style={{ marginBottom: SPACING.sm }} />
-            <Shimmer width="60%" height={14} />
-          </GlassCard>
-        ))}
-      </View>
-    );
-  }
+  const handleSearchSubmit = useCallback(() => {
+    setSearch(search);
+  }, [search, setSearch]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-      <LinearGradient colors={['rgba(212,175,55,0.1)', 'rgba(0,0,0,0)']} style={styles.header}>
-        <Typography variant="h2">Rides</Typography>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={ADMIN_GRADIENTS.header} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="chevron-back" size={22} color="#ffffff" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Rides</Text>
+          </View>
+          <TouchableOpacity onPress={() => setSearchOpen(!searchOpen)} style={styles.iconBtn}>
+            <Ionicons name={searchOpen ? 'close' : 'search'} size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
-      <View style={{ flexDirection: 'row', paddingHorizontal: SPACING.base, marginBottom: SPACING.base, gap: SPACING.sm }}>
-        {filters.map((f) => (
-          <Chip key={f} label={f === 'all' ? 'All' : f.replace('_', ' ')} selected={filter === f || (f === 'all' && filter === null)} onPress={() => setFilter(f === 'all' ? null : f)} />
-        ))}
-      </View>
+      {searchOpen && (
+        <View style={styles.searchWrap}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            onSubmitEditing={handleSearchSubmit}
+            placeholder="Search by ride ID, rider, driver..."
+          />
+        </View>
+      )}
 
-      <FlatList
-        data={ridesList}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: SPACING.base }}
-        ListEmptyComponent={<Typography variant="body" color={COLORS.textDim} style={{ textAlign: 'center', marginTop: 40 }}>No rides found</Typography>}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        renderItem={({ item }) => (
-          <GlassCard glow glowColor={getStatusGlow(item.status)} style={{ marginBottom: SPACING.sm }}>
-            <RideStatusBadge status={item.status} style={{ marginBottom: SPACING.sm }} />
-            <Typography variant="body" style={{ marginBottom: SPACING.sm }}>{item.pickup_address} → {item.dropoff_address}</Typography>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Typography variant="small" color={COLORS.textMuted}>{item.rider?.name || item.rider_id}</Typography>
-              {item.total_fare && <GradientText colors={GRADIENTS.primary} style={styles.price}>R {item.total_fare.toFixed(2)}</GradientText>}
-            </View>
-          </GlassCard>
-        )}
+      <FilterTabs
+        tabs={STATUS_FILTERS}
+        activeTab={filter}
+        onTabPress={setFilter}
       />
+
+      {loading && !refreshing ? (
+        <LoadingSpinner />
+      ) : error ? (
+        <ErrorState message={error} onRetry={refresh} />
+      ) : (
+        <FlatList
+          data={rides}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => (
+            <RideCard
+              ride={item}
+              onPress={() => navigation.navigate('AdminRideDetail', { id: item.id })}
+            />
+          )}
+          ListEmptyComponent={<EmptyState icon="car" message="No rides found" />}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={ADMIN_COLORS.accent} />}
+          onEndReached={() => { if (hasMore) loadMore(); }}
+          onEndReachedThreshold={0.3}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingTop: SPACING['2xl'], paddingBottom: SPACING.sm, paddingHorizontal: SPACING.base },
-  price: { fontSize: 18, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: '#0a0a0f' },
+  header: { paddingBottom: 16, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
+  headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#ffffff' },
+  iconBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  searchWrap: { paddingHorizontal: 16, paddingTop: 12 },
+  list: { padding: 16, paddingBottom: 100 },
 });

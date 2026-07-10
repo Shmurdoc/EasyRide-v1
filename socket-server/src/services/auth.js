@@ -2,6 +2,7 @@ const { dataClient } = require('./redis');
 
 const CACHE_TTL_SECONDS = 60;
 const CACHE_PREFIX = 'auth:token:';
+const TOKEN_REVALIDATE_INTERVAL_MS = 55_000;
 
 async function validateToken(token) {
   if (!token || typeof token !== 'string' || token.length < 10) {
@@ -29,6 +30,10 @@ async function validateToken(token) {
     console.warn('[Auth] cache read failed:', err.message);
   }
 
+  return await validateTokenAgainstBackend(token);
+}
+
+async function validateTokenAgainstBackend(token) {
   const apiBaseUrl = (process.env.APP_API_BASE_URL || 'http://nginx:8080').replace(/\/$/, '');
   const url = `${apiBaseUrl}/api/v1/auth/me`;
 
@@ -82,6 +87,61 @@ async function validateToken(token) {
   }
 }
 
+async function revalidateConnectedTokens(io) {
+  const SCAN_PATTERN = CACHE_PREFIX + '*';
+  const SCAN_COUNT = 50;
+  let cursor = '0';
+  let evictedCount = 0;
+  let refreshedCount = 0;
+
+  try {
+    do {
+      const [nextCursor, keys] = await dataClient.scan(cursor, 'MATCH', SCAN_PATTERN, 'COUNT', SCAN_COUNT);
+      cursor = nextCursor;
+
+      for (const key of keys) {
+        if (key.endsWith(':INVALID')) continue;
+
+        try {
+          const cached = await dataClient.get(key);
+          if (!cached || cached === 'INVALID') continue;
+
+          const parsed = JSON.parse(cached);
+          if (!parsed.userId || !parsed.expires_at) continue;
+
+          const isNearExpiry = parsed.expires_at - Date.now() < 15_000;
+
+          if (isNearExpiry) {
+            const token = key.replace(CACHE_PREFIX, '');
+            const result = await validateTokenAgainstBackend(token);
+
+            if (!result.valid) {
+              const sockets = await io.in(`user:${parsed.userId}`).fetchSockets();
+              for (const sock of sockets) {
+                if (sock.data.token === token) {
+                  sock.emit('auth:token-expired', { reason: result.reason });
+                  sock.disconnect(true);
+                  evictedCount++;
+                }
+              }
+            } else {
+              refreshedCount++;
+            }
+          }
+        } catch (err) {
+          console.warn('[Auth] revalidate scan key error:', err.message);
+        }
+      }
+    } while (cursor !== '0');
+
+    if (evictedCount > 0 || refreshedCount > 0) {
+      console.log(`[Auth] Token revalidation: ${refreshedCount} refreshed, ${evictedCount} evicted`);
+    }
+  } catch (err) {
+    console.error('[Auth] Token revalidation scan failed:', err.message);
+  }
+}
+
 async function cacheValid(token, payload) {
   try {
     await dataClient.set(
@@ -114,4 +174,7 @@ async function invalidateToken(token) {
 module.exports = {
   validateToken,
   invalidateToken,
+  revalidateConnectedTokens,
+  CACHE_TTL_SECONDS,
+  TOKEN_REVALIDATE_INTERVAL_MS,
 };

@@ -1,0 +1,4 @@
+appId: za.co.easyryde.rider
+---
+- launchApp
+- tapOn: "Email"

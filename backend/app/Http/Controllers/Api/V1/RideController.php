@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1;
 
-use App\Events\NewRideRequest;
+use App\Enums\RideStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Ride\FareEstimateRequest;
 use App\Http\Requests\Api\V1\Ride\RideApplyPromoRequest;
@@ -10,34 +12,30 @@ use App\Http\Requests\Api\V1\Ride\RideCancelRequest;
 use App\Http\Requests\Api\V1\Ride\RideCreateRequest;
 use App\Http\Requests\Api\V1\Ride\RideRateRequest;
 use App\Http\Requests\Api\V1\Ride\UpdateLocationRequest;
+use App\Http\Resources\RideResource;
 use App\Models\Ride;
-use App\Models\User;
 use App\Services\FareCalculationService;
-use App\Services\PaymentService;
 use App\Services\PromoCodeService;
-use App\Services\RatingService;
 use App\Services\ReceiptService;
-use App\Services\RideMatchingService;
+use App\Services\RideService;
 use App\Services\RouteService;
+use App\Services\SurgePricingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class RideController extends Controller
 {
     public function __construct(
+        protected RideService $rideService,
         protected FareCalculationService $fareCalculationService,
         protected RouteService $routeService,
-        protected RideMatchingService $rideMatchingService,
-        protected PaymentService $paymentService,
-        protected RatingService $ratingService,
         protected PromoCodeService $promoCodeService,
         protected ReceiptService $receiptService,
+        protected SurgePricingService $surgePricingService,
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): AnonymousResourceCollection
     {
         $rides = Ride::query()
             ->when($request->status, fn ($q, $v) => $q->where('status', $v))
@@ -50,38 +48,18 @@ class RideController extends Controller
             ->latest()
             ->paginate($request->per_page ?? 15);
 
-        return response()->json($rides);
+        return RideResource::collection($rides);
     }
 
     public function store(RideCreateRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        try {
+            $ride = $this->rideService->createRide($request->user(), $request->validated());
 
-        $fare = $this->fareCalculationService->calculate(
-            $validated['pickup_lat'], $validated['pickup_lng'],
-            $validated['dropoff_lat'], $validated['dropoff_lng'],
-            $validated['category'],
-        );
-
-        $ride = Ride::create([
-            'pickup_latitude' => $validated['pickup_lat'],
-            'pickup_longitude' => $validated['pickup_lng'],
-            'dropoff_latitude' => $validated['dropoff_lat'],
-            'dropoff_longitude' => $validated['dropoff_lng'],
-            'pickup_address' => $validated['pickup_address'],
-            'dropoff_address' => $validated['dropoff_address'],
-            'category' => $validated['category'],
-            'payment_method' => $validated['payment_method'],
-            'promo_code' => $validated['promo_code'] ?? null,
-            'tenant_id' => $request->user()->tenant_id,
-            'rider_id' => $request->user()->id,
-            'status' => 'searching',
-            ...$fare,
-        ]);
-
-        Event::dispatch(new NewRideRequest($ride));
-
-        return response()->json(['ride' => $ride->load('rider')], 201);
+            return response()->json(['ride' => new RideResource($ride->load('rider'))], 201);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
     public function show(Request $request, Ride $ride): JsonResponse
@@ -91,7 +69,7 @@ class RideController extends Controller
         }
 
         return response()->json(
-            $ride->load([
+            new RideResource($ride->load([
                 'rider',
                 'driver',
                 'driver.driverProfile',
@@ -99,7 +77,7 @@ class RideController extends Controller
                 'payment',
                 'rating',
                 'delivery',
-            ])
+            ]))
         );
     }
 
@@ -109,24 +87,19 @@ class RideController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        if (! in_array($ride->status, ['searching', 'accepted', 'arrived'])) {
-            return response()->json(['message' => 'Ride cannot be cancelled.'], 422);
+        try {
+            $validated = $request->validated();
+
+            $cancelledRide = $this->rideService->cancelRide(
+                $ride,
+                $validated['cancellation_reason'],
+                (string) $request->user()->id,
+            );
+
+            return response()->json(new RideResource($cancelledRide));
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        $validated = $request->validated();
-
-        $ride->update([
-            'status' => 'cancelled',
-            'cancelled_at' => now(),
-            'cancelled_by' => $request->user()->id,
-            'cancellation_reason' => $validated['cancellation_reason'],
-        ]);
-
-        if ($ride->payment && $ride->payment->status === 'completed') {
-            $this->paymentService->processRefund($ride->payment, 'Ride cancelled');
-        }
-
-        return response()->json($ride);
     }
 
     public function rate(RideRateRequest $request, Ride $ride): JsonResponse
@@ -135,24 +108,19 @@ class RideController extends Controller
             return response()->json(['message' => 'Only the rider can rate.'], 403);
         }
 
-        if ($ride->status !== 'completed') {
-            return response()->json(['message' => 'Only completed rides can be rated.'], 422);
+        try {
+            $validated = $request->validated();
+
+            $ratedRide = $this->rideService->rateRide(
+                $ride,
+                $validated['score'],
+                $validated['comment'] ?? null,
+            );
+
+            return response()->json(new RideResource($ratedRide), 201);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        $validated = $request->validated();
-
-        $rater = User::find($request->user()->id);
-        $ratee = User::find($ride->driver_id);
-
-        $rating = $this->ratingService->rateRide(
-            $ride,
-            $rater,
-            $ratee,
-            $validated['score'],
-            $validated['comment'] ?? null,
-        );
-
-        return response()->json($rating, 201);
     }
 
     public function applyPromo(RideApplyPromoRequest $request, Ride $ride): JsonResponse
@@ -161,17 +129,19 @@ class RideController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        if ($ride->status !== 'searching') {
+        $status = $ride->status instanceof RideStatus ? $ride->status->value : $ride->status;
+        if ($status !== RideStatus::SEARCHING->value) {
             return response()->json(['message' => 'Promo code cannot be applied at this stage.'], 422);
         }
 
-        $validated = $request->validated();
-
         try {
+            $validated = $request->validated();
+
             $promo = $this->promoCodeService->validateCode(
                 $validated['code'],
                 $request->user()->tenant_id,
                 null,
+                $request->user()->id,
             );
 
             $discount = $this->promoCodeService->applyDiscount($promo, (float) $ride->total_fare);
@@ -180,6 +150,8 @@ class RideController extends Controller
                 'promo_code_id' => $promo->id,
                 'discount_amount' => $discount['discount'],
             ]);
+
+            $this->promoCodeService->incrementUsage($promo, $request->user()->id);
 
             return response()->json([
                 'promo_code' => $promo,
@@ -193,20 +165,15 @@ class RideController extends Controller
 
     public function driverAccept(Request $request, Ride $ride): JsonResponse
     {
-        if ($ride->status !== 'searching') {
-            return response()->json(['message' => 'Ride is no longer available.'], 422);
+        try {
+            $acceptedRide = $this->rideService->acceptRide($ride, $request->user());
+
+            return response()->json(
+                new RideResource($acceptedRide->load(['driver', 'driver.driverProfile', 'driver.vehicle']))
+            );
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        $driver = $request->user();
-        $result = $this->rideMatchingService->accept($ride, $driver);
-
-        if (! $result['success']) {
-            return response()->json(['message' => $result['message']], 422);
-        }
-
-        $driver->update(['current_ride_id' => $ride->id]);
-
-        return response()->json($ride->fresh()->load(['driver', 'driver.driverProfile', 'driver.vehicle']));
     }
 
     public function driverArrived(Request $request, Ride $ride): JsonResponse
@@ -215,13 +182,13 @@ class RideController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        if ($ride->status !== 'accepted') {
-            return response()->json(['message' => 'Invalid ride status.'], 422);
+        try {
+            $arrivedRide = $this->rideService->driverArrived($ride);
+
+            return response()->json(new RideResource($arrivedRide));
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        $ride->update(['status' => 'arrived']);
-
-        return response()->json($ride);
     }
 
     public function startRide(Request $request, Ride $ride): JsonResponse
@@ -230,16 +197,13 @@ class RideController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        if ($ride->status !== 'arrived') {
-            return response()->json(['message' => 'Driver has not arrived yet.'], 422);
+        try {
+            $startedRide = $this->rideService->startRide($ride);
+
+            return response()->json(new RideResource($startedRide));
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        $ride->update([
-            'status' => 'in_progress',
-            'started_at' => now(),
-        ]);
-
-        return response()->json($ride);
     }
 
     public function completeRide(Request $request, Ride $ride): JsonResponse
@@ -248,31 +212,23 @@ class RideController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        if ($ride->status !== 'in_progress') {
-            return response()->json(['message' => 'Ride is not in progress.'], 422);
-        }
+        try {
+            $completedRide = $this->rideService->completeRide(
+                $ride,
+                (float) $request->input('distance_km', $ride->distance_km),
+                (float) $request->input('duration_minutes', $ride->duration_minutes),
+            );
 
-        $finalFare = $this->fareCalculationService->calculateFinalFare($ride);
-
-        DB::transaction(function () use ($ride, $finalFare) {
-            $ride->update([
-                'status' => 'completed',
-                'total_fare' => $finalFare,
-                'completed_at' => now(),
+            return response()->json([
+                'ride' => new RideResource($completedRide->load('payment')),
+                'rating_required' => true,
             ]);
-
-            $this->paymentService->processRidePayment($ride);
-
-            $ride->driver->update(['current_ride_id' => null]);
-        });
-
-        return response()->json([
-            'ride' => $ride->fresh()->load('payment'),
-            'rating_required' => true,
-        ]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
-    public function receipt(Request $request, Ride $ride): BinaryFileResponse
+    public function receipt(Request $request, Ride $ride)
     {
         if ($ride->rider_id !== $request->user()->id && $ride->driver_id !== $request->user()->id) {
             abort(403, 'Unauthorized.');
@@ -293,34 +249,55 @@ class RideController extends Controller
 
     public function updateLocation(UpdateLocationRequest $request, Ride $ride): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $this->rideService->updateDriverLocation(
+                $request->user(),
+                (float) $request->validated('latitude'),
+                (float) $request->validated('longitude'),
+            );
 
-        $validated = $request->validated();
+            return response()->json(['message' => 'Location updated.']);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
 
-        $user->update([
-            'current_latitude' => $validated['latitude'],
-            'current_longitude' => $validated['longitude'],
-            'last_location_update' => now(),
-        ]);
+    public function markNoShow(Request $request, string $rideId): JsonResponse
+    {
+        $ride = Ride::findOrFail($rideId);
 
-        return response()->json(['message' => 'Location updated.']);
+        try {
+            $noShowRide = $this->rideService->markNoShow($ride, (string) $request->user()->id);
+
+            return response()->json(new RideResource($noShowRide));
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
     public function fareEstimate(FareEstimateRequest $request): JsonResponse
     {
         $validated = $request->validated();
 
+        $pickupLat = (float) $validated['pickup_lat'];
+        $pickupLng = (float) $validated['pickup_lng'];
+
         $route = $this->routeService->getRoute(
-            (float) $validated['pickup_lat'],
-            (float) $validated['pickup_lng'],
+            $pickupLat,
+            $pickupLng,
             (float) $validated['dropoff_lat'],
             (float) $validated['dropoff_lng'],
         );
 
+        $category = $validated['category'] ?? 'standard';
+        $tenantId = $request->user()?->tenant_id;
+        $surgeBreakdown = $this->surgePricingService->getSurgeBreakdown($pickupLat, $pickupLng, $category, $tenantId);
+
         $fare = $this->fareCalculationService->calculateFare(
             $route['distance_km'],
             $route['duration_minutes'],
-            $validated['category'] ?? 'standard',
+            $category,
+            $surgeBreakdown['combined_multiplier'],
         );
 
         return response()->json([
@@ -330,7 +307,8 @@ class RideController extends Controller
                 'base_fare' => $fare['base_fare'],
                 'distance_fare' => $fare['distance_fare'],
                 'time_fare' => $fare['time_fare'],
-                'surge' => $fare['surge_multiplier'],
+                'surge' => $surgeBreakdown['combined_multiplier'],
+                'surge_breakdown' => $surgeBreakdown,
                 'subtotal' => $fare['subtotal'],
                 'total_fare' => $fare['total_fare'],
             ],
@@ -339,26 +317,57 @@ class RideController extends Controller
 
     public function current(Request $request): JsonResponse
     {
-        $ride = Ride::whereIn('status', ['searching', 'accepted', 'arrived', 'in_progress'])
-            ->where(function ($q) use ($request) {
-                $q->where('rider_id', $request->user()->id)
-                    ->orWhere('driver_id', $request->user()->id);
-            })
-            ->latest()
-            ->first();
+        $ride = $this->rideService->getCurrentRideForUser($request->user());
 
         if (! $ride) {
             return response()->json(['message' => 'No active ride.'], 404);
         }
 
         return response()->json(
-            $ride->load([
+            new RideResource($ride->load([
                 'rider',
                 'driver',
                 'driver.driverProfile',
                 'driver.vehicle',
                 'payment',
-            ])
+            ]))
         );
+    }
+
+    public function track(Request $request, Ride $ride): JsonResponse
+    {
+        if ($ride->rider_id !== $request->user()->id && $ride->driver_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        try {
+            $trackingData = $this->rideService->trackRide($ride);
+
+            return response()->json($trackingData);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function nearby(Request $request): JsonResponse
+    {
+        $latitude = $request->input('lat');
+        $longitude = $request->input('lng');
+        $radius = (float) ($request->input('radius', 10));
+
+        if (! $latitude || ! $longitude) {
+            return response()->json(['message' => 'Latitude and longitude are required.'], 422);
+        }
+
+        $drivers = $this->rideService->findNearbyDrivers(
+            (float) $latitude,
+            (float) $longitude,
+            $radius,
+        );
+
+        return response()->json([
+            'drivers' => $drivers,
+            'count' => $drivers->count(),
+        ]);
     }
 }

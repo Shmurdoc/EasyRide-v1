@@ -1,58 +1,125 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert, Animated } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth, COLORS, GRADIENTS, SPACING, RADIUS, useTranslation } from '@easyryde/shared';
-import { GlowButton } from '@easyryde/shared';
-import { GlassCard } from '@easyryde/shared';
-import { GradientText } from '@easyryde/shared';
-import { Input } from '@easyryde/shared';
-import { Typography } from '@easyryde/shared';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@easyryde/shared';
+import { ADMIN_COLORS, ADMIN_GRADIENTS } from '../constants/theme';
 
 export default function LoginScreen() {
+  const insets = useSafeAreaInsets();
   const { login } = useAuth();
-  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-      Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, speed: 50, bounciness: 4 }),
-    ]).start();
-  }, []);
 
   const handleLogin = async () => {
-    if (!email || !password) { Alert.alert(t('common.error'), t('auth.fillAllFields')); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { Alert.alert(t('common.error'), t('auth.enterValidEmail')); return; }
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
     setLoading(true);
-    try { await login(email, password); } catch (err: any) { Alert.alert(t('auth.loginFailed'), err.message || t('auth.invalidCredentials')); }
-    finally { setLoading(false); }
+    try {
+      await login(email.trim().toLowerCase(), password.trim());
+    } catch (error: any) {
+      Alert.alert('Login Failed', error?.response?.data?.message || error.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <LinearGradient colors={GRADIENTS.background as unknown as string[]} style={styles.container}>
-      <KeyboardAvoidingView style={styles.keyboard} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Animated.View style={[styles.inner, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <GradientText colors={GRADIENTS.primary} style={styles.title}>{t('admin.login.title')}</GradientText>
-          <Typography variant="body" color={COLORS.textMuted} style={{ textAlign: 'center', marginBottom: 40 }}>{t('admin.login.subtitle')}</Typography>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <LinearGradient colors={ADMIN_GRADIENTS.header} style={[styles.container, { paddingTop: insets.top + 40 }]}>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <View style={styles.logoSection}>
+            <View style={styles.logoCircle}>
+              <Ionicons name="shield-checkmark" size={40} color="#ffffff" />
+            </View>
+            <Text style={styles.brand}>EasyRyde</Text>
+            <Text style={styles.subtitle}>Admin Panel</Text>
+          </View>
 
-          <GlassCard padding={SPACING.lg}>
-            <Input label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={{ marginBottom: SPACING.base }} />
-            <Input label={t('auth.password')} value={password} onChangeText={setPassword} secureTextEntry style={{ marginBottom: SPACING.lg }} />
-            <GlowButton title={loading ? t('auth.signingIn') : t('auth.signIn')} onPress={handleLogin} disabled={loading} loading={loading} size="lg" />
-          </GlassCard>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Sign In</Text>
+            <Text style={styles.formSub}>Access the admin dashboard</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="mail-outline" size={18} color="rgba(255,255,255,0.35)" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="admin@easyryde.com"
+                  placeholderTextColor="rgba(255,255,255,0.25)"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="lock-closed-outline" size={18} color="rgba(255,255,255,0.35)" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter password"
+                  placeholderTextColor="rgba(255,255,255,0.25)"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="rgba(255,255,255,0.35)" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={loading} activeOpacity={0.8}>
+              <LinearGradient colors={['#6366f1', '#4f46e5']} style={styles.loginBtnGradient}>
+                {loading ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <>
+                    <Text style={styles.loginBtnText}>Sign In</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#ffffff" />
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.footer}>EasyRyde Admin v4.0 — Phalaborwa, Limpopo</Text>
+        </ScrollView>
+      </LinearGradient>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  keyboard: { flex: 1 },
-  inner: { flex: 1, justifyContent: 'center', padding: SPACING.lg },
-  title: { fontSize: 32, fontWeight: '800', textAlign: 'center', marginBottom: SPACING.sm },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 40 },
+  logoSection: { alignItems: 'center', marginBottom: 40 },
+  logoCircle: { width: 72, height: 72, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  brand: { fontSize: 28, fontWeight: '800', color: '#ffffff', marginTop: 14 },
+  subtitle: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.5)', marginTop: 4 },
+  formCard: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  formTitle: { fontSize: 20, fontWeight: '700', color: '#ffffff' },
+  formSub: { fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 4, marginBottom: 24 },
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.6)', marginBottom: 8 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, paddingHorizontal: 14, height: 48, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', gap: 10 },
+  input: { flex: 1, fontSize: 15, color: '#ffffff' },
+  loginBtn: { marginTop: 8, borderRadius: 14, overflow: 'hidden' },
+  loginBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 50, gap: 8 },
+  loginBtnText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
+  footer: { textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 32 },
 });

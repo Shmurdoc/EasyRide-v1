@@ -14,11 +14,12 @@ interface InputProps {
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   style?: ViewStyle;
+  testID?: string;
 }
 
 export function Input({
   label, value, onChangeText, placeholder, secureTextEntry,
-  error, multiline, keyboardType, autoCapitalize, style,
+  error, multiline, keyboardType, autoCapitalize, style, testID,
 }: InputProps) {
   const { colors, typography } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -31,6 +32,7 @@ export function Input({
         </Text>
       )}
       <RNTextInput
+        testID={testID}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

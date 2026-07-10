@@ -29,6 +29,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropForeign(['tenant_id']);
             $table->dropIndex(['role']);

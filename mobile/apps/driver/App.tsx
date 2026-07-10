@@ -1,10 +1,12 @@
 import React, { useRef } from 'react';
+import { ActivityIndicator, StatusBar, View, LogBox } from 'react-native';
+LogBox.ignoreLogs(['Require cycle']);
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth, useNotifications, ErrorBoundary } from '@easyryde/shared';
-import { COLORS } from '@easyryde/shared';
+import { useAuth, useNotifications, ErrorBoundary, COLORS, ThemeProvider, AuthProvider } from '@easyryde/shared';
 
 import LoginScreen from './screens/LoginScreen';
 import DashboardScreen from './screens/DashboardScreen';
@@ -16,9 +18,44 @@ import ProfileScreen from './screens/ProfileScreen';
 import ChatScreen from './screens/ChatScreen';
 import FoodDeliveryScreen from './screens/FoodDeliveryScreen';
 import FoodOrderDetailScreen from './screens/FoodOrderDetailScreen';
+import ConsentScreen from './screens/ConsentScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+function RootNavigator() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigationRef = useRef<NavigationContainerRef<any>>(null);
+
+  useNotifications(navigationRef);
+
+  if (isLoading) return (
+    <View style={{ flex: 1, backgroundColor: '#1c1c1e', justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator size="large" color="#16a34a" />
+    </View>
+  );
+
+  return (
+    <NavigationContainer ref={navigationRef}>
+      <Stack.Navigator screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+        }}>
+        {!isAuthenticated ? (
+          <Stack.Screen name="Login" component={LoginScreen} />
+        ) : (
+          <>
+            <Stack.Screen name="Main" component={DriverTabs} />
+            <Stack.Screen name="Consent" component={ConsentScreen} />
+            <Stack.Screen name="ActiveRide" component={ActiveRideScreen} />
+            <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="FoodOrderDetail" component={FoodOrderDetailScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
 
 function DriverTabs() {
   return (
@@ -26,21 +63,24 @@ function DriverTabs() {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'home';
-          if (route.name === 'Dashboard') iconName = focused ? 'speedometer' : 'speedometer-outline';
-          else if (route.name === 'Requests')           iconName = focused ? 'car' : 'car-outline';
+          if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';
+          else if (route.name === 'Requests') iconName = focused ? 'car' : 'car-outline';
           else if (route.name === 'Food') iconName = focused ? 'restaurant' : 'restaurant-outline';
           else if (route.name === 'Earnings') iconName = focused ? 'cash' : 'cash-outline';
           else if (route.name === 'Trips') iconName = focused ? 'time' : 'time-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textDim,
+        tabBarActiveTintColor: '#16a34a',
+        tabBarInactiveTintColor: '#666',
         tabBarStyle: {
-          backgroundColor: COLORS.surface,
-          borderTopColor: COLORS.border,
+          backgroundColor: 'rgba(28, 28, 30, 0.95)',
+          borderTopColor: '#3a3a3c',
           borderTopWidth: 1,
+          height: 60,
+          paddingBottom: 8,
         },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '500' },
         headerShown: false,
       })}
     >
@@ -55,32 +95,16 @@ function DriverTabs() {
 }
 
 export default function AppLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const navigationRef = useRef<NavigationContainerRef<any>>(null);
-
-  useNotifications(navigationRef);
-
-  if (isLoading) return null;
-
   return (
+    <SafeAreaProvider>
+    <AuthProvider>
+    <ThemeProvider>
+    <StatusBar barStyle="light-content" backgroundColor="#1c1c1e" />
     <ErrorBoundary>
-    <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator screenOptions={{
-          headerShown: false,
-          animation: 'slide_from_right',
-        }}>
-        {!isAuthenticated ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        ) : (
-          <>
-            <Stack.Screen name="Main" component={DriverTabs} />
-            <Stack.Screen name="ActiveRide" component={ActiveRideScreen} />
-            <Stack.Screen name="Chat" component={ChatScreen} />
-            <Stack.Screen name="FoodOrderDetail" component={FoodOrderDetailScreen} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <RootNavigator />
     </ErrorBoundary>
+    </ThemeProvider>
+    </AuthProvider>
+    </SafeAreaProvider>
   );
 }

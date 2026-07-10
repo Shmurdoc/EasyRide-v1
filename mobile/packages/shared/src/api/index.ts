@@ -3,6 +3,7 @@ export { api };
 import type {
   User, Ride, Payment, Wallet, WalletTransaction, Rating,
   PromoCode, Delivery, PaginatedResponse, PlatformConfig, DriverLocation,
+  FareEstimate, Notification, SOSAlert, Place,
 } from '../types';
 
 export const auth = {
@@ -46,7 +47,14 @@ export const rides = {
     dropoff_address: string;
     payment_method: string;
     promo_code?: string;
-  }) => api.post<{ ride: Ride }>('/rides', data).then(r => r.ride),
+  }) => api.post<{ ride: Ride }>('/rides', data).then(r => {
+    const ride = r?.ride ?? (r as any)?.data?.ride ?? r;
+    if (!ride?.id) {
+      console.error('[rides.create] Unexpected response shape:', JSON.stringify(r));
+      throw new Error('Server returned an invalid ride response');
+    }
+    return ride;
+  }),
 
   cancel: (id: string, reason?: string) =>
     api.post<Ride>(`/rides/${id}/cancel`, { cancellation_reason: reason }),
@@ -58,6 +66,20 @@ export const rides = {
     api.post(`/rides/${id}/apply-promo`, { code }),
 
   current: () => api.get<Ride | null>('/rides/current'),
+
+  fareEstimate: (data: {
+    pickup_lat: number;
+    pickup_lng: number;
+    dropoff_lat: number;
+    dropoff_lng: number;
+    category: string;
+  }) => api.get<FareEstimate>('/rides/fare-estimate', {
+    pickup_lat: String(data.pickup_lat),
+    pickup_lng: String(data.pickup_lng),
+    dropoff_lat: String(data.dropoff_lat),
+    dropoff_lng: String(data.dropoff_lng),
+    category: data.category,
+  }),
 
   updateLocation: (id: string, lat: number, lng: number) =>
     api.post(`/rides/${id}/location`, { latitude: lat, longitude: lng }),
@@ -82,7 +104,7 @@ export const drivers = {
     color: string; license_plate: string; category: string;
   }) => api.post('/drivers/vehicle', data),
 
-  toggleOnline: () => api.post<{ is_online: boolean }>('/drivers/toggle-online'),
+  toggleOnline: (is_online: boolean) => api.post<{ is_online: boolean }>('/drivers/toggle-online', { is_online }),
 
   earnings: () => api.get<{
     total_earnings: number;
@@ -105,6 +127,37 @@ export const drivers = {
 export const notifications = {
   registerToken: (token: string) =>
     api.post('/notifications/register-token', { token }),
+
+  list: () =>
+    api.get<PaginatedResponse<Notification>>('/notifications/'),
+
+  unreadCount: () =>
+    api.get<{ count: number }>('/notifications/unread-count'),
+
+  getPreferences: () =>
+    api.get<{ data: import('../types').NotificationPreferences }>('/notifications/preferences'),
+
+  updatePreferences: (prefs: Partial<import('../types').NotificationPreferences>) =>
+    api.put<{ data: import('../types').NotificationPreferences }>('/notifications/preferences', prefs),
+};
+
+export const consent = {
+  list: () =>
+    api.get<{ data: import('../types').ConsentRecord[] }>('/consent/'),
+
+  grant: (consentType: import('../types').ConsentType, version: string) =>
+    api.post<{ data: import('../types').ConsentRecord }>('/consent/grant', {
+      consent_type: consentType,
+      version,
+    }),
+
+  revoke: (consentType: import('../types').ConsentType) =>
+    api.post<{ data: import('../types').ConsentRecord }>('/consent/revoke', {
+      consent_type: consentType,
+    }),
+
+  history: () =>
+    api.get<{ data: import('../types').ConsentRecord[] }>('/consent/history'),
 };
 
 export const payments = {
@@ -132,7 +185,7 @@ export const wallet = {
     api.get<PaginatedResponse<WalletTransaction>>('/wallet/transactions', params),
 
   deposit: (amount: number, method: string) =>
-    api.post('/wallet/deposit', { amount, payment_method: method }),
+    api.post<{ client_secret?: string }>('/wallet/deposit', { amount, payment_method: method }),
 
   withdraw: (amount: number) =>
     api.post('/wallet/withdraw', { amount }),
@@ -165,6 +218,26 @@ export const deliveries = {
 
   updateStatus: (id: string, status: string) =>
     api.put<Delivery>(`/deliveries/${id}/status`, { status }),
+};
+
+export const places = {
+  search: (query: string, lat?: number, lng?: number) =>
+    api.get<Place[]>('/places/search', {
+      query,
+      ...(lat !== undefined && { lat: String(lat) }),
+      ...(lng !== undefined && { lng: String(lng) }),
+    }),
+
+  reverse: (lat: number, lng: number) =>
+    api.get<Place>('/places/reverse', { lat: String(lat), lng: String(lng) }),
+};
+
+export const sos = {
+  trigger: (data: { ride_id: string; latitude: number; longitude: number; message?: string }) =>
+    api.post<SOSAlert>('/sos/', data),
+
+  cancel: (id: string) =>
+    api.post<SOSAlert>(`/sos/${id}/cancel`),
 };
 
 export const config = {

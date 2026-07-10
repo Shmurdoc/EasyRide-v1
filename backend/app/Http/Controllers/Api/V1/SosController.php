@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Sos\SosAcknowledgeRequest;
 use App\Http\Requests\Api\V1\Sos\SosResolveRequest;
 use App\Http\Requests\Api\V1\Sos\SosTriggerRequest;
 use App\Models\Ride;
@@ -50,13 +51,11 @@ class SosController extends Controller
         return response()->json($result);
     }
 
-    public function acknowledge(Request $request, string $id): JsonResponse
+    public function acknowledge(SosAcknowledgeRequest $request, string $id): JsonResponse
     {
-        if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
-        }
+        $validated = $request->validated();
 
-        $result = $this->sosService->acknowledgeAlert($request->user(), $id, $request->input('notes', ''));
+        $result = $this->sosService->acknowledgeAlert($request->user(), $id, $validated['notes'] ?? '');
 
         if (! $result['success']) {
             return response()->json($result, 422);

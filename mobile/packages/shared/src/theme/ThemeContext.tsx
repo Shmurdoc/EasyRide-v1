@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, BORDERS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, BORDERS, ANIMATION, Z_INDEX } from '../constants';
 
 export const theme = {
   colors: COLORS,
@@ -8,6 +8,8 @@ export const theme = {
   radius: RADIUS,
   shadows: SHADOWS,
   borders: BORDERS,
+  animation: ANIMATION,
+  zIndex: Z_INDEX,
 } as const;
 
 export type Theme = typeof theme;

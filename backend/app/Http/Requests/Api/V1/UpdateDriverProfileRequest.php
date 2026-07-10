@@ -27,7 +27,7 @@ class UpdateDriverProfileRequest extends FormRequest
             'year' => 'sometimes|integer|min:1990|max:'.(date('Y') + 1),
             'color' => 'sometimes|string|max:50',
             'license_plate' => 'sometimes|string|max:20',
-            'category' => 'sometimes|string|in:standard,premium,xl',
+            'category' => 'sometimes|string|in:standard,premium,minivan,pets',
         ];
     }
 }

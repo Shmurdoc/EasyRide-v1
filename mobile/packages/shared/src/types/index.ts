@@ -11,6 +11,9 @@ export interface User {
   is_online?: boolean;
   current_latitude?: number;
   current_longitude?: number;
+  average_rating?: number;
+  total_trips?: number;
+  avatar_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -76,6 +79,7 @@ export interface Ride {
   completed_at?: string;
   cancelled_at?: string;
   cancelled_by?: string;
+  cancellation_reason?: string;
   created_at: string;
   updated_at: string;
   rider?: User;
@@ -85,11 +89,17 @@ export interface Ride {
 
 export type RideStatus =
   | 'searching'
+  | 'driver_assigned'
   | 'accepted'
+  | 'driver_en_route'
   | 'arrived'
+  | 'waiting_for_rider'
   | 'in_progress'
+  | 'near_drop_off'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'cancellation_requested'
+  | 'no_show';
 
 export type RideCategory = 'economy' | 'standard' | 'premium' | 'xl' | 'delivery';
 
@@ -241,6 +251,57 @@ export interface PaymentMethodConfig {
   enabled: boolean;
 }
 
+export interface Place {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  address: string;
+}
+
+export interface SavedPlace {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  icon: string;
+}
+
+export interface FareEstimate {
+  distance_km: number;
+  duration_minutes: number;
+  breakdown: {
+    base_fare: number;
+    distance_fare: number;
+    time_fare: number;
+    surge: number;
+    subtotal: number;
+    total_fare: number;
+  };
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  created_at: string;
+  data?: any;
+}
+
+export interface SOSAlert {
+  id: string;
+  ride_id: string;
+  user_id: string;
+  latitude: number;
+  longitude: number;
+  status: 'active' | 'cancelled' | 'resolved';
+  message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   current_page: number;
@@ -253,6 +314,38 @@ export interface ApiResponse<T> {
   data?: T;
   message?: string;
 }
+
+export interface NotificationPreferences {
+  push_enabled: boolean;
+  email_enabled: boolean;
+  sms_enabled: boolean;
+  in_app_enabled: boolean;
+  ride_updates: boolean;
+  payment_updates: boolean;
+  promotions: boolean;
+  marketing: boolean;
+  security_alerts: boolean;
+}
+
+export interface ConsentRecord {
+  id: string;
+  user_id: string;
+  consent_type: ConsentType;
+  status: 'granted' | 'revoked';
+  version: string;
+  granted_at?: string;
+  revoked_at?: string;
+  created_at: string;
+}
+
+export type ConsentType =
+  | 'terms_of_service'
+  | 'privacy_policy'
+  | 'marketing_email'
+  | 'marketing_sms'
+  | 'location_tracking'
+  | 'data_sharing_partners'
+  | 'biometric_data';
 
 export interface Restaurant {
   id: string;

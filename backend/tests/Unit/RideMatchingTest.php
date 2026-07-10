@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Enums\RideStatus;
 use App\Models\Ride;
 use App\Models\Tenant;
 use App\Models\User;
@@ -164,7 +165,7 @@ class RideMatchingTest extends TestCase
         $result = $this->service->assignDriver($ride, $driver);
 
         $this->assertEquals($driver->id, $result->driver_id);
-        $this->assertEquals('accepted', $result->status);
+        $this->assertEquals(RideStatus::ACCEPTED, $result->status);
         $this->assertNotNull($result->driver_eta);
     }
 }

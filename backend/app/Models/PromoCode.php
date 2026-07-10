@@ -17,7 +17,7 @@ class PromoCode extends Model
 
     protected $fillable = [
         'tenant_id', 'code', 'type', 'value', 'min_ride_amount', 'max_discount',
-        'max_uses', 'used_count', 'starts_at', 'expires_at', 'is_active',
+        'max_uses', 'used_count', 'max_uses_per_user', 'starts_at', 'expires_at', 'is_active',
     ];
 
     protected function casts(): array

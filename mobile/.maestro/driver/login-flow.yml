@@ -1,0 +1,9 @@
+appId: za.co.easyryde.driver
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "driver@easyryde.com"
+- tapOn: "Password"
+- inputText: "password"
+- tapOn: "Sign In"
+- assertVisible: "Home"

@@ -1,61 +1,202 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { useAuth, COLORS, Typography, Input, Button, useTranslation } from '@easyryde/shared';
-import { SPACING } from '@easyryde/shared';
+import React, { useState, useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Text, TextInput } from 'react-native';
+import { useAuth, COLORS, SPACING } from '@easyryde/shared';
 import type { RiderAuthNav } from '@easyryde/shared';
+import { LinearGradient } from 'expo-linear-gradient';
+
+type Role = 'rider' | 'driver' | 'admin';
+
+const roleAccounts: Record<Role, { email: string; password: string }> = {
+  rider: { email: 'rider@easyryde.com', password: 'password' },
+  driver: { email: 'driver@easyryde.com', password: 'password' },
+  admin: { email: 'admin@easyryde.com', password: 'password' },
+};
 
 export default function LoginScreen({ navigation }: { navigation: RiderAuthNav }) {
   const { login } = useAuth();
-  const { t } = useTranslation();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<Role>('rider');
+  const [email, setEmail] = useState(roleAccounts.rider.email);
+  const [password, setPassword] = useState(roleAccounts.rider.password);
   const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(true);
+
+  const handleContinue = () => {
+    setEmail(roleAccounts[selectedRole].email);
+    setPassword(roleAccounts[selectedRole].password);
+    setShowForm(true);
+  };
 
   const handleLogin = async () => {
-    if (!email || !password) { Alert.alert(t('common.error'), t('auth.fillAllFields')); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { Alert.alert(t('common.error'), t('auth.enterValidEmail')); return; }
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
     setLoading(true);
-    try { await login(email, password); } catch (err: any) { Alert.alert(t('auth.loginFailed'), err.message || t('auth.invalidCredentials')); }
-    finally { setLoading(false); }
+    console.log('LOGIN ATTEMPT:', email);
+    try {
+      const result = await login(email, password);
+      console.log('LOGIN SUCCESS:', JSON.stringify(result));
+    } catch (err: any) {
+      console.log('LOGIN ERROR:', err.message, err.status, err.stack);
+      Alert.alert('Login Failed', err.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (showForm) {
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.inner}>
+          <TouchableOpacity onPress={() => setShowForm(false)} style={styles.backBtn}>
+            <Text style={styles.backText}>{'< Back'}</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.formTitle}>{selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Login</Text>
+
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            testID="email-input"
+          />
+
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            testID="password-input"
+          />
+
+          <TouchableOpacity style={styles.forgotPassword}>
+            <Text style={styles.forgotText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.signInBtn, loading && styles.disabledBtn]}
+            onPress={handleLogin}
+            disabled={loading}
+            testID="login-button"
+          >
+            <LinearGradient colors={['#FFAD7A', '#e89b6a']} style={styles.gradientBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+              <Text style={styles.signInText}>{loading ? 'Signing In...' : 'Sign In'}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.registerText}>
+              Don't have an account? <Text style={styles.registerLink}>Sign Up</Text>
+            </Text>
+          </TouchableOpacity>
+
+          {__DEV__ && (
+            <TouchableOpacity
+              onPress={() => { setEmail('rider@easyryde.com'); setPassword('password'); setTimeout(() => handleLogin(), 100); }}
+              style={styles.demoBtn}
+            >
+              <Text style={styles.demoText}>Quick Demo Login</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.inner}>
-        <Typography variant="h1" color={COLORS.primary} style={{ textAlign: 'center' }}>{t('app.name')}</Typography>
-        <Typography variant="body" color={COLORS.textMuted} style={{ textAlign: 'center', marginBottom: 40 }}>{t('app.tagline')}</Typography>
+        <Text style={styles.title}>EasyRyde</Text>
+        <Text style={styles.tagline}>Premium Mobility</Text>
 
-        <Input label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={{ marginBottom: SPACING.base }} />
-        <Input label={t('auth.password')} value={password} onChangeText={setPassword} secureTextEntry style={{ marginBottom: SPACING.sm }} />
-
-        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={{ alignSelf: 'flex-end', marginBottom: SPACING.base }}>
-          <Typography variant="bodySmall" color={COLORS.primary}>Forgot Password?</Typography>
-        </TouchableOpacity>
-
-        <Button title={loading ? t('auth.signingIn') : t('auth.signIn')} onPress={handleLogin} disabled={loading} size="lg" style={{ marginBottom: SPACING.base }} />
-
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Typography variant="body" color={COLORS.textMuted} style={{ textAlign: 'center' }}>
-            {t('auth.noAccount')}
-          </Typography>
-        </TouchableOpacity>
-
-        {__DEV__ && (
         <TouchableOpacity
-          onPress={() => { setEmail('rider@easyryde.com'); setPassword('password'); }}
-          style={{ marginTop: SPACING.xl, padding: SPACING.base, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary + '40', backgroundColor: COLORS.primary + '10' }}
+          style={[styles.roleBtn, selectedRole === 'rider' && styles.roleBtnSelected]}
+          onPress={() => setSelectedRole('rider')}
         >
-          <Typography variant="bodySmall" color={COLORS.primary} style={{ textAlign: 'center' }}>
-            Quick Demo Login
-          </Typography>
+          <Text style={styles.roleIcon}>🚗</Text>
+          <Text style={[styles.roleText, selectedRole === 'rider' && styles.roleTextSelected]}>Rider</Text>
         </TouchableOpacity>
-        )}
+
+        <TouchableOpacity
+          style={[styles.roleBtn, selectedRole === 'driver' && styles.roleBtnSelected]}
+          onPress={() => setSelectedRole('driver')}
+        >
+          <Text style={styles.roleIcon}>🚙</Text>
+          <Text style={[styles.roleText, selectedRole === 'driver' && styles.roleTextSelected]}>Driver</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.roleBtn, selectedRole === 'admin' && styles.roleBtnSelected]}
+          onPress={() => setSelectedRole('admin')}
+        >
+          <Text style={styles.roleIcon}>⚙️</Text>
+          <Text style={[styles.roleText, selectedRole === 'admin' && styles.roleTextSelected]}>Admin</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
+          <LinearGradient colors={['#FFAD7A', '#e89b6a']} style={styles.gradientBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            <Text style={styles.continueText}>Continue</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <TouchableOpacity style={styles.guestBtn}>
+          <Text style={styles.guestText}>Continue as Guest</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.version}>EasyRyde v4.0.0 • Phalaborwa, Limpopo</Text>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
-  inner: { flex: 1, justifyContent: 'center', padding: SPACING.lg },
+  container: { flex: 1, backgroundColor: '#121212' },
+  inner: { flex: 1, justifyContent: 'center', padding: 20, maxWidth: 400, alignSelf: 'center', width: '100%' },
+  title: { fontSize: 40, fontWeight: '800', textAlign: 'center', marginBottom: 8, color: '#FFAD7A' },
+  tagline: { fontSize: 16, color: '#98989d', textAlign: 'center', marginBottom: 40 },
+  roleBtn: {
+    flexDirection: 'row', alignItems: 'center', padding: 16, marginBottom: 10,
+    backgroundColor: '#1e1e1e', borderWidth: 2, borderColor: '#333',
+    borderRadius: 12, minHeight: 56,
+  },
+  roleBtnSelected: { borderColor: '#FFAD7A', backgroundColor: 'rgba(255, 173, 122, 0.1)' },
+  roleIcon: { fontSize: 24, marginRight: 12 },
+  roleText: { fontSize: 17, fontWeight: '600', color: '#fff' },
+  roleTextSelected: { color: '#FFAD7A' },
+  continueBtn: { marginTop: 20, borderRadius: 8, overflow: 'hidden' },
+  gradientBtn: { padding: 16, alignItems: 'center', borderRadius: 8 },
+  continueText: { fontSize: 18, fontWeight: '700', color: '#121212' },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#333' },
+  dividerText: { marginHorizontal: 16, color: '#666', fontSize: 14 },
+  guestBtn: { padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#333', borderRadius: 8 },
+  guestText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  version: { textAlign: 'center', color: '#666', fontSize: 13, marginTop: 30 },
+  backBtn: { marginBottom: 20 },
+  backText: { color: '#FFAD7A', fontSize: 16, fontWeight: '600' },
+  formTitle: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 24 },
+  label: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 8 },
+  input: {
+    width: '100%', padding: 14, backgroundColor: '#1e1e1e', borderWidth: 2, borderColor: '#333',
+    borderRadius: 8, color: '#fff', fontSize: 16, marginBottom: 16, minHeight: 50,
+  },
+  forgotPassword: { alignSelf: 'flex-end', marginBottom: 20 },
+  forgotText: { color: '#FFAD7A', fontSize: 14 },
+  signInBtn: { borderRadius: 8, overflow: 'hidden', marginBottom: 16 },
+  disabledBtn: { opacity: 0.6 },
+  signInText: { fontSize: 18, fontWeight: '700', color: '#121212' },
+  registerText: { textAlign: 'center', color: '#98989d', fontSize: 15 },
+  registerLink: { color: '#FFAD7A', fontWeight: '600' },
+  demoBtn: { marginTop: 24, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 173, 122, 0.4)', backgroundColor: 'rgba(255, 173, 122, 0.1)' },
+  demoText: { color: '#FFAD7A', textAlign: 'center', fontSize: 14 },
 });

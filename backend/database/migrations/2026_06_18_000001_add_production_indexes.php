@@ -25,6 +25,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
         Schema::table('rides', function (Blueprint $table) {
             $table->dropIndex(['status', 'created_at']);
         });

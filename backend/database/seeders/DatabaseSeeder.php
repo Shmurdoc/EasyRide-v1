@@ -17,6 +17,12 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call([
+            ProductionSeeder::class,
+            PhalaborwaLocationSeeder::class,
+            FoodDeliverySeeder::class,
+        ]);
+
         // Create permissions
         $permissions = ['view-dashboard', 'manage-users', 'manage-rides', 'manage-drivers',
             'manage-payments', 'manage-promotions', 'manage-deliveries', 'manage-settings'];
@@ -50,19 +56,25 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Default Tenant', 'region' => 'ZA', 'currency' => 'ZAR', 'is_active' => true]
         );
 
-        // Create admin user
+        // Create admin user — plain text password; the 'hashed' cast auto-hashes on set
         $admin = User::firstOrCreate(
             ['email' => 'admin@easyryde.com'],
             [
                 'tenant_id' => $tenant->id,
                 'name' => 'Admin User',
-                'password' => Hash::make('password'),
+                'password' => 'password',
                 'phone_number' => '+27123456789',
                 'role' => 'admin',
                 'is_active' => true,
             ]
         );
+        // Fix any existing user with a double-hashed password
+        if ($admin->wasRecentlyCreated === false) {
+            $admin->password = 'password';
+            $admin->save();
+        }
         $admin->assignRole('super-admin');
+        $admin->roles()->attach(Role::findByName('super-admin', 'api'));
 
         // Create driver user
         $driver = User::firstOrCreate(
@@ -70,14 +82,19 @@ class DatabaseSeeder extends Seeder
             [
                 'tenant_id' => $tenant->id,
                 'name' => 'John Driver',
-                'password' => Hash::make('password'),
+                'password' => 'password',
                 'phone_number' => '+27234567890',
                 'role' => 'driver',
                 'is_active' => true,
                 'is_online' => false,
             ]
         );
+        if ($driver->wasRecentlyCreated === false) {
+            $driver->password = 'password';
+            $driver->save();
+        }
         $driver->assignRole('driver');
+        $driver->roles()->attach(Role::findByName('driver', 'api'));
 
         DriverProfile::firstOrCreate(
             ['user_id' => $driver->id],
@@ -108,13 +125,18 @@ class DatabaseSeeder extends Seeder
             [
                 'tenant_id' => $tenant->id,
                 'name' => 'Jane Rider',
-                'password' => Hash::make('password'),
+                'password' => 'password',
                 'phone_number' => '+27345678901',
                 'role' => 'rider',
                 'is_active' => true,
             ]
         );
+        if ($rider->wasRecentlyCreated === false) {
+            $rider->password = 'password';
+            $rider->save();
+        }
         $rider->assignRole('rider');
+        $rider->roles()->attach(Role::findByName('rider', 'api'));
 
         // Create wallets
         Wallet::firstOrCreate(
@@ -133,10 +155,14 @@ class DatabaseSeeder extends Seeder
         // Create system settings
         $settings = [
             ['app_name', 'EasyRyde', 'text', 'Application name'],
-            ['fare_economy_base', '25', 'number', 'Base fare for economy rides'],
-            ['fare_economy_per_km', '12', 'number', 'Per km rate for economy'],
-            ['fare_economy_per_min', '2', 'number', 'Per minute rate for economy'],
-            ['fare_economy_minimum', '35', 'number', 'Minimum fare for economy'],
+            ['fare_minivan_base', '45', 'number', 'Base fare for minivan rides'],
+            ['fare_minivan_per_km', '18', 'number', 'Per km rate for minivan'],
+            ['fare_minivan_per_min', '4', 'number', 'Per minute rate for minivan'],
+            ['fare_minivan_minimum', '65', 'number', 'Minimum fare for minivan'],
+            ['fare_pets_base', '30', 'number', 'Base fare for pet-friendly rides'],
+            ['fare_pets_per_km', '14', 'number', 'Per km rate for pets'],
+            ['fare_pets_per_min', '2', 'number', 'Per minute rate for pets'],
+            ['fare_pets_minimum', '45', 'number', 'Minimum fare for pets'],
             ['fare_standard_base', '35', 'number', 'Base fare for standard rides'],
             ['fare_standard_per_km', '15', 'number', 'Per km rate for standard'],
             ['fare_standard_per_min', '3', 'number', 'Per minute rate for standard'],

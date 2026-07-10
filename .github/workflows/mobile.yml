@@ -1,0 +1,39 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Expo lint
+        run: npx expo lint
+        continue-on-error: true

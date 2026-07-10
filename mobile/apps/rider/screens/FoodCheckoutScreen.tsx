@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { foodDelivery, COLORS, GRADIENTS, SPACING } from '@easyryde/shared';
+import { foodDelivery, wallet, COLORS, GRADIENTS, SPACING, PAYMENT_METHODS } from '@easyryde/shared';
 import { Typography, GlowButton, GlassCard, GradientText, Input, Badge } from '@easyryde/shared';
 import type { CartItem, RiderNav, RiderRoute } from '@easyryde/shared';
 
@@ -13,6 +13,12 @@ export default function FoodCheckoutScreen({ route, navigation }: { route: Rider
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [tip, setTip] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [walletLoading, setWalletLoading] = useState(true);
+
+  useEffect(() => {
+    wallet.get().then(w => setWalletBalance(w.balance)).catch(() => { console.warn('Failed to fetch wallet balance'); }).finally(() => setWalletLoading(false));
+  }, []);
 
   const serviceFee = Math.round(subtotal * 0.05 * 100) / 100;
   const total = subtotal + deliveryFee + serviceFee + tip;
@@ -20,6 +26,7 @@ export default function FoodCheckoutScreen({ route, navigation }: { route: Rider
 
   async function placeOrder() {
     if (!deliveryAddress.trim()) { Alert.alert('Missing Address', 'Please enter a delivery address'); return; }
+    if (paymentMethod === 'wallet' && !walletLoading && walletBalance < total) { Alert.alert('Insufficient Balance', `Your wallet balance (R${walletBalance.toFixed(2)}) is less than the total (R${total.toFixed(2)}).`); return; }
     setLoading(true);
     try {
       const order = await foodDelivery.createOrder(restaurantId, {
@@ -60,14 +67,14 @@ export default function FoodCheckoutScreen({ route, navigation }: { route: Rider
 
         <GlassCard padding={SPACING.base} style={{ marginBottom: SPACING.base }}>
           <Typography variant="h3" style={{ marginBottom: SPACING.md }}>Payment Method</Typography>
-          {['cash', 'wallet', 'payfast', 'ozow'].map((id) => (
+          {PAYMENT_METHODS.map(({ id, name }) => (
             <TouchableOpacity key={id} onPress={() => setPaymentMethod(id)}>
               <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.sm }}>
                 {paymentMethod === id && (
                   <LinearGradient colors={GRADIENTS.primary as unknown as string[]} style={{ width: 4, height: 20, borderRadius: 2, marginRight: SPACING.sm }} />
                 )}
                 <Typography variant="body" color={paymentMethod === id ? COLORS.primary : COLORS.text} style={{ fontWeight: paymentMethod === id ? '600' : '400', marginLeft: paymentMethod === id ? 0 : SPACING.lg }}>
-                  {id.charAt(0).toUpperCase() + id.slice(1)}
+                  {name}
                 </Typography>
               </View>
             </TouchableOpacity>

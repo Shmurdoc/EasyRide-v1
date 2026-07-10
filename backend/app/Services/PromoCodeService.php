@@ -6,10 +6,11 @@ namespace App\Services;
 
 use App\Models\PromoCode;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class PromoCodeService
 {
-    public function validateCode(string $code, ?string $tenantId = null, ?float $rideAmount = null): PromoCode
+    public function validateCode(string $code, ?string $tenantId = null, ?float $rideAmount = null, ?string $userId = null): PromoCode
     {
         $query = PromoCode::where('code', $code)->where('is_active', true);
 
@@ -39,6 +40,10 @@ class PromoCodeService
             throw new \RuntimeException("Minimum ride amount of {$promo->min_ride_amount} not met.");
         }
 
+        if ($userId !== null && $this->hasUserExceededPerUserLimit($promo, $userId)) {
+            throw new \RuntimeException('You have already used this promo code the maximum number of times.');
+        }
+
         return $promo;
     }
 
@@ -60,9 +65,35 @@ class PromoCodeService
         ];
     }
 
-    public function incrementUsage(PromoCode $promo): void
+    public function incrementUsage(PromoCode $promo, ?string $userId = null): void
     {
-        $promo->increment('used_count');
+        DB::transaction(function () use ($promo, $userId) {
+            DB::table('promo_codes')
+                ->where('id', $promo->id)
+                ->where('used_count', '<', $promo->max_uses > 0 ? $promo->max_uses : PHP_INT_MAX)
+                ->update(['used_count' => DB::raw('used_count + 1')]);
+
+            if ($userId !== null) {
+                DB::table('promo_code_usages')->insert([
+                    'id' => \Illuminate\Support\Str::uuid(),
+                    'promo_code_id' => $promo->id,
+                    'user_id' => $userId,
+                    'used_at' => now(),
+                ]);
+            }
+        });
+    }
+
+    public function hasUserExceededPerUserLimit(PromoCode $promo, string $userId): bool
+    {
+        $maxPerUser = $promo->max_uses_per_user ?? 1;
+
+        $userUsageCount = DB::table('promo_code_usages')
+            ->where('promo_code_id', $promo->id)
+            ->where('user_id', $userId)
+            ->count();
+
+        return $userUsageCount >= $maxPerUser;
     }
 
     public function getActiveCodes(?string $tenantId = null): Collection

@@ -1,99 +1,139 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit;
 
+use App\Enums\WalletTransactionType;
 use App\Models\User;
+use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class WalletServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    private WalletService $service;
+    private WalletService $walletService;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new WalletService;
+        Cache::setDefaultDriver('array');
+        $this->walletService = new WalletService;
     }
 
-    public function test_get_or_create_wallet_creates_wallet(): void
+    private function createUser(array $overrides = []): User
     {
-        $user = User::factory()->create();
-        $wallet = $this->service->getOrCreateWallet($user);
-
-        $this->assertNotNull($wallet);
-        $this->assertEquals($user->id, $wallet->user_id);
-        $this->assertEquals(0.0, $wallet->balance);
+        return User::create(array_merge([
+            'id' => \Str::uuid()->toString(),
+            'name' => 'Test User',
+            'email' => uniqid('user_') . '@test.com',
+            'password' => bcrypt('password'),
+            'role' => 'rider',
+            'phone_number' => '+27800000000',
+            'is_verified' => true,
+        ], $overrides));
     }
 
-    public function test_get_or_create_wallet_returns_existing(): void
+    private function createWallet(User $user, float $balance = 100.0): Wallet
     {
-        $user = User::factory()->create();
-        $wallet1 = $this->service->getOrCreateWallet($user);
-        $wallet2 = $this->service->getOrCreateWallet($user);
-
-        $this->assertEquals($wallet1->id, $wallet2->id);
+        return Wallet::create([
+            'id' => \Str::uuid()->toString(),
+            'user_id' => $user->id,
+            'balance' => $balance,
+            'currency' => 'ZAR',
+        ]);
     }
 
-    public function test_credit_increases_balance(): void
+    // ── getBalance ──────────────────────────────────────────────
+
+    public function test_get_balance_returns_current_balance(): void
     {
-        $user = User::factory()->create();
-        $wallet = $this->service->getOrCreateWallet($user);
+        $user = $this->createUser();
+        $wallet = $this->createWallet($user, 250.50);
 
-        $this->service->credit($wallet, 100.0, 'test', 'ref-1', 'Test credit');
-        $wallet->refresh();
+        $balance = $this->walletService->getBalance($user);
 
-        $this->assertEquals(100.0, $wallet->balance);
+        $this->assertEquals(250.50, $balance);
     }
 
-    public function test_debit_decreases_balance(): void
+    // ── topUp ───────────────────────────────────────────────────
+
+    public function test_top_up_creates_pending_transaction_and_increases_pending_balance(): void
     {
-        $user = User::factory()->create();
-        $wallet = $this->service->getOrCreateWallet($user);
+        $user = $this->createUser();
+        $wallet = $this->createWallet($user, 100.0);
 
-        $this->service->credit($wallet, 100.0, 'test', 'ref-1', 'Initial');
-        $this->service->debit($wallet, 40.0, 'test', 'ref-2', 'Test debit');
-        $wallet->refresh();
+        $result = $this->walletService->topUp($user, 50.0, 'card');
 
-        $this->assertEquals(60.0, $wallet->balance);
+        $this->assertInstanceOf(Wallet::class, $result);
+        // topUp() creates a PENDING transaction — balance should NOT change
+        $this->assertEquals(100.0, $result->fresh()->balance);
+        $this->assertEquals(50.0, $result->fresh()->pending_balance);
+        $this->assertDatabaseHas('wallet_transactions', [
+            'wallet_id' => $wallet->id,
+            'type' => 'credit',
+            'amount' => 50.0,
+            'reference_type' => 'pending_topup',
+        ]);
     }
 
-    public function test_get_balance(): void
+    // ── deduct ──────────────────────────────────────────────────
+
+    public function test_deduct_decreases_balance(): void
     {
-        $user = User::factory()->create();
-        $wallet = $this->service->getOrCreateWallet($user);
-        $this->service->credit($wallet, 250.0, 'test', 'ref-1', 'Test');
+        $user = $this->createUser();
+        $wallet = $this->createWallet($user, 100.0);
 
-        $balance = $this->service->getBalance($wallet);
+        $result = $this->walletService->deduct($user, 30.0, 'Ride payment');
 
-        $this->assertEquals(250.0, $balance);
+        $this->assertInstanceOf(Wallet::class, $result);
+        $this->assertEquals(70.0, $result->fresh()->balance);
+        $this->assertDatabaseHas('wallets', [
+            'user_id' => $user->id,
+            'balance' => 70.0,
+        ]);
     }
 
-    public function test_has_sufficient_funds(): void
+    public function test_deduct_fails_with_insufficient_balance(): void
     {
-        $user = User::factory()->create();
-        $wallet = $this->service->getOrCreateWallet($user);
-        $this->service->credit($wallet, 100.0, 'test', 'ref-1', 'Test');
+        $user = $this->createUser();
+        $wallet = $this->createWallet($user, 20.0);
 
-        $this->assertTrue($this->service->hasSufficientFunds($wallet, 50.0));
-        $this->assertFalse($this->service->hasSufficientFunds($wallet, 150.0));
+        $this->expectException(\RuntimeException::class);
+
+        $this->walletService->deduct($user, 50.0, 'Ride payment');
     }
 
-    public function test_transaction_history_recorded(): void
+    // ── transfer ────────────────────────────────────────────────
+
+    public function test_transfer_moves_funds_between_wallets(): void
     {
-        $user = User::factory()->create();
-        $wallet = $this->service->getOrCreateWallet($user);
-        $this->service->credit($wallet, 100.0, 'test', 'ref-1', 'Credit 1');
-        $this->service->debit($wallet, 30.0, 'test', 'ref-2', 'Debit 1');
+        $sender = $this->createUser(['name' => 'Sender']);
+        $receiver = $this->createUser(['name' => 'Receiver']);
+        $senderWallet = $this->createWallet($sender, 200.0);
+        $receiverWallet = $this->createWallet($receiver, 50.0);
 
-        $transactions = WalletTransaction::where('wallet_id', $wallet->id)->get();
+        $result = $this->walletService->transfer($sender, $receiver, 75.0);
 
-        $this->assertCount(2, $transactions);
-        $this->assertEquals('credit', $transactions[0]->type);
-        $this->assertEquals('debit', $transactions[1]->type);
+        $this->assertTrue($result);
+        $this->assertEquals(125.0, $senderWallet->fresh()->balance);
+        $this->assertEquals(125.0, $receiverWallet->fresh()->balance);
+    }
+
+    public function test_transfer_fails_when_sender_has_insufficient_funds(): void
+    {
+        $sender = $this->createUser(['name' => 'Sender']);
+        $receiver = $this->createUser(['name' => 'Receiver']);
+        $senderWallet = $this->createWallet($sender, 10.0);
+        $receiverWallet = $this->createWallet($receiver, 50.0);
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->walletService->transfer($sender, $receiver, 75.0);
     }
 }

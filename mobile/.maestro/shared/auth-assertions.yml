@@ -1,0 +1,4 @@
+---
+- assertVisible: "Email"
+- assertVisible: "Password"
+- assertVisible: "Sign In"

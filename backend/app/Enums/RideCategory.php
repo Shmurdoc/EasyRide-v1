@@ -6,19 +6,19 @@ namespace App\Enums;
 
 enum RideCategory: string
 {
-    case ECONOMY = 'economy';
     case STANDARD = 'standard';
     case PREMIUM = 'premium';
-    case XL = 'xl';
+    case MINIVAN = 'minivan';
+    case PETS = 'pets';
     case DELIVERY = 'delivery';
 
     public function label(): string
     {
         return match ($this) {
-            self::ECONOMY => 'Economy',
             self::STANDARD => 'Standard',
             self::PREMIUM => 'Premium',
-            self::XL => 'XL',
+            self::MINIVAN => 'Minivan',
+            self::PETS => 'Pets',
             self::DELIVERY => 'Delivery',
         };
     }

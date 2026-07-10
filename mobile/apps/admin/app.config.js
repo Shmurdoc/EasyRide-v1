@@ -8,7 +8,7 @@ export default ({ config }) => ({
   },
   android: {
     ...config.android,
-    usesCleartextTraffic: process.env.EXPO_PUBLIC_CLEARTEXT_TRAFFIC === "true",
+    usesCleartextTraffic: true,
     config: {
       googleMaps: {
         apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,

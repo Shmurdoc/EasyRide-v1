@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\RideStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Payment\ConfirmStripePaymentRequest;
+use App\Http\Requests\Api\V1\Payment\CreateStripeIntentRequest;
 use App\Http\Requests\Api\V1\Payment\DisputeRequest;
 use App\Http\Requests\Api\V1\Payment\RefundRequest;
 use App\Http\Requests\Api\V1\ProcessPaymentRequest;
 use App\Models\Dispute;
 use App\Models\Payment;
 use App\Models\Ride;
+use App\Models\WebhookEvent;
 use App\Services\CashPaymentService;
 use App\Services\EscrowService;
 use App\Services\OzowService;
@@ -18,8 +22,11 @@ use App\Services\PayFastService;
 use App\Services\PaymentService;
 use App\Services\RefundService;
 use App\Services\StripeService;
+use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use App\Http\Resources\PaymentResource;
 
 class PaymentController extends Controller
 {
@@ -31,18 +38,50 @@ class PaymentController extends Controller
         protected RefundService $refundService,
         protected CashPaymentService $cashPaymentService,
         protected StripeService $stripeService,
+        protected WalletService $walletService,
     ) {}
 
-    public function index(Request $request): JsonResponse
+    private function isWebhookIpAllowed(string $gateway): bool
     {
-        $payments = Payment::where('payer_id', $request->user()->id)
-            ->when($request->status, fn ($q, $v) => $q->where('status', $v))
-            ->when($request->input('method'), fn ($q, $v) => $q->where('method', $v))
-            ->with('ride')
-            ->latest()
-            ->paginate($request->per_page ?? 15);
+        if (config('webhook_ips.bypass_in_local', true)) {
+            return true;
+        }
 
-        return response()->json($payments);
+        $ip = request()->ip();
+        $allowedIps = config("webhook_ips.{$gateway}", []);
+
+        foreach ($allowedIps as $allowed) {
+            if (str_contains($allowed, '/')) {
+                if ($this->ipInCidr($ip, $allowed)) {
+                    return true;
+                }
+            } elseif ($ip === $allowed) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function ipInCidr(string $ip, string $cidr): bool
+    {
+        [$subnet, $mask] = explode('/', $cidr);
+        $ipLong = ip2long($ip);
+        $subnetLong = ip2long($subnet);
+        $maskLong = -1 << (32 - (int) $mask);
+
+        return ($ipLong & $maskLong) === ($subnetLong & $maskLong);
+    }
+
+    public function index(Request $request): AnonymousResourceCollection
+    {
+        $payments = $this->paymentService->getUserPayments(
+            $request->user(),
+            $request->only(['status', 'method']),
+            $request->per_page ?? 15,
+        );
+
+        return PaymentResource::collection($payments);
     }
 
     public function show(Payment $payment): JsonResponse
@@ -52,19 +91,13 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        return response()->json($payment->load(['ride', 'payer', 'payee']));
+        return response()->json(new PaymentResource($payment->load(['ride', 'payer', 'payee'])));
     }
 
-    public function methods(Request $request): JsonResponse
+    public function methods(): JsonResponse
     {
         return response()->json([
-            'methods' => [
-                ['id' => 'wallet', 'name' => 'Wallet', 'available' => true],
-                ['id' => 'cash', 'name' => 'Cash', 'available' => true],
-                ['id' => 'payfast', 'name' => 'PayFast', 'available' => true],
-                ['id' => 'ozow', 'name' => 'Ozow EFT', 'available' => true],
-                ['id' => 'stripe', 'name' => 'Stripe Card', 'available' => true],
-            ],
+            'methods' => $this->paymentService->getPaymentMethods(),
         ]);
     }
 
@@ -74,7 +107,8 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        if ($ride->status !== 'completed') {
+        $status = $ride->status instanceof RideStatus ? $ride->status->value : $ride->status;
+        if ($status !== RideStatus::COMPLETED->value) {
             return response()->json(['message' => 'Ride is not completed.'], 422);
         }
 
@@ -82,7 +116,11 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Payment already processed.'], 422);
         }
 
-        $velocity = $this->checkPaymentVelocity($request->user()->id, (float) $ride->total_fare);
+        $velocity = $this->paymentService->checkPaymentVelocity(
+            $request->user()->id,
+            (float) $ride->total_fare,
+        );
+
         if ($velocity !== null) {
             return response()->json([
                 'message' => $velocity['message'],
@@ -90,7 +128,8 @@ class PaymentController extends Controller
             ], 429);
         }
 
-        $method = $request->validated('payment_method');
+        $validated = $request->validated();
+        $method = $validated['payment_method'];
 
         if ($method === 'wallet') {
             $payment = $this->escrowService->holdPayment($ride, 'wallet');
@@ -104,91 +143,28 @@ class PaymentController extends Controller
             return response()->json(['payment' => $payment, 'message' => 'Cash payment recorded.'], 201);
         }
 
-        if ($method === 'payfast') {
-            $payment = Payment::create([
-                'ride_id' => $ride->id,
-                'payer_id' => $ride->rider_id,
-                'method' => 'payfast',
-                'gateway' => 'payfast',
-                'amount' => $ride->total_fare,
-                'platform_fee' => $this->paymentService->calculatePlatformFee((float) $ride->total_fare),
-                'status' => Payment::STATUS_PENDING,
-            ]);
+        try {
+            $result = $this->paymentService->processPayment($ride, $method);
 
-            $url = $this->payFastService->generatePaymentUrl([
-                'payment_id' => $payment->id,
-                'amount' => (float) $ride->total_fare,
-                'item_name' => "Ride #{$ride->id}",
-                'item_description' => "{$ride->pickup_address} → {$ride->dropoff_address}",
-                'name_first' => $ride->rider->name ?? '',
-                'email' => $ride->rider->email ?? '',
-            ]);
-
-            return response()->json([
-                'payment' => $payment,
-                'redirect_url' => $url,
-                'message' => 'Redirect to PayFast to complete payment.',
-            ], 201);
+            return response()->json(new PaymentResource($result->load(['ride', 'payer'])), 201);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        if ($method === 'ozow') {
-            $payment = Payment::create([
-                'ride_id' => $ride->id,
-                'payer_id' => $ride->rider_id,
-                'method' => 'ozow',
-                'gateway' => 'ozow',
-                'amount' => $ride->total_fare,
-                'platform_fee' => $this->paymentService->calculatePlatformFee((float) $ride->total_fare),
-                'status' => Payment::STATUS_PENDING,
-            ]);
-
-            $result = $this->ozowService->createPayment([
-                'amount' => (float) $ride->total_fare,
-                'transaction_reference' => $payment->id,
-                'customer' => [
-                    'name' => $ride->rider->name ?? '',
-                    'email' => $ride->rider->email ?? '',
-                    'phone' => $ride->rider->phone_number ?? '',
-                ],
-            ]);
-
-            if (! $result['success']) {
-                return response()->json(['message' => $result['error'] ?? 'Ozow payment failed.'], 502);
-            }
-
-            return response()->json([
-                'payment' => $payment,
-                'redirect_url' => $result['url'],
-                'message' => 'Redirect to Ozow to complete payment.',
-            ], 201);
-        }
-
-        if ($method === 'stripe') {
-            $payment = Payment::create([
-                'ride_id' => $ride->id,
-                'payer_id' => $ride->rider_id,
-                'method' => 'stripe',
-                'gateway' => 'stripe',
-                'amount' => $ride->total_fare,
-                'platform_fee' => $this->paymentService->calculatePlatformFee((float) $ride->total_fare),
-                'status' => Payment::STATUS_PENDING,
-            ]);
-
-            $intent = $this->stripeService->createPaymentIntent((float) $ride->total_fare);
-
-            return response()->json([
-                'payment' => $payment,
-                'client_secret' => $intent['client_secret'],
-                'payment_intent_id' => $intent['id'],
-                'message' => 'Confirm payment on client with Stripe Elements.',
-            ], 201);
-        }
-
-        return response()->json(['message' => 'Invalid payment method.'], 422);
     }
 
     public function payfastWebhook(Request $request): JsonResponse
     {
+        if (! $this->isWebhookIpAllowed('payfast')) {
+            return response()->json(['status' => 'forbidden'], 403);
+        }
+
+        $webhookEvent = WebhookEvent::create([
+            'gateway' => 'payfast',
+            'event_type' => $request->input('payment_status', 'unknown'),
+            'payload' => $request->all(),
+            'status' => 'processing',
+        ]);
+
         if ($this->payFastService->verifyItn($request)) {
             $paymentId = $request->input('m_payment_id');
             $payment = Payment::find($paymentId);
@@ -199,10 +175,16 @@ class PaymentController extends Controller
                     'payfast',
                     ['gateway' => 'payfast', 'reference' => $request->input('pf_payment_id')],
                 );
+            } else {
+                $this->walletService->confirmTopUpByGatewayReference((string) $paymentId);
             }
+
+            $webhookEvent->update(['status' => 'processed', 'processed_at' => now()]);
 
             return response()->json(['status' => 'success']);
         }
+
+        $webhookEvent->update(['status' => 'failed', 'error_message' => 'Itn verification failed', 'processed_at' => now()]);
 
         return response()->json(['status' => 'invalid'], 400);
     }
@@ -220,6 +202,17 @@ class PaymentController extends Controller
 
     public function ozowWebhook(Request $request): JsonResponse
     {
+        if (! $this->isWebhookIpAllowed('ozow')) {
+            return response()->json(['status' => 'forbidden'], 403);
+        }
+
+        $webhookEvent = WebhookEvent::create([
+            'gateway' => 'ozow',
+            'event_type' => $request->input('Status') ?? $request->input('status', 'unknown'),
+            'payload' => $request->all(),
+            'status' => 'processing',
+        ]);
+
         if ($this->ozowService->verifyWebhook($request)) {
             $transactionReference = $request->input('TransactionReference') ?? $request->input('transactionReference');
             $status = $request->input('Status') ?? $request->input('status');
@@ -236,10 +229,18 @@ class PaymentController extends Controller
                 } else {
                     $payment->update(['status' => Payment::STATUS_FAILED]);
                 }
+            } else {
+                if (strtolower((string) $status) === 'complete') {
+                    $this->walletService->confirmTopUpByGatewayReference((string) $transactionReference);
+                }
             }
+
+            $webhookEvent->update(['status' => 'processed', 'processed_at' => now()]);
 
             return response()->json(['status' => 'success']);
         }
+
+        $webhookEvent->update(['status' => 'failed', 'error_message' => 'Webhook verification failed', 'processed_at' => now()]);
 
         return response()->json(['status' => 'invalid'], 400);
     }
@@ -257,9 +258,18 @@ class PaymentController extends Controller
 
     public function stripeWebhook(Request $request): JsonResponse
     {
+        $webhookEvent = WebhookEvent::create([
+            'gateway' => 'stripe',
+            'event_type' => $request->input('type', 'unknown'),
+            'payload' => $request->all(),
+            'status' => 'processing',
+        ]);
+
         $result = $this->stripeService->handleWebhook($request);
 
         if (isset($result['error'])) {
+            $webhookEvent->update(['status' => 'failed', 'error_message' => $result['error'], 'processed_at' => now()]);
+
             return response()->json(['error' => $result['error']], 400);
         }
 
@@ -274,6 +284,8 @@ class PaymentController extends Controller
                     'stripe',
                     ['gateway' => 'stripe', 'reference' => $intentId],
                 );
+            } else {
+                $this->walletService->confirmTopUpByGatewayReference($intentId);
             }
         }
 
@@ -287,6 +299,8 @@ class PaymentController extends Controller
             }
         }
 
+        $webhookEvent->update(['status' => 'processed', 'processed_at' => now()]);
+
         return response()->json(['status' => 'success']);
     }
 
@@ -295,15 +309,9 @@ class PaymentController extends Controller
         return response()->json(['status' => 'received']);
     }
 
-    public function createStripeIntent(Request $request): JsonResponse
+    public function createStripeIntent(CreateStripeIntentRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:1',
-            'ride_id' => 'sometimes|string|uuid|exists:rides,id',
-            'currency' => 'sometimes|string|size:3',
-            'metadata' => 'sometimes|array',
-        ]);
-
+        $validated = $request->validated();
         $amount = (float) $validated['amount'];
 
         if (! empty($validated['ride_id'])) {
@@ -329,11 +337,9 @@ class PaymentController extends Controller
         return response()->json($intent);
     }
 
-    public function confirmStripePayment(Request $request): JsonResponse
+    public function confirmStripePayment(ConfirmStripePaymentRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'payment_intent_id' => 'required|string',
-        ]);
+        $validated = $request->validated();
 
         $result = $this->stripeService->confirmPayment($validated['payment_intent_id']);
 
@@ -348,19 +354,21 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        $validated = $request->validated();
+        try {
+            $result = $this->refundService->processRefund(
+                $payment->ride,
+                $request->validated('reason'),
+                $user->id,
+            );
 
-        $result = $this->refundService->processRefund(
-            $payment->ride,
-            $validated['reason'],
-            $user->id,
-        );
+            if (! $result['success']) {
+                return response()->json($result, 422);
+            }
 
-        if (! $result['success']) {
-            return response()->json($result, 422);
+            return response()->json($result);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        return response()->json($result);
     }
 
     public function dispute(DisputeRequest $request, Payment $payment): JsonResponse
@@ -390,37 +398,5 @@ class PaymentController extends Controller
         $this->escrowService->holdPendingFundsForDispute($payment);
 
         return response()->json(['message' => 'Dispute raised successfully.'], 201);
-    }
-
-    private function checkPaymentVelocity(string $userId, float $rideAmount): ?array
-    {
-        $windowStart = now()->subHour();
-
-        $recentCount = Payment::where('payer_id', $userId)
-            ->where('created_at', '>=', $windowStart)
-            ->whereIn('status', [Payment::STATUS_COMPLETED, Payment::STATUS_ESCROW_HELD])
-            ->count();
-
-        if ($recentCount >= 5) {
-            return [
-                'code' => 'VELOCITY_COUNT_EXCEEDED',
-                'message' => 'Too many payments in the last hour. Please try again later.',
-            ];
-        }
-
-        $recentAmount = (float) Payment::where('payer_id', $userId)
-            ->where('created_at', '>=', $windowStart)
-            ->whereIn('status', [Payment::STATUS_COMPLETED, Payment::STATUS_ESCROW_HELD])
-            ->sum('amount');
-
-        $hourlyLimit = (float) config('easyryde.payment.velocity.hourly_limit', 5000.00);
-        if (($recentAmount + $rideAmount) > $hourlyLimit) {
-            return [
-                'code' => 'VELOCITY_AMOUNT_EXCEEDED',
-                'message' => 'Hourly payment limit exceeded. Please contact support.',
-            ];
-        }
-
-        return null;
     }
 }

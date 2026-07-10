@@ -1,0 +1,14 @@
+appId: za.co.easyryde.rider
+---
+- launchApp
+# Assumes already logged in
+- tapOn: "Where to?"
+- inputText: "Phalaborwa Mall"
+- tapOn:
+    text: "Phalaborwa Mall"
+    index: 0
+- tapOn: "Confirm Location"
+- assertVisible: "Economy"
+- tapOn: "Economy"
+- assertVisible: "Request Ride"
+- tapOn: "Request Ride"

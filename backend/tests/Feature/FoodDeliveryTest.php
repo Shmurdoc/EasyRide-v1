@@ -9,6 +9,7 @@ use App\Models\RestaurantCategory;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class FoodDeliveryTest extends TestCase
@@ -29,9 +30,15 @@ class FoodDeliveryTest extends TestCase
     {
         parent::setUp();
 
+        Role::create(['name' => 'rider', 'guard_name' => 'web']);
+        Role::create(['name' => 'driver', 'guard_name' => 'web']);
+
         $this->tenant = Tenant::factory()->create();
         $this->customer = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->customer->assignRole('rider');
+
         $this->driver = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $this->driver->assignRole('driver');
 
         $this->restaurant = Restaurant::factory()->create([
             'tenant_id' => $this->tenant->id,

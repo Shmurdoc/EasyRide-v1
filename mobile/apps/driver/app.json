@@ -18,16 +18,11 @@
       }
     },
     "android": {
-      "package": "za.co.easyryde.driver"
+      "package": "za.co.easyryde.driver",
+      "minSdkVersion": 23
     },
     "plugins": [
       "expo-location",
-      [
-        "react-native-maps",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Allow EasyRyde to track your location for ride requests."
-        }
-      ],
       "expo-notifications"
     ]
   }

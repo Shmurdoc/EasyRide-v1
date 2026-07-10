@@ -13,14 +13,16 @@ class FareCalculationService
     private const float EARTH_RADIUS_KM = 6371.0;
 
     private const array CATEGORY_RATES = [
-        'economy' => ['base' => 25, 'per_km' => 12, 'per_min' => 2, 'min' => 35],
-        'standard' => ['base' => 35, 'per_km' => 15, 'per_min' => 3, 'min' => 50],
+        'standard' => ['base' => 45, 'per_km' => 15, 'per_min' => 4, 'min' => 65],
         'premium' => ['base' => 55, 'per_km' => 22, 'per_min' => 5, 'min' => 80],
+        'minivan' => ['base' => 35, 'per_km' => 12, 'per_min' => 3, 'min' => 45],
+        'pets' => ['base' => 30, 'per_km' => 14, 'per_min' => 2, 'min' => 45],
         'delivery' => ['base' => 20, 'per_km' => 10, 'per_min' => 1, 'min' => 30],
     ];
 
     public function __construct(
         protected RouteService $routeService,
+        protected SurgePricingService $surgePricingService,
     ) {}
 
     public function calculate(
@@ -29,10 +31,20 @@ class FareCalculationService
         float $dropoffLat,
         float $dropoffLng,
         string $category = 'standard',
+        ?float $surgeMultiplier = null,
+        ?string $tenantId = null,
     ): array {
         $route = $this->routeService->getRoute($pickupLat, $pickupLng, $dropoffLat, $dropoffLng);
 
-        return $this->calculateFare($route['distance_km'], $route['duration_minutes'], $category);
+        $surgeMultiplier ??= $this->surgePricingService->getCurrentSurge($pickupLat, $pickupLng, $category, $tenantId);
+
+        $fare = $this->calculateFare($route['distance_km'], $route['duration_minutes'], $category, $surgeMultiplier);
+
+        return array_merge($fare, [
+            'distance_km' => $route['distance_km'],
+            'duration_minutes' => $route['duration_minutes'],
+            'estimated_duration' => $route['duration_minutes'],
+        ]);
     }
 
     public function calculateFinalFare(Ride $ride): float

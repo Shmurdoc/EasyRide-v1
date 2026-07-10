@@ -1,161 +1,119 @@
 services:
-  postgres:
-    image: postgis/postgis:16-3.4
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: easyryde-backend
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: ./backend/.env
+    volumes:
+      - backend-storage:/var/www/storage
+      - backend-logs:/var/www/storage/logs
+    networks:
+      - easyryde
+
+  nginx:
+    image: nginx:alpine
+    container_name: easyryde-nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "90:80"
+      - "9443:443"
+      - "3082:8080"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - backend-storage:/var/www/storage
+      - ./nginx/ssl:/etc/nginx/ssl
+    networks:
+      - easyryde
+
+  database:
+    image: postgres:16-alpine
+    container_name: easyryde-db
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: easyryde
-      POSTGRES_USER: easyryde
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD not set}
+      POSTGRES_DB: ${DB_DATABASE:-easyryde}
+      POSTGRES_USER: ${DB_USERNAME:-easyryde}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U easyryde"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-easyryde} -d ${DB_DATABASE:-easyryde}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
     networks:
       - easyryde
 
   redis:
     image: redis:7-alpine
+    container_name: easyryde-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
     ports:
       - "6379:6379"
-    volumes:
-      - redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
     networks:
       - easyryde
 
-  app:
+  queue:
     build:
-      context: .
-      dockerfile: .docker/php/Dockerfile
-    environment:
-      APP_NAME: EasyRyde
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-true}
-      APP_KEY: ${APP_KEY:?APP_KEY not set}
-      APP_URL: ${APP_URL:-http://localhost:8000}
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: easyryde
-      DB_USERNAME: easyryde
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD not set}
-      REDIS_HOST: redis
-      REDIS_PASSWORD: null
-      SESSION_DRIVER: redis
-      CACHE_DRIVER: redis
-      QUEUE_CONNECTION: redis
-      BROADCAST_CONNECTION: redis
-      LOG_CHANNEL: stderr
-      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-}
-      MAIL_MAILER: ${MAIL_MAILER:-log}
-    user: root
-    command: sh -c "chown -R appuser:appuser storage bootstrap/cache public/storage && su appuser -c 'php artisan storage:link || true' && php-fpm -R"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - easyryde
-
-  nginx:
-    build:
-      context: .
-      dockerfile: .docker/nginx/Dockerfile
-    ports:
-      - "${NGINX_PORT:-8000}:80"
-      - "${NGINX_SSL_PORT:-8443}:443"
-      - "${NGINX_HTTP_PORT:-8081}:8080"
-    volumes:
-      - ./backend:/var/www/html
-    depends_on:
-      - app
-    restart: unless-stopped
-    networks:
-      - easyryde
-
-  socket-server:
-    build:
-      context: ./socket-server
+      context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "${SOCKET_PORT:-13099}:3001"
-    environment:
-      PORT: 3001
-      CLIENT_URL: ${APP_URL:-http://localhost:8000}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET not set}
-      APP_API_BASE_URL: ${SOCKET_API_BASE_URL:-http://nginx:8080}
-      APP_API_TOKEN: ${SOCKET_SERVICE_TOKEN:-}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD:
-      REDIS_DB: 0
-      STALE_LOCATION_TTL: 300
-      CLEANUP_INTERVAL_MS: 60000
-      DRIVER_RADIUS_KM: 10
-      RATE_LIMIT_WINDOW_MS: 60000
-      RATE_LIMIT_MAX: 60
-      HEALTH_CHECK_ENABLED: "true"
-      HEALTH_CHECK_PATH: /health
+    container_name: easyryde-queue
+    restart: unless-stopped
     depends_on:
+      database:
+        condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+    env_file: ./backend/.env
+    command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - backend-storage:/var/www/storage
     networks:
       - easyryde
 
-  horizon:
+  scheduler:
     build:
-      context: .
-      dockerfile: .docker/php/Dockerfile
-    user: root
-    command: sh -c "chown -R appuser:appuser storage bootstrap/cache public/storage && su appuser -c 'php artisan config:clear' && su appuser -c 'php artisan horizon'"
-    environment:
-      APP_NAME: EasyRyde
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-true}
-      APP_KEY: ${APP_KEY:?APP_KEY not set}
-      APP_URL: ${APP_URL:-http://localhost:8000}
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: easyryde
-      DB_USERNAME: easyryde
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD not set}
-      REDIS_HOST: redis
-      REDIS_PASSWORD: null
-      CACHE_DRIVER: redis
-      QUEUE_CONNECTION: redis
-      BROADCAST_CONNECTION: redis
-      LOG_CHANNEL: stderr
-      SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-}
-    depends_on:
-      app:
-        condition: service_started
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: easyryde-scheduler
     restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: ./backend/.env
+    command: >
+      sh -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
+    volumes:
+      - backend-storage:/var/www/storage
     networks:
       - easyryde
+
+volumes:
+  postgres-data:
+  redis-data:
+  backend-storage:
+  backend-logs:
 
 networks:
   easyryde:
     driver: bridge
-
-volumes:
-  pgdata:
-  redisdata:

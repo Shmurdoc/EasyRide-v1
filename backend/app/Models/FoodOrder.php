@@ -35,6 +35,7 @@ class FoodOrder extends Model
         return [
             'delivery_latitude' => 'decimal:7',
             'delivery_longitude' => 'decimal:7',
+            'delivery_address' => 'encrypted',
             'subtotal' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'service_fee' => 'decimal:2',

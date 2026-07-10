@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Food\FoodAssignDriverRequest;
+use App\Http\Requests\Api\V1\Food\FoodOrderCancelRequest;
 use App\Http\Requests\Api\V1\Food\FoodOrderCreateRequest;
 use App\Http\Requests\Api\V1\Food\FoodOrderRateRequest;
 use App\Http\Requests\Api\V1\Food\FoodUpdateStatusRequest;
@@ -13,6 +14,8 @@ use App\Models\FoodOrder;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Services\FoodDeliveryService;
+use App\Services\FoodOrderService;
+use App\Services\RestaurantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,33 +23,27 @@ class FoodDeliveryController extends Controller
 {
     public function __construct(
         protected FoodDeliveryService $foodDeliveryService,
+        protected FoodOrderService $foodOrderService,
+        protected RestaurantService $restaurantService,
     ) {}
 
     public function restaurants(Request $request): JsonResponse
     {
-        $restaurants = Restaurant::where('tenant_id', $request->user()->tenant_id)
-            ->where('is_active', true)
-            ->when($request->cuisine, fn ($q, $v) => $q->where('cuisine_type', $v))
-            ->when($request->search, fn ($q, $v) => $q->where('name', 'like', "%{$v}%"))
-            ->when($request->featured, fn ($q) => $q->where('is_featured', true))
-            ->when($request->lat && $request->lng, function ($q) use ($request) {
-                $q->whereRaw(
-                    '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) <= ?',
-                    [$request->lat, $request->lng, $request->lat, $request->radius ?? 10]
-                );
-            })
-            ->withCount('menuItems')
-            ->orderBy(
-                in_array($request->sort, ['name', 'created_at', 'rating', 'delivery_fee']) ? $request->sort : 'name',
-                in_array($request->order, ['asc', 'desc']) ? $request->order : 'asc'
-            )
-            ->paginate($request->per_page ?? 15);
+        $restaurants = $this->restaurantService->getNearbyRestaurants(
+            $request->user()->tenant_id,
+            $request->only(['lat', 'lng', 'radius', 'cuisine', 'search', 'featured', 'sort', 'order']),
+            $request->per_page ?? 15,
+        );
 
         return response()->json($restaurants);
     }
 
-    public function show(Restaurant $restaurant): JsonResponse
+    public function show(Request $request, Restaurant $restaurant): JsonResponse
     {
+        if ($restaurant->tenant_id !== $request->user()->tenant_id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
         return response()->json(
             $restaurant->load(['categories.menuItems' => function ($q) {
                 $q->where('is_active', true)->where('is_available', true)->orderBy('sort_order');
@@ -54,35 +51,31 @@ class FoodDeliveryController extends Controller
         );
     }
 
-    public function menu(Restaurant $restaurant): JsonResponse
+    public function menu(Request $request, Restaurant $restaurant): JsonResponse
     {
-        $menu = $restaurant->categories()
-            ->where('is_active', true)
-            ->with(['menuItems' => function ($q) {
-                $q->where('is_active', true)->orderBy('sort_order');
-            }])
-            ->orderBy('sort_order')
-            ->get();
+        if ($restaurant->tenant_id !== $request->user()->tenant_id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $menu = $this->restaurantService->getRestaurantMenu($restaurant);
 
         return response()->json($menu);
     }
 
     public function createOrder(FoodOrderCreateRequest $request, Restaurant $restaurant): JsonResponse
     {
-        $validated = $request->validated();
-
         try {
-            $order = $this->foodDeliveryService->createOrder(
+            $order = $this->foodOrderService->createOrder(
                 $restaurant,
                 $request->user(),
-                $validated['items'],
+                $request->validated('items'),
                 [
-                    'address' => $validated['delivery_address'],
-                    'latitude' => $validated['delivery_lat'],
-                    'longitude' => $validated['delivery_lng'],
-                    'notes' => $validated['notes'] ?? null,
-                    'payment_method' => $validated['payment_method'],
-                    'tip_amount' => $validated['tip_amount'] ?? 0,
+                    'address' => $request->validated('delivery_address'),
+                    'latitude' => $request->validated('delivery_lat'),
+                    'longitude' => $request->validated('delivery_lng'),
+                    'notes' => $request->validated('notes'),
+                    'payment_method' => $request->validated('payment_method'),
+                    'tip_amount' => $request->validated('tip_amount') ?? 0,
                 ],
             );
 
@@ -108,7 +101,7 @@ class FoodDeliveryController extends Controller
 
     public function myOrders(Request $request): JsonResponse
     {
-        $orders = $this->foodDeliveryService->getCustomerOrders(
+        $orders = $this->foodOrderService->getCustomerOrders(
             $request->user(),
             $request->status,
         );
@@ -116,22 +109,17 @@ class FoodDeliveryController extends Controller
         return response()->json($orders);
     }
 
-    public function cancelOrder(Request $request, FoodOrder $order): JsonResponse
+    public function cancelOrder(FoodOrderCancelRequest $request, FoodOrder $order): JsonResponse
     {
         if ($order->customer_id !== $request->user()->id) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        if (! in_array($order->status, ['pending', 'confirmed'])) {
-            return response()->json(['message' => 'Order cannot be cancelled at this stage.'], 422);
-        }
-
         try {
-            $order = $this->foodDeliveryService->updateStatus(
+            $order = $this->foodOrderService->cancelOrder(
                 $order,
-                'cancelled',
-                $request->input('reason', 'Cancelled by customer'),
-                cancelledBy: $request->user()->id,
+                $request->user()->id,
+                $request->validated('reason') ?? 'Cancelled by customer',
             );
 
             return response()->json($order);
@@ -146,13 +134,11 @@ class FoodDeliveryController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        $validated = $request->validated();
-
         try {
-            $order = $this->foodDeliveryService->rateOrder(
+            $order = $this->foodOrderService->rateOrder(
                 $order,
-                $validated['rating'],
-                $validated['comment'] ?? null,
+                $request->validated('rating'),
+                $request->validated('comment'),
             );
 
             return response()->json($order);
@@ -163,7 +149,7 @@ class FoodDeliveryController extends Controller
 
     public function driverOrders(Request $request): JsonResponse
     {
-        $orders = $this->foodDeliveryService->getDriverOrders(
+        $orders = $this->foodOrderService->getDriverOrders(
             $request->user(),
             $request->status,
         );
@@ -173,7 +159,7 @@ class FoodDeliveryController extends Controller
 
     public function availableOrders(Request $request): JsonResponse
     {
-        $orders = $this->foodDeliveryService->getAvailableOrders(
+        $orders = $this->foodOrderService->getAvailableOrders(
             $request->user(),
             $request->status,
         );
@@ -184,10 +170,7 @@ class FoodDeliveryController extends Controller
     public function driverAcceptOrder(Request $request, FoodOrder $order): JsonResponse
     {
         try {
-            $order = $this->foodDeliveryService->driverAcceptOrder(
-                $order,
-                $request->user(),
-            );
+            $order = $this->foodOrderService->acceptOrder($order, $request->user());
 
             return response()->json($order);
         } catch (\RuntimeException $e) {
@@ -204,23 +187,21 @@ class FoodDeliveryController extends Controller
             return response()->json(['data' => []]);
         }
 
-        $orders = FoodOrder::whereIn('restaurant_id', $restaurantIds)
-            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-            ->with(['items', 'customer', 'driver'])
-            ->latest()
-            ->paginate($request->per_page ?? 15);
+        $orders = $this->foodOrderService->getRestaurantOrders(
+            $restaurantIds,
+            $request->only(['status']),
+            $request->per_page ?? 15,
+        );
 
         return response()->json($orders);
     }
 
     public function assignDriver(FoodAssignDriverRequest $request, FoodOrder $order): JsonResponse
     {
-        $validated = $request->validated();
-
-        $driver = User::findOrFail($validated['driver_id']);
+        $driver = User::findOrFail($request->validated('driver_id'));
 
         try {
-            $order = $this->foodDeliveryService->assignDriver($order, $driver);
+            $order = $this->foodOrderService->assignDriver($order, $driver);
 
             return response()->json($order);
         } catch (\RuntimeException $e) {
@@ -230,12 +211,10 @@ class FoodDeliveryController extends Controller
 
     public function updateStatus(FoodUpdateStatusRequest $request, FoodOrder $order): JsonResponse
     {
-        $validated = $request->validated();
-
         try {
-            $order = $this->foodDeliveryService->updateStatus(
+            $order = $this->foodOrderService->updateOrderStatus(
                 $order,
-                $validated['status'],
+                $request->validated('status'),
                 $request->input('reason'),
             );
 

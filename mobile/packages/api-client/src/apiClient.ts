@@ -1,4 +1,4 @@
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8082/api';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000/api';
 
 class ApiClient {
   private baseUrl: string;

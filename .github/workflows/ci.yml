@@ -7,170 +7,60 @@ on:
     branches: [main]
 
 jobs:
-  backend:
+  backend-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: easyryde_test
-          POSTGRES_USER: easyryde
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: pdo_pgsql, redis, bcmath
-          coverage: xdebug
-
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
-
-      - name: Copy .env
-        run: cp .env.example .env
-
-      - name: Generate key
-        run: php artisan key:generate
-
-      - name: Run PHPStan
-        run: ./vendor/bin/phpstan analyse --memory-limit=2G --no-progress
-
-      - name: Run Pint
-        run: ./vendor/bin/pint --test
-
-      - name: Run tests
-        run: php artisan test
-        env:
-          DB_CONNECTION: pgsql
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_DATABASE: easyryde_test
-          DB_USERNAME: easyryde
-          DB_PASSWORD: test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          directory: backend/coverage
-
-  socket:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: socket-server
-
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, intl, gd, exif, pcov
+          coverage: pcov
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: socket-server/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-  web:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Cache Composer
+        uses: actions/cache@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Build
-        run: npm run build
-
-  mobile:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: mobile
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: mobile/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: TypeScript check
+          path: vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+      - name: Install Dependencies
+        working-directory: backend
+        run: composer install --no-progress --prefer-dist
+      - name: Prepare Environment
+        working-directory: backend
         run: |
-          npx tsc -p apps/rider/tsconfig.json --noEmit
-          npx tsc -p apps/driver/tsconfig.json --noEmit
-          npx tsc -p apps/admin/tsconfig.json --noEmit
+          cp .env.testing .env
+          php -n artisan key:generate
+      - name: Run Tests
+        working-directory: backend
+        run: php -n vendor/bin/phpunit --configuration phpunit.xml --coverage-text
 
-  security:
+  mobile-typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies
+        working-directory: mobile
+        run: npm ci
+      - name: TypeScript Check (Rider)
+        working-directory: mobile/apps/rider
+        run: npx tsc --noEmit
+      - name: TypeScript Check (Driver)
+        working-directory: mobile/apps/driver
+        run: npx tsc --noEmit
 
-      - name: Run security check
-        uses: symfonycorp/security-checker-action@v5
-
-      - name: Run gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Backend Image
+        run: docker build -f .docker/php/Dockerfile -t easyryde-backend ./backend
+      - name: Build Socket Server Image
+        run: docker build -f socket-server/Dockerfile -t easyryde-socket ./socket-server

@@ -52,7 +52,7 @@ react {
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
     //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    debuggableVariants = ['debug']
+    // debuggableVariants = ["liteDebug", "prodDebug"]
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
@@ -124,19 +124,15 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-        release {
-            storeFile file(System.getenv('ANDROID_KEYSTORE_PATH') ?: 'debug.keystore')
-            storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: 'android'
-            keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: 'androiddebugkey'
-            keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: 'android'
-        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.release
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            signingConfig signingConfigs.debug
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"

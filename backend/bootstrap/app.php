@@ -4,6 +4,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\AdminTotpMiddleware;
 use App\Http\Middleware\ApiRateLimiterMiddleware;
 use App\Http\Middleware\DriverMiddleware;
+use App\Http\Middleware\ForceHttps;
 use App\Http\Middleware\InputSanitizationMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\TenantMiddleware;
@@ -30,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             RateLimiter::for('auth-login', function (Request $request) {
-                return Limit::perMinute(10)->by($request->ip().'|'.($request->userAgent() ?? ''));
+                return Limit::perMinute(5)->by($request->ip().'|'.($request->userAgent() ?? ''));
             });
 
             RateLimiter::for('auth-register', function (Request $request) {
@@ -50,10 +51,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [
+            \App\Http\Middleware\RequestTimingMiddleware::class,
             EnsureFrontendRequestsAreStateful::class,
             SecurityHeadersMiddleware::class,
             InputSanitizationMiddleware::class,
             ApiRateLimiterMiddleware::class,
+            ForceHttps::class,
         ]);
 
         $middleware->alias([
@@ -70,6 +73,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->trustProxies(at: '*');
+
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
+            return route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(function (Request $request) {
@@ -95,4 +107,5 @@ return Application::configure(basePath: dirname(__DIR__))
         PaymentServiceProvider::class,
         SentryServiceProvider::class,
         EventServiceProvider::class,
+        \App\Providers\HorizonServiceProvider::class,
     ])->create();

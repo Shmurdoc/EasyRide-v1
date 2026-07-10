@@ -1,0 +1,15 @@
+appId: za.co.easyryde.rider
+---
+- launchApp
+- takeScreenshot: F:\EasyRyde\mobile\maestro-test-screenshot.png
+- tapOn:
+    point: "50%,42%"
+- inputText: "rider@easyryde.com"
+- takeScreenshot: F:\EasyRyde\mobile\maestro-after-email.png
+- tapOn:
+    point: "50%,52%"
+- inputText: "password"
+- takeScreenshot: F:\EasyRyde\mobile\maestro-after-password.png
+- tapOn:
+    point: "50%,62%"
+- takeScreenshot: F:\EasyRyde\mobile\maestro-after-tap.png

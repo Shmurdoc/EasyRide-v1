@@ -18,7 +18,8 @@
       }
     },
     "android": {
-      "package": "za.co.easyryde.admin"
+      "package": "za.co.easyryde.admin",
+      "minSdkVersion": 23
     },
     "plugins": [
       "expo-location",

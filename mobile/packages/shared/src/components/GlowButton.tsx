@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { Animated, TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator, Vibration } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Animated, TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator, Vibration, View } from 'react-native';
+let LinearGradient: any = null;
+try { LinearGradient = require('expo-linear-gradient').LinearGradient; } catch {}
 import { useTheme } from '../theme';
 import { RADIUS, SPACING, COLORS } from '../constants';
 
@@ -41,7 +42,11 @@ export function GlowButton({
   }, [disabled]);
 
   const handlePressIn = () => {
-    Vibration.vibrate(10);
+    try {
+      Vibration.vibrate(10);
+    } catch (e) {
+      console.warn('[GlowButton] Vibration.vibrate failed:', e);
+    }
     Animated.parallel([
       Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: true, speed: 50, bounciness: 4 }),
       Animated.timing(innerGlow, { toValue: 1, duration: 100, useNativeDriver: true }),
@@ -54,6 +59,16 @@ export function GlowButton({
       Animated.timing(innerGlow, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]).start();
   };
+
+  const handlePress = React.useCallback(() => {
+    try {
+      console.log('[GlowButton] handlePress called, disabled=', disabled, 'loading=', loading);
+      if (disabled || loading) return;
+      onPress?.();
+    } catch (e) {
+      console.error('[GlowButton] handlePress crashed:', e);
+    }
+  }, [disabled, loading, onPress]);
 
   const sizeStyles: Record<ButtonSize, ViewStyle> = {
     sm: { paddingVertical: 12, paddingHorizontal: 20, minHeight: 44, borderRadius: RADIUS.sm },
@@ -78,19 +93,23 @@ export function GlowButton({
       elevation: 12,
     }}>
       <TouchableOpacity
-        onPress={onPress}
+        onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
         activeOpacity={1}
         style={[sizeStyles[size], { overflow: 'hidden' }, style]}
       >
-        <LinearGradient
-          colors={[glowColor, glowColor]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: sizeStyles[size].borderRadius }]}
-        />
+        {LinearGradient ? (
+          <LinearGradient
+            colors={[glowColor, glowColor]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: sizeStyles[size].borderRadius }]}
+          />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: glowColor, borderRadius: sizeStyles[size].borderRadius }]} />
+        )}
         <Animated.View style={[
           StyleSheet.absoluteFill,
           {

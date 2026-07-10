@@ -7,6 +7,8 @@ const config = getDefaultConfig(projectRoot);
 
 config.watchFolders = [
   path.resolve(monorepoRoot, 'packages/shared'),
+  path.resolve(monorepoRoot, 'packages/api-client'),
+  path.resolve(monorepoRoot, 'packages/ui-kit'),
   monorepoRoot,
 ];
 

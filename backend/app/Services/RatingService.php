@@ -13,6 +13,14 @@ class RatingService
 {
     public function rateRide(Ride $ride, User $rater, User $ratee, int $score, ?string $comment = null): Rating
     {
+        $existing = Rating::where('ride_id', $ride->id)
+            ->where('rater_id', $rater->id)
+            ->exists();
+
+        if ($existing) {
+            throw new \RuntimeException('You have already rated this ride.');
+        }
+
         return Rating::create([
             'ride_id' => $ride->id,
             'rater_id' => $rater->id,

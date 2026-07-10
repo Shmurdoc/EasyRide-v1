@@ -1,80 +1,104 @@
-import React, { useState, useEffect } from 'react';
-import { FlatList, StyleSheet, Alert, View } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  View, Text, FlatList, StyleSheet, RefreshControl, TouchableOpacity,
+  TextInput, StatusBar,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { admin, COLORS, GRADIENTS, SPACING, RADIUS } from '@easyryde/shared';
-import { Typography } from '@easyryde/shared';
-import { GlowButton } from '@easyryde/shared';
-import { GlassCard } from '@easyryde/shared';
-import { GradientText } from '@easyryde/shared';
-import { Shimmer } from '@easyryde/shared';
-import type { User } from '@easyryde/shared';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ADMIN_COLORS, ADMIN_GRADIENTS } from '../constants/theme';
+import { useAdminDrivers } from '../hooks/useAdminDrivers';
+import DriverCard from '../components/drivers/DriverCard';
+import FilterTabs from '../components/common/FilterTabs';
+import { SearchBar } from '../components/common/SearchBar';
+import EmptyState from '../components/common/EmptyState';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorState from '../components/common/ErrorState';
+
+type Nav = NativeStackNavigationProp<any>;
+
+const STATUS_FILTERS = ['all', 'pending', 'approved', 'suspended'];
 
 export default function DriversScreen() {
-  const [drivers, setDrivers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<Nav>();
+  const { drivers, loading, error, refreshing, refresh, loadMore, filter, setFilter, search, setSearch, hasMore } = useAdminDrivers();
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  useEffect(() => { loadDrivers(); }, []);
-
-  async function loadDrivers() { try { const data = await admin.drivers({ per_page: '50' }); setDrivers(data.data); } catch (err) { console.warn('Failed to load drivers:', err); } finally { setLoading(false); setRefreshing(false); } }
-
-  const onRefresh = React.useCallback(() => { setRefreshing(true); loadDrivers(); }, []);
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-        <Typography variant="h2" style={{ padding: SPACING.base, paddingBottom: SPACING.sm }}>Drivers</Typography>
-        {[1, 2, 3].map((i) => (
-          <GlassCard key={i} style={{ marginHorizontal: SPACING.base, marginBottom: SPACING.sm }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.sm }}>
-              <Shimmer width={120} height={20} />
-              <Shimmer width={16} height={16} borderRadius={8} />
-            </View>
-            <Shimmer width="80%" height={14} style={{ marginBottom: SPACING.xs }} />
-            <Shimmer width="60%" height={14} style={{ marginBottom: SPACING.md }} />
-            <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-              <Shimmer style={{ flex: 1 }} height={40} borderRadius={RADIUS.md} />
-              <Shimmer style={{ flex: 1 }} height={40} borderRadius={RADIUS.md} />
-            </View>
-          </GlassCard>
-        ))}
-      </View>
-    );
-  }
+  const handleSearchSubmit = useCallback(() => {
+    setSearch(search);
+  }, [search, setSearch]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-      <LinearGradient colors={['rgba(212,175,55,0.1)', 'rgba(0,0,0,0)']} style={styles.header}>
-        <Typography variant="h2">Drivers</Typography>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={ADMIN_GRADIENTS.header} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="chevron-back" size={22} color="#ffffff" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Drivers</Text>
+          </View>
+          <TouchableOpacity onPress={() => setSearchOpen(!searchOpen)} style={styles.iconBtn}>
+            <Ionicons name={searchOpen ? 'close' : 'search'} size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
-      <FlatList
-        data={drivers}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: SPACING.base }}
-        ListEmptyComponent={<Typography variant="body" color={COLORS.textDim} style={{ textAlign: 'center', marginTop: 40 }}>No drivers found</Typography>}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        renderItem={({ item }) => (
-          <GlassCard glow glowColor={item.is_active ? COLORS.successGlow : COLORS.primaryGlow} style={{ marginBottom: SPACING.sm }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.xs }}>
-              <GradientText colors={GRADIENTS.primary} style={styles.driverName}>{item.name}</GradientText>
-              <View style={[styles.statusDot, { backgroundColor: item.is_active ? COLORS.success : COLORS.textMuted }]} />
-            </View>
-            <Typography variant="small" color={COLORS.textMuted}>{item.email}</Typography>
-            <Typography variant="small" color={COLORS.textMuted} style={{ marginBottom: SPACING.md }}>{item.phone_number}</Typography>
-            <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-              <GlowButton title="Approve" onPress={async () => { try { await admin.approveDriver(item.id); Alert.alert('Approved', 'Driver approved'); loadDrivers(); } catch (err: any) { Alert.alert('Error', err.message); } }} size="sm" glowColor={COLORS.success} style={{ flex: 1 }} />
-              <GlowButton title="Reject" onPress={async () => { try { await admin.rejectDriver(item.id); Alert.alert('Rejected', 'Driver rejected'); loadDrivers(); } catch (err: any) { Alert.alert('Error', err.message); } }} size="sm" glowColor={COLORS.error} style={{ flex: 1 }} />
-            </View>
-          </GlassCard>
-        )}
+
+      {searchOpen && (
+        <View style={styles.searchWrap}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            onSubmitEditing={handleSearchSubmit}
+            placeholder="Search by name, email, vehicle..."
+          />
+        </View>
+      )}
+
+      <FilterTabs
+        tabs={STATUS_FILTERS}
+        activeTab={filter}
+        onTabPress={setFilter}
       />
+
+      {loading && !refreshing ? (
+        <LoadingSpinner />
+      ) : error ? (
+        <ErrorState message={error} onRetry={refresh} />
+      ) : (
+        <FlatList
+          data={drivers}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => (
+            <DriverCard
+              driver={item}
+              onPress={() => navigation.navigate('AdminDriverDetail', { id: item.id, driver: item })}
+            />
+          )}
+          ListEmptyComponent={<EmptyState icon="people" message="No drivers found" />}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={ADMIN_COLORS.accent} />}
+          onEndReached={() => { if (hasMore) loadMore(); }}
+          onEndReachedThreshold={0.3}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingTop: SPACING['2xl'], paddingBottom: SPACING.sm, paddingHorizontal: SPACING.base },
-  driverName: { fontSize: 18, fontWeight: '600' },
-  statusDot: { width: 12, height: 12, borderRadius: 6 },
+  container: { flex: 1, backgroundColor: '#0a0a0f' },
+  header: { paddingBottom: 16, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
+  headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#ffffff' },
+  iconBtn: { width: 38, height: 38, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  searchWrap: { paddingHorizontal: 16, paddingTop: 12 },
+  list: { padding: 16, paddingBottom: 100 },
 });

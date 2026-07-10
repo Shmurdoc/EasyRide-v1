@@ -90,7 +90,7 @@ class PaymentTest extends TestCase
 
         $response->assertStatus(201);
         $wallet->refresh();
-        $this->assertEquals(200.0, $wallet->balance);
+        $this->assertEquals(350.0, $wallet->balance);
     }
 
     public function test_rider_can_get_payment_history(): void

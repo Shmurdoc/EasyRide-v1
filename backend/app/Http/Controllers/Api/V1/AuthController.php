@@ -33,7 +33,7 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => $request->password,
             'phone_number' => $request->phone_number,
-            'role' => $request->role ?? 'rider',
+            'role' => 'rider',
         ]);
 
         $user->assignRole($user->role);
@@ -53,11 +53,35 @@ class AuthController extends Controller
     {
         $user = User::where('email', $request->email)->first();
 
+        if ($user && $user->locked_until && $user->locked_until->isFuture()) {
+            $minutesRemaining = (int) ceil($user->locked_until->diffInSeconds(now()) / 60);
+
+            return response()->json([
+                'message' => 'Account is locked due to too many failed attempts. Try again in '.$minutesRemaining.' minute(s).',
+            ], 423);
+        }
+
         if (! $user || ! Hash::check($request->password, $user->password)) {
+            if ($user) {
+                $attempts = ($user->failed_attempts ?? 0) + 1;
+                $update = ['failed_attempts' => $attempts];
+
+                if ($attempts >= 5) {
+                    $update['locked_until'] = now()->addMinutes(15);
+                }
+
+                $user->update($update);
+            }
+
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
+
+        $user->update([
+            'failed_attempts' => 0,
+            'locked_until' => null,
+        ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -115,7 +139,13 @@ class AuthController extends Controller
     {
         $validated = $request->validated();
 
-        $status = Password::sendResetLink(['email' => $validated['email']]);
+        $user = User::where('email', $validated['email'])->first();
+
+        if (! $user) {
+            return response()->json(['message' => __(Password::RESET_LINK_SENT)], 200);
+        }
+
+        $status = Password::sendResetLink(['email' => $user->email]);
 
         return $status === Password::RESET_LINK_SENT
             ? response()->json(['message' => __($status)])
@@ -126,8 +156,14 @@ class AuthController extends Controller
     {
         $validated = $request->validated();
 
+        $user = User::where('email', $validated['email'])->first();
+
+        if (! $user) {
+            return response()->json(['message' => __('passwords.user')], 400);
+        }
+
         $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
+            ['email' => $user->email, 'password' => $validated['password'], 'password_confirmation' => $validated['password_confirmation'], 'token' => $validated['token']],
             function ($user, $password) {
                 $user->forceFill(['password' => $password])->save();
             }

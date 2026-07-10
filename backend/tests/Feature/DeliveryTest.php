@@ -148,6 +148,11 @@ class DeliveryTest extends TestCase
 
     public function test_driver_can_assign_delivery(): void
     {
+        Role::create(['name' => 'admin', 'guard_name' => 'web']);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
         $driver = User::factory()->create([
             'is_online' => true,
         ]);
@@ -167,7 +172,7 @@ class DeliveryTest extends TestCase
             'item_description' => 'Package',
         ]);
 
-        Sanctum::actingAs($driver);
+        Sanctum::actingAs($admin);
         $response = $this->postJson("/api/v1/deliveries/{$delivery->id}/assign", [
             'driver_id' => $driver->id,
         ]);

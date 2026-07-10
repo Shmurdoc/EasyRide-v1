@@ -3,12 +3,10 @@ const path = require('path');
 
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
+const sharedPkg = path.resolve(monorepoRoot, 'packages/shared');
 const config = getDefaultConfig(projectRoot);
 
-config.watchFolders = [
-  path.resolve(monorepoRoot, 'packages/shared'),
-  monorepoRoot,
-];
+config.watchFolders = [sharedPkg, monorepoRoot];
 
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\RideStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Chat\ChatSendRequest;
 use App\Models\Ride;
@@ -38,7 +39,8 @@ class ChatController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        if (! in_array($ride->status, ['accepted', 'arrived', 'in_progress'])) {
+        $status = $ride->status instanceof RideStatus ? $ride->status->value : $ride->status;
+        if (! in_array($status, [RideStatus::ACCEPTED->value, RideStatus::ARRIVED->value, RideStatus::IN_PROGRESS->value])) {
             return response()->json(['message' => 'Chat is only available during active rides.'], 422);
         }
 

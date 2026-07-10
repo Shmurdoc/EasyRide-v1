@@ -19,10 +19,6 @@ class FareCalculationTest extends TestCase
         $this->service = $this->app->make(FareCalculationService::class);
 
         $settings = [
-            'fare_economy_base_fare' => '25',
-            'fare_economy_per_km_rate' => '12',
-            'fare_economy_per_minute_rate' => '2',
-            'fare_economy_minimum_fare' => '40',
             'fare_standard_base_fare' => '35',
             'fare_standard_per_km_rate' => '15',
             'fare_standard_per_minute_rate' => '3',
@@ -31,10 +27,14 @@ class FareCalculationTest extends TestCase
             'fare_premium_per_km_rate' => '22',
             'fare_premium_per_minute_rate' => '5',
             'fare_premium_minimum_fare' => '80',
-            'fare_xl_base_fare' => '45',
-            'fare_xl_per_km_rate' => '18',
-            'fare_xl_per_minute_rate' => '4',
-            'fare_xl_minimum_fare' => '65',
+            'fare_minivan_base_fare' => '30',
+            'fare_minivan_per_km_rate' => '12',
+            'fare_minivan_per_minute_rate' => '3',
+            'fare_minivan_minimum_fare' => '45',
+            'fare_pets_base_fare' => '30',
+            'fare_pets_per_km_rate' => '14',
+            'fare_pets_per_minute_rate' => '2',
+            'fare_pets_minimum_fare' => '45',
         ];
         foreach ($settings as $key => $value) {
             SystemSetting::create(['key' => $key, 'value' => $value]);
@@ -150,11 +150,11 @@ class FareCalculationTest extends TestCase
 
     public function test_different_categories_produce_different_fares(): void
     {
-        $economy = $this->service->calculateFare(10, 30, 'economy');
+        $minivan = $this->service->calculateFare(10, 30, 'minivan');
         $standard = $this->service->calculateFare(10, 30, 'standard');
         $premium = $this->service->calculateFare(10, 30, 'premium');
 
-        $this->assertLessThan($standard['total_fare'], $economy['total_fare']);
+        $this->assertLessThan($standard['total_fare'], $minivan['total_fare']);
         $this->assertGreaterThan($standard['total_fare'], $premium['total_fare']);
     }
 }

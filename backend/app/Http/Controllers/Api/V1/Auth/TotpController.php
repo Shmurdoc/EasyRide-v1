@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Auth\TotpVerifyRequest;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class TotpController extends Controller
         ], 'Scan the QR code with your authenticator app. Then call verify to confirm.');
     }
 
-    public function verify(Request $request): JsonResponse
+    public function verify(TotpVerifyRequest $request): JsonResponse
     {
         $user = $request->user();
 
@@ -37,9 +38,9 @@ class TotpController extends Controller
             return ApiResponse::error('TOTP is already enabled.', 400);
         }
 
-        $request->validate(['code' => 'required|string|size:6']);
+        $validated = $request->validated();
 
-        if (! $user->verifyTotp($request->code)) {
+        if (! $user->verifyTotp($validated['code'])) {
             throw ValidationException::withMessages([
                 'code' => ['The provided TOTP code is invalid.'],
             ]);
@@ -51,7 +52,7 @@ class TotpController extends Controller
         return ApiResponse::success(message: 'TOTP has been enabled successfully.');
     }
 
-    public function disable(Request $request): JsonResponse
+    public function disable(TotpVerifyRequest $request): JsonResponse
     {
         $user = $request->user();
 
@@ -59,9 +60,9 @@ class TotpController extends Controller
             return ApiResponse::error('TOTP is not enabled.', 400);
         }
 
-        $request->validate(['code' => 'required|string|size:6']);
+        $validated = $request->validated();
 
-        if (! $user->verifyTotp($request->code)) {
+        if (! $user->verifyTotp($validated['code'])) {
             throw ValidationException::withMessages([
                 'code' => ['The provided TOTP code is invalid.'],
             ]);

@@ -10,11 +10,8 @@ class InputSanitizationMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->isJson()) {
-            return $next($request);
-        }
-
-        $request->merge($this->sanitizeInput($request->all()));
+        $sanitized = $this->sanitizeInput($request->all());
+        $request->merge($sanitized);
 
         return $next($request);
     }

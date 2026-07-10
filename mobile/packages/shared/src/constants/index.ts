@@ -1,50 +1,53 @@
 export const COLORS = {
-  bg: '#0a0a0a',
-  bgGradientStart: '#0a0a0a',
-  bgGradientEnd: '#1a1a1a',
-  surface: '#141414',
-  surfaceElevated: '#1c1c1c',
-  surfaceLight: '#242424',
-  primary: '#D4AF37',
-  primaryLight: '#E8C84A',
-  primaryDark: '#B8960F',
-  primaryGlow: 'rgba(212, 175, 55, 0.3)',
+  bg: '#121212',
+  bgGradientStart: '#121212',
+  bgGradientEnd: '#1c1c1e',
+  surface: '#1c1c1e',
+  surfaceElevated: '#242426',
+  surfaceLight: '#2c2c2e',
+  surfaceBorder: '#3a3a3c',
+  primary: '#FFAD7A',
+  primaryLight: '#FFC9A0',
+  primaryDark: '#e89b6a',
+  primaryGlow: 'rgba(255, 173, 122, 0.3)',
   text: '#FFFFFF',
   textSecondary: '#E8E8E8',
-  textMuted: '#8A8A8E',
-  textDim: '#5A5A5E',
-  success: '#00D68F',
-  successGlow: 'rgba(0, 214, 143, 0.25)',
-  error: '#FF3B5C',
-  errorGlow: 'rgba(255, 59, 92, 0.25)',
+  textMuted: '#98989d',
+  textDim: '#666666',
+  success: '#16a34a',
+  successLight: '#22c55e',
+  successGlow: 'rgba(22, 163, 74, 0.25)',
+  error: '#dc2626',
+  errorLight: '#f87171',
+  errorGlow: 'rgba(220, 38, 38, 0.25)',
   warning: '#FFB800',
-  info: '#5E9EFF',
-  border: 'rgba(255, 255, 255, 0.06)',
-  borderLight: 'rgba(255, 255, 255, 0.1)',
-  borderFocus: 'rgba(212, 175, 55, 0.4)',
+  info: '#3b82f6',
+  border: '#333333',
+  borderLight: '#3a3a3c',
+  borderFocus: 'rgba(255, 173, 122, 0.5)',
   glass: 'rgba(255, 255, 255, 0.03)',
   glassBorder: 'rgba(255, 255, 255, 0.08)',
   overlay: 'rgba(0, 0, 0, 0.7)',
   white: '#FFFFFF',
   black: '#000000',
-  gold: '#D4AF37',
-  silver: '#C0C0C0',
-  platinum: '#E5E4E2',
-  peach: '#F5C882',
-  warmBg: '#2A1F14',
-  tileBg: '#1C1510',
-  tileBorder: '#3A2E20',
+  orange: '#FFAD7A',
+  orangeDark: '#e89b6a',
+  green: '#16a34a',
+  greenLight: '#22c55e',
+  red: '#dc2626',
+  blue: '#3b82f6',
 } as const;
 
 export const GRADIENTS = {
-  primary: ['#D4AF37', '#E8C84A', '#D4AF37'] as const,
-  primaryDark: ['#B8960F', '#D4AF37'] as const,
-  surface: ['#141414', '#1c1c1c'] as const,
-  surfaceElevated: ['#1c1c1c', '#242424'] as const,
-  background: ['#0a0a0a', '#1a1a1a'] as const,
+  primary: ['#FFAD7A', '#e89b6a'] as const,
+  primaryDark: ['#e89b6a', '#FFAD7A'] as const,
+  surface: ['#1c1c1e', '#242426'] as const,
+  surfaceElevated: ['#242426', '#2c2c2e'] as const,
+  background: ['#121212', '#1c1c1e'] as const,
   shimmer: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0)'] as const,
-  goldShimmer: ['rgba(212,175,55,0)', 'rgba(212,175,55,0.15)', 'rgba(212,175,55,0)'] as const,
-  glow: ['rgba(212,175,55,0.2)', 'rgba(212,175,55,0)'] as const,
+  orangeShimmer: ['rgba(255,173,122,0)', 'rgba(255,173,122,0.15)', 'rgba(255,173,122,0)'] as const,
+  glow: ['rgba(255,173,122,0.2)', 'rgba(255,173,122,0)'] as const,
+  green: ['#16a34a', '#22c55e'] as const,
 } as const;
 
 export const GLASS = {
@@ -92,6 +95,30 @@ export const RADIUS = {
   '2xl': 24,
   full: 9999,
   tile: 20,
+} as const;
+
+export const ANIMATION = {
+  spring: { speed: 50, bounciness: 4 },
+  springFast: { speed: 70, bounciness: 4 },
+  springSlow: { speed: 30, bounciness: 6 },
+  durationFast: 200,
+  durationNormal: 300,
+  durationSlow: 500,
+  pulse: { min: 0.3, max: 1, duration: 1200 },
+  pulseFast: { min: 0.4, max: 1, duration: 800 },
+  shimmer: 1200,
+  modal: { enter: 250, exit: 200 },
+} as const;
+
+export const Z_INDEX = {
+  base: 0,
+  surface: 10,
+  dropdown: 50,
+  header: 100,
+  modal: 1000,
+  overlay: 2000,
+  toast: 3000,
+  tooltip: 4000,
 } as const;
 
 export const SHADOWS = {
@@ -146,6 +173,13 @@ export const BORDERS = {
   glass: { borderWidth: 1, borderColor: COLORS.glassBorder, borderStyle: 'solid' as const },
 } as const;
 
+export const VEHICLE_TYPES = [
+  { id: 'economy', type: 'EasyRyde', price: 35, time: '3 min', desc: 'Affordable everyday rides', seats: 4, perKm: 12, perMin: 2 },
+  { id: 'comfort', type: 'EasyRyde Comfort', price: 55, time: '5 min', desc: 'Newer cars with extra legroom', seats: 4, perKm: 15, perMin: 3 },
+  { id: 'premium', type: 'EasyRyde Premium', price: 95, time: '8 min', desc: 'Luxury vehicles with top drivers', seats: 4, perKm: 22, perMin: 5 },
+  { id: 'xl', type: 'GoXL', price: 120, time: '6 min', desc: 'SUVs for groups up to 6', seats: 6, perKm: 18, perMin: 4 },
+] as const;
+
 export const RIDE_CATEGORIES = [
   { id: 'economy', name: 'Economy', baseFare: 25, perKm: 12, perMin: 2 },
   { id: 'standard', name: 'Standard', baseFare: 35, perKm: 15, perMin: 3 },
@@ -153,29 +187,54 @@ export const RIDE_CATEGORIES = [
   { id: 'xl', name: 'XL', baseFare: 45, perKm: 18, perMin: 4 },
 ] as const;
 
+export const PHALABORWA_LOCATIONS = [
+  { name: 'Kruger National Park Gate', address: 'R71 Road, Phalaborwa', latitude: -24.0117, longitude: 31.3267, icon: 'trees', dist: '18.5 km', fare: 185 },
+  { name: 'Phalaborwa Airport', address: 'Airport Road, Phalaborwa', latitude: -23.9372, longitude: 31.1554, icon: 'airplane', dist: '3.2 km', fare: 65 },
+  { name: 'Mall of Phalaborwa', address: 'Schoeman Street, Phalaborwa', latitude: -23.9421, longitude: 31.1408, icon: 'bag', dist: '0.5 km', fare: 35 },
+  { name: 'Phalaborwa Minerals', address: 'Industrial Area, Phalaborwa', latitude: -23.9530, longitude: 31.1320, icon: 'briefcase', dist: '2.1 km', fare: 45 },
+  { name: 'Letaba Hospital', address: 'Letaba Street, Phalaborwa', latitude: -23.9380, longitude: 31.1450, icon: 'medical', dist: '1.0 km', fare: 35 },
+  { name: 'Phalaborwa High School', address: 'Boksburg Street, Phalaborwa', latitude: -23.9445, longitude: 31.1390, icon: 'school', dist: '0.8 km', fare: 35 },
+  { name: 'Magoebaskloof Dam', address: 'R71, Magoebaskloof', latitude: -23.9750, longitude: 30.9900, icon: 'water', dist: '12.3 km', fare: 145 },
+  { name: 'Polokwane CBD', address: 'Burger Street, Polokwane', latitude: -23.9045, longitude: 29.4688, icon: 'location', dist: '135 km', fare: 1250 },
+  { name: 'Tzaneen Town Centre', address: 'Danie Joubert Street, Tzaneen', latitude: -23.8130, longitude: 30.1640, icon: 'location', dist: '55 km', fare: 520 },
+] as const;
+
 export const PAYMENT_METHODS = [
   { id: 'cash', name: 'Cash' },
   { id: 'wallet', name: 'Wallet' },
   { id: 'payfast', name: 'PayFast' },
   { id: 'ozow', name: 'Ozow EFT' },
+  { id: 'stripe', name: 'Card (Stripe)' },
 ] as const;
 
 export const RIDE_STATUS_LABELS: Record<string, string> = {
   searching: 'Finding driver...',
-  accepted: 'Driver assigned',
+  driver_assigned: 'Driver assigned',
+  accepted: 'Driver accepted',
+  driver_en_route: 'Driver on the way',
   arrived: 'Driver has arrived',
+  waiting_for_rider: 'Waiting for you',
   in_progress: 'Ride in progress',
+  near_drop_off: 'Arriving soon',
   completed: 'Ride completed',
   cancelled: 'Ride cancelled',
+  cancellation_requested: 'Cancellation requested',
+  no_show: 'No show',
 };
 
 export const RIDE_STATUS_COLORS: Record<string, string> = {
   searching: COLORS.primary,
+  driver_assigned: COLORS.info,
   accepted: COLORS.text,
+  driver_en_route: COLORS.info,
   arrived: COLORS.success,
+  waiting_for_rider: COLORS.warning,
   in_progress: COLORS.text,
+  near_drop_off: COLORS.primaryLight,
   completed: COLORS.success,
   cancelled: COLORS.error,
+  cancellation_requested: COLORS.warning,
+  no_show: COLORS.error,
 };
 
 export const API_TIMEOUT = 15000;

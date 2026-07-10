@@ -18,6 +18,7 @@ export type RiderMainTabParamList = {
 // Rider Main App Navigation
 export type RiderStackParamList = {
   Main: NavigatorScreenParams<RiderMainTabParamList>;
+  Consent: undefined;
   BookRide: { pickup?: { lat: number; lng: number; address: string }; dropoff?: string };
   RideTracking: { rideId: string };
   Payment: { rideId: string };
@@ -29,12 +30,14 @@ export type RiderStackParamList = {
   FoodCheckout: { restaurantId: string; restaurantName: string; cart: any[]; subtotal: number; deliveryFee: number };
   FoodOrderTracking: { orderId: string };
   Wallet: undefined;
+  Rating: { rideId: string; driverName?: string; driverAvatar?: string };
 };
 
 // Driver App Navigation
 export type DriverStackParamList = {
   Login: undefined;
   Main: undefined;
+  Consent: undefined;
   RideRequests: undefined;
   ActiveRide: { rideId: string; riderId: string };
   Chat: { rideId: string; receiverId: string };

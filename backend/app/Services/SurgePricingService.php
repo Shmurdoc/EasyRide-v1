@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\PeakHour;
+use App\Models\SurgeZone;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SurgePricingService
 {
@@ -13,19 +16,50 @@ class SurgePricingService
 
     private const DEFAULT_SURGE = 1.0;
 
-    private const MAX_SURGE = 3.0;
+    private const MAX_SURGE = 2.5;
 
-    public function getCurrentSurge(float $lat, float $lng, string $category = 'standard'): float
+    public function getCurrentSurge(float $lat, float $lng, string $category = 'standard', ?string $tenantId = null): float
     {
-        $zone = $this->getZone($lat, $lng);
-        $cacheKey = self::CACHE_PREFIX.$zone.':'.$category;
+        $cacheKey = self::CACHE_PREFIX . $lat . ':' . $lng . ':' . $category . ':' . ($tenantId ?? 'global');
 
-        return Cache::remember($cacheKey, 300, function () use ($lat, $lng, $zone, $category) {
-            return $this->calculateSurge($lat, $lng, $zone, $category);
+        return (float) Cache::remember($cacheKey, 300, function () use ($lat, $lng, $category, $tenantId) {
+            return $this->calculateSurge($lat, $lng, $category, $tenantId);
         });
     }
 
-    private function calculateSurge(float $lat, float $lng, string $zone, string $category): float
+    public function getSurgeBreakdown(float $lat, float $lng, string $category = 'standard', ?string $tenantId = null): array
+    {
+        $demandSupplyMultiplier = $this->getDemandSupplyMultiplier($lat, $lng);
+        $peakHourMultiplier = $this->getPeakHourMultiplier($tenantId);
+        $zoneMultiplier = $this->getZoneMultiplier($lat, $lng, $tenantId);
+        $combinedMultiplier = min($demandSupplyMultiplier * $peakHourMultiplier * $zoneMultiplier, self::MAX_SURGE);
+
+        Log::info('Surge pricing breakdown', [
+            'lat' => $lat,
+            'lng' => $lng,
+            'tenant_id' => $tenantId,
+            'demand_supply' => $demandSupplyMultiplier,
+            'peak_hour' => $peakHourMultiplier,
+            'zone' => $zoneMultiplier,
+            'combined' => $combinedMultiplier,
+        ]);
+
+        return [
+            'demand_supply_multiplier' => $demandSupplyMultiplier,
+            'peak_hour_multiplier' => $peakHourMultiplier,
+            'zone_multiplier' => $zoneMultiplier,
+            'combined_multiplier' => round($combinedMultiplier, 2),
+        ];
+    }
+
+    private function calculateSurge(float $lat, float $lng, string $category, ?string $tenantId = null): float
+    {
+        $breakdown = $this->getSurgeBreakdown($lat, $lng, $category, $tenantId);
+
+        return $breakdown['combined_multiplier'];
+    }
+
+    private function getDemandSupplyMultiplier(float $lat, float $lng): float
     {
         $demand = $this->getDemandCount($lat, $lng, $radiusKm = 5);
         $supply = $this->getSupplyCount($lat, $lng, $radiusKm = 5);
@@ -56,6 +90,48 @@ class SurgePricingService
         }
 
         return self::MAX_SURGE;
+    }
+
+    private function getPeakHourMultiplier(?string $tenantId = null): float
+    {
+        $now = now();
+        $dayOfWeek = (int) $now->dayOfWeek;
+        $currentTime = $now->format('H:i:s');
+
+        $query = PeakHour::active()
+            ->forDay($dayOfWeek)
+            ->where('start_time', '<=', $currentTime)
+            ->where('end_time', '>=', $currentTime);
+
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        $peakHour = $query->first();
+
+        return $peakHour ? (float) $peakHour->multiplier : 1.0;
+    }
+
+    private function getZoneMultiplier(float $lat, float $lng, ?string $tenantId = null): float
+    {
+        $query = SurgeZone::active();
+
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        $surgeZones = $query->get();
+
+        foreach ($surgeZones as $zone) {
+            $distance = $this->haversine($lat, $lng, (float) $zone->center_lat, (float) $zone->center_lng);
+            $radiusKm = $zone->radius_meters / 1000;
+
+            if ($distance <= $radiusKm) {
+                return (float) $zone->multiplier;
+            }
+        }
+
+        return 1.0;
     }
 
     private function getDemandCount(float $lat, float $lng, float $radiusKm): int
@@ -117,12 +193,12 @@ class SurgePricingService
     public function setManualSurge(string $zone, float $multiplier): void
     {
         $multiplier = max(1.0, min(self::MAX_SURGE, $multiplier));
-        Cache::put(self::CACHE_PREFIX.$zone.':manual', $multiplier, 3600);
+        Cache::put(self::CACHE_PREFIX . $zone . ':manual', $multiplier, 3600);
     }
 
     public function clearSurge(string $zone): void
     {
-        Cache::forget(self::CACHE_PREFIX.$zone.':manual');
-        Cache::forget(self::CACHE_PREFIX.$zone);
+        Cache::forget(self::CACHE_PREFIX . $zone . ':manual');
+        Cache::forget(self::CACHE_PREFIX . $zone);
     }
 }

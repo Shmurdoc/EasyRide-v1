@@ -8,7 +8,7 @@ use App\Events\RideAccepted;
 use App\Events\RideCancelled;
 use App\Events\RideCompleted;
 use App\Events\RideStarted;
-use App\Services\Notification\PushNotificationService;
+use App\Services\PushNotificationService;
 use Illuminate\Events\Dispatcher;
 
 class SendPushNotification

@@ -47,4 +47,18 @@ export const foodDelivery = {
 
   updateOrderStatus: (id: string, status: string) =>
     api.post<FoodOrder>(`/driver/food/orders/${id}/status`, { status }),
+
+  adminRestaurants: (params?: Record<string, string>) =>
+    api.get<Restaurant[]>('/admin/food/restaurants', params),
+
+  adminCreateRestaurant: (data: {
+    name: string; address: string; delivery_fee: number;
+    minimum_order: number; is_active: boolean;
+  }) => api.post<Restaurant>('/admin/food/restaurants', data),
+
+  adminUpdateRestaurant: (id: string, data: Record<string, unknown>) =>
+    api.put<Restaurant>(`/admin/food/restaurants/${id}`, data),
+
+  adminOrders: (params?: Record<string, string>) =>
+    api.get<FoodOrder[]>('/admin/food/orders', params),
 };

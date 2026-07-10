@@ -25,7 +25,7 @@ class DriverProfile extends Model
     {
         return [
             'license_expiry' => 'date',
-            'date_of_birth' => 'date',
+            'date_of_birth' => 'encrypted',
             'is_verified' => 'boolean',
             'is_approved' => 'boolean',
             'approved_at' => 'datetime',

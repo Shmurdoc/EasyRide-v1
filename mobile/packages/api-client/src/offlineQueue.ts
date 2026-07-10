@@ -1,4 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+let AsyncStorage: any = null;
+try {
+  AsyncStorage = require('@react-native-async-storage/async-storage').default;
+} catch {}
 
 const QUEUE_KEY = '@easyryde/offline_queue';
 
@@ -15,8 +18,11 @@ class OfflineQueue {
   private queue: QueuedRequest[] = [];
 
   async init(): Promise<void> {
-    const stored = await AsyncStorage.getItem(QUEUE_KEY);
-    if (stored) this.queue = JSON.parse(stored);
+    if (!AsyncStorage) return;
+    try {
+      const stored = await AsyncStorage.getItem(QUEUE_KEY);
+      if (stored) this.queue = JSON.parse(stored);
+    } catch {}
   }
 
   async enqueue(request: Omit<QueuedRequest, 'id' | 'timestamp' | 'retryCount'>): Promise<void> {
@@ -44,12 +50,18 @@ class OfflineQueue {
   }
 
   private async persist(): Promise<void> {
-    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(this.queue));
+    if (!AsyncStorage) return;
+    try {
+      await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(this.queue));
+    } catch {}
   }
 
   async clear(): Promise<void> {
     this.queue = [];
-    await AsyncStorage.removeItem(QUEUE_KEY);
+    if (!AsyncStorage) return;
+    try {
+      await AsyncStorage.removeItem(QUEUE_KEY);
+    } catch {}
   }
 }
 

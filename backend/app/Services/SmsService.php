@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SmsService
 {
+    private const RATE_LIMIT_MAX = 5;
+    private const RATE_LIMIT_TTL = 3600;
+
     private const TWILIO_API_URL = 'https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json';
 
     public function __construct(
@@ -19,6 +23,17 @@ class SmsService
 
     public function send(string $to, string $message): bool
     {
+        $rateKey = "sms_rate:{$to}";
+        $count = Cache::increment($rateKey);
+        if ($count === 1) {
+            Cache::put($rateKey, 1, self::RATE_LIMIT_TTL);
+        }
+        if ($count > self::RATE_LIMIT_MAX) {
+            Log::warning('SMS rate limit exceeded', ['to' => $to]);
+
+            return false;
+        }
+
         try {
             $url = sprintf(self::TWILIO_API_URL, $this->accountSid);
 
@@ -31,6 +46,8 @@ class SmsService
                 ]);
 
             if ($response->successful()) {
+                Log::info('SMS sent', ['to' => $to]);
+
                 return true;
             }
 

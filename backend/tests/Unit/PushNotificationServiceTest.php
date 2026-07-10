@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\User;
-use App\Services\Notification\PushNotificationService;
+use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

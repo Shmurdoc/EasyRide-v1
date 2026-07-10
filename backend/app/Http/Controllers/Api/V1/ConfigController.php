@@ -22,10 +22,10 @@ class ConfigController extends Controller
                     'currency_symbol' => 'R',
                 ],
                 'ride_categories' => [
-                    ['id' => 'economy', 'name' => 'Economy', 'base_fare' => 15.00, 'per_km' => 8.00, 'per_min' => 1.50],
                     ['id' => 'standard', 'name' => 'Standard', 'base_fare' => 25.00, 'per_km' => 12.00, 'per_min' => 2.00],
                     ['id' => 'premium', 'name' => 'Premium', 'base_fare' => 40.00, 'per_km' => 18.00, 'per_min' => 3.00],
-                    ['id' => 'xl', 'name' => 'XL', 'base_fare' => 35.00, 'per_km' => 15.00, 'per_min' => 2.50],
+                    ['id' => 'minivan', 'name' => 'Minivan', 'base_fare' => 35.00, 'per_km' => 15.00, 'per_min' => 2.50],
+                    ['id' => 'pets', 'name' => 'Pets', 'base_fare' => 30.00, 'per_km' => 14.00, 'per_min' => 2.00],
                     ['id' => 'delivery', 'name' => 'Delivery', 'base_fare' => 20.00, 'per_km' => 10.00, 'per_min' => 2.00],
                 ],
                 'payment_methods' => [

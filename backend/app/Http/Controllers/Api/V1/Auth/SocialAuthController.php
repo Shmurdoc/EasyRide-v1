@@ -38,7 +38,7 @@ class SocialAuthController extends Controller
             return ApiResponse::error('Failed to authenticate with '.$provider.'.', 400);
         }
 
-        $user = User::where('email', $socialUser->getEmail())->first();
+        $user = User::where('email_hash', User::hashPiiField($socialUser->getEmail() ?? ''))->first();
 
         if (! $user) {
             $user = User::create([

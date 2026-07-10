@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UpdateSettingsRequest;
 use App\Models\AdminAuditLog;
 use App\Models\DriverPayout;
+use App\Models\PoolRide;
 use App\Models\Ride;
 use App\Models\SystemSetting;
 use App\Models\User;
@@ -28,6 +29,14 @@ class AdminController extends Controller
         $completedToday = Ride::where('tenant_id', $tenantId)->whereDate('completed_at', today())->count();
         $revenueToday = Ride::where('tenant_id', $tenantId)->where('status', 'completed')->whereDate('completed_at', today())->sum('total_fare');
 
+        $activePoolRides = PoolRide::whereHas('ride', fn ($q) => $q->where('tenant_id', $tenantId))
+            ->whereIn('status', ['matching', 'in_progress'])
+            ->count();
+
+        $totalPoolPassengers = PoolRide::whereHas('ride', fn ($q) => $q->where('tenant_id', $tenantId))
+            ->whereIn('status', ['matching', 'in_progress'])
+            ->sum('current_passengers');
+
         return response()->json([
             'total_users' => $totalUsers,
             'total_drivers' => $totalDrivers,
@@ -37,6 +46,8 @@ class AdminController extends Controller
             'rides_today' => $ridesToday,
             'completed_today' => $completedToday,
             'revenue_today' => (float) $revenueToday,
+            'active_pool_rides' => $activePoolRides,
+            'total_pool_passengers' => (int) $totalPoolPassengers,
         ]);
     }
 
@@ -49,9 +60,7 @@ class AdminController extends Controller
             ->when($request->role, fn ($q, $v) => $q->where('role', $v))
             ->when($request->is_active, fn ($q, $v) => $q->where('is_active', filter_var($v, FILTER_VALIDATE_BOOLEAN)))
             ->when($request->search, fn ($q, $v) => $q->where(function ($qq) use ($v) {
-                $qq->where('name', 'like', "%{$v}%")
-                    ->orWhere('email', 'like', "%{$v}%")
-                    ->orWhere('phone_number', 'like', "%{$v}%");
+                $qq->where('name', 'like', "%{$v}%");
             }))
             ->with(['tenant', 'driverProfile', 'vehicle'])
             ->latest()
@@ -86,8 +95,7 @@ class AdminController extends Controller
             ->when($request->is_verified, fn ($q, $v) => $q->whereHas('driverProfile', fn ($qp) => $qp->where('is_verified', filter_var($v, FILTER_VALIDATE_BOOLEAN))))
             ->when($request->is_online, fn ($q, $v) => $q->where('is_online', filter_var($v, FILTER_VALIDATE_BOOLEAN)))
             ->when($request->search, fn ($q, $v) => $q->where(function ($qq) use ($v) {
-                $qq->where('name', 'like', "%{$v}%")
-                    ->orWhere('email', 'like', "%{$v}%");
+                $qq->where('name', 'like', "%{$v}%");
             }))
             ->with(['driverProfile', 'vehicle', 'tenant'])
             ->latest()
@@ -96,10 +104,14 @@ class AdminController extends Controller
         return response()->json($drivers);
     }
 
-    public function approveDriver(User $driver): JsonResponse
+    public function approveDriver(Request $request, User $driver): JsonResponse
     {
         if (! $driver->hasRole('driver')) {
             return response()->json(['message' => 'User is not a driver.'], 422);
+        }
+
+        if ($driver->tenant_id !== $request->user()->tenant_id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
         $profile = $driver->driverProfile;

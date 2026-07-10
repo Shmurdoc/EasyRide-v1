@@ -144,6 +144,14 @@ class PushNotificationService
         return $this->sendToMultipleUsers($userIds, $notification, $data);
     }
 
+    public function send(User $user, string $title, string $body, array $data = []): array
+    {
+        return $this->sendToDevice($user, [
+            'title' => $title,
+            'body' => $body,
+        ], $data);
+    }
+
     public function registerToken(User $user, string $token, string $platform = 'android'): PushToken
     {
         return PushToken::updateOrCreate(

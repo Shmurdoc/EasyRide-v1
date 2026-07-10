@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FlatList, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
-import { View } from 'react-native';
+import { FlatList, TouchableOpacity, Alert, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { foodDelivery, COLORS, GRADIENTS, SPACING, RADIUS } from '@easyryde/shared';
+import { foodDelivery, COLORS, GRADIENTS, SPACING } from '@easyryde/shared';
 import { Typography, GlowButton, GlassCard, GradientText, Badge, LoadingOverlay } from '@easyryde/shared';
 import type { Restaurant, MenuItem, CartItem, RiderNav, RiderRoute } from '@easyryde/shared';
 
@@ -11,10 +10,13 @@ export default function RestaurantMenuScreen({ route, navigation }: { route: Rid
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => { loadMenu(); }, [restaurantId]);
 
-  async function loadMenu() { try { const data = await foodDelivery.restaurant(restaurantId); setRestaurant(data); } catch {} finally { setLoading(false); } }
+  async function loadMenu() { try { const data = await foodDelivery.restaurant(restaurantId); setRestaurant(data); } catch (err: any) { Alert.alert('Error', err?.message || 'Failed to load menu'); } finally { setLoading(false); setRefreshing(false); } }
+
+  const onRefresh = React.useCallback(() => { setRefreshing(true); loadMenu(); }, [restaurantId]);
 
   const addToCart = (item: MenuItem) => setCart((prev) => { const e = prev.find((c) => c.menuItem.id === item.id); return e ? prev.map((c) => c.menuItem.id === item.id ? { ...c, quantity: c.quantity + 1 } : c) : [...prev, { menuItem: item, quantity: 1 }]; });
   const removeFromCart = (itemId: string) => setCart((prev) => { const e = prev.find((c) => c.menuItem.id === itemId); return e && e.quantity > 1 ? prev.map((c) => c.menuItem.id === itemId ? { ...c, quantity: c.quantity - 1 } : c) : prev.filter((c) => c.menuItem.id !== itemId); });
@@ -29,12 +31,15 @@ export default function RestaurantMenuScreen({ route, navigation }: { route: Rid
         data={restaurant.categories || []}
         keyExtractor={(item: any) => item.id}
         contentContainerStyle={{ padding: SPACING.base }}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
         ListHeaderComponent={
           <View>
             <Typography variant="h2" style={{ marginBottom: SPACING.sm }}>{restaurant.name}</Typography>
             <Typography variant="xs" color={COLORS.textMuted} style={{ marginBottom: SPACING.base }}>{restaurant.cuisine_type || 'Restaurant'} · {restaurant.estimated_delivery_minutes}min</Typography>
           </View>
         }
+        ListEmptyComponent={<Typography variant="body" color={COLORS.textMuted} style={{ textAlign: 'center', marginTop: 40 }}>No menu available</Typography>}
         renderItem={({ item: category }: any) => (
           <View style={{ marginBottom: SPACING.lg }}>
             <GradientText colors={GRADIENTS.primary} style={{ fontSize: 20, fontWeight: '600', marginBottom: SPACING.md }}>

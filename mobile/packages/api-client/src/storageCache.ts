@@ -1,4 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+let AsyncStorage: any = null;
+try {
+  AsyncStorage = require('@react-native-async-storage/async-storage').default;
+} catch {}
 
 const CACHE_PREFIX = '@easyryde/cache/';
 
@@ -10,6 +13,7 @@ interface CacheEntry<T> {
 
 export class StorageCache {
   async get<T>(key: string): Promise<T | null> {
+    if (!AsyncStorage) return null;
     try {
       const raw = await AsyncStorage.getItem(CACHE_PREFIX + key);
       if (!raw) return null;
@@ -25,18 +29,27 @@ export class StorageCache {
   }
 
   async set<T>(key: string, data: T, ttlMs: number = 900000): Promise<void> {
-    const entry: CacheEntry<T> = { data, timestamp: Date.now(), ttl: ttlMs };
-    await AsyncStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
+    if (!AsyncStorage) return;
+    try {
+      const entry: CacheEntry<T> = { data, timestamp: Date.now(), ttl: ttlMs };
+      await AsyncStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
+    } catch {}
   }
 
   async remove(key: string): Promise<void> {
-    await AsyncStorage.removeItem(CACHE_PREFIX + key);
+    if (!AsyncStorage) return;
+    try {
+      await AsyncStorage.removeItem(CACHE_PREFIX + key);
+    } catch {}
   }
 
   async clear(): Promise<void> {
-    const keys = await AsyncStorage.getAllKeys();
-    const cacheKeys = keys.filter((k) => k.startsWith(CACHE_PREFIX));
-    await AsyncStorage.multiRemove(cacheKeys);
+    if (!AsyncStorage) return;
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const cacheKeys = keys.filter((k) => k.startsWith(CACHE_PREFIX));
+      await AsyncStorage.multiRemove(cacheKeys);
+    } catch {}
   }
 }
 

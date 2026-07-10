@@ -16,7 +16,7 @@ return new class extends Migration
             $table->decimal('value', 10, 2);
             $table->decimal('min_ride_amount', 10, 2)->default(0);
             $table->integer('max_uses')->nullable();
-            $table->integer('uses_count')->default(0);
+            $table->integer('used_count')->default(0);
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('expires_at')->nullable();
             $table->boolean('is_active')->default(true);
