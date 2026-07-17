@@ -13,7 +13,9 @@ const MENU_ITEMS = [
   { icon: 'card-outline' as const, label: 'Payment Methods', route: 'Payment' as const, color: COLORS.primary },
   { icon: 'location-outline' as const, label: 'Saved Places', route: 'BookRide' as const, color: COLORS.success },
   { icon: 'time-outline' as const, label: 'Ride History', route: 'RideHistory' as const, color: COLORS.primaryLight },
-  { icon: 'help-circle-outline' as const, label: 'Help & Support', route: 'help' as const, color: COLORS.warning },
+  { icon: 'pricetag-outline' as const, label: 'Promo Codes', route: 'PromoCode' as const, color: COLORS.warning },
+  { icon: 'notifications-outline' as const, label: 'Notifications', route: 'Notification' as const, color: COLORS.primaryLight },
+  { icon: 'help-circle-outline' as const, label: 'Help & Support', route: 'Support' as const, color: COLORS.warning },
   { icon: 'settings-outline' as const, label: 'Settings', route: 'settings' as const, color: COLORS.textMuted },
   { icon: 'document-text-outline' as const, label: 'Legal', route: 'legal' as const, color: COLORS.textDim },
 ];
@@ -33,8 +35,12 @@ export default function ProfileScreen({ navigation }: { navigation: RiderNav }) 
     : 'N/A';
 
   const handleMenuPress = (item: typeof MENU_ITEMS[number]) => {
-    if (item.route === 'help') {
-      setShowHelpModal(true);
+    if (item.route === 'Support') {
+      navigation.navigate('Support');
+    } else if (item.route === 'PromoCode') {
+      navigation.navigate('PromoCode');
+    } else if (item.route === 'Notification') {
+      navigation.navigate('Notification');
     } else if (item.route === 'settings') {
       Alert.alert('Settings', 'Settings will be available in a future update.');
     } else if (item.route === 'legal') {

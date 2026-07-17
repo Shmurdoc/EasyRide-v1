@@ -21,6 +21,9 @@ import RideDetailScreen from './screens/RideDetailScreen';
 import ChatScreen from './screens/ChatScreen';
 import WalletScreen from './screens/WalletScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import PromoCodeScreen from './screens/PromoCodeScreen';
+import SupportScreen from './screens/SupportScreen';
+import NotificationScreen from './screens/NotificationScreen';
 import RestaurantListScreen from './screens/RestaurantListScreen';
 import RestaurantMenuScreen from './screens/RestaurantMenuScreen';
 import FoodCheckoutScreen from './screens/FoodCheckoutScreen';
@@ -115,6 +118,9 @@ function MainNavigator() {
       <MainStack.Screen name="RideDetail" component={RideDetailScreen} />
       <MainStack.Screen name="Chat" component={ChatScreen} />
       <MainStack.Screen name="Wallet" component={WalletScreen} />
+      <MainStack.Screen name="PromoCode" component={PromoCodeScreen} />
+      <MainStack.Screen name="Support" component={SupportScreen} />
+      <MainStack.Screen name="Notification" component={NotificationScreen} />
       <MainStack.Screen name="RestaurantList" component={RestaurantListScreen} />
       <MainStack.Screen name="RestaurantMenu" component={RestaurantMenuScreen} />
       <MainStack.Screen name="FoodCheckout" component={FoodCheckoutScreen} />

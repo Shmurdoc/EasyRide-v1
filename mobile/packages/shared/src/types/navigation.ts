@@ -31,6 +31,9 @@ export type RiderStackParamList = {
   FoodOrderTracking: { orderId: string };
   Wallet: undefined;
   Rating: { rideId: string; driverName?: string; driverAvatar?: string };
+  PromoCode: undefined;
+  Support: undefined;
+  Notification: undefined;
 };
 
 // Driver App Navigation

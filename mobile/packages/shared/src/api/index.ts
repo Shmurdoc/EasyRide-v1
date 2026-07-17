@@ -131,6 +131,12 @@ export const notifications = {
   list: () =>
     api.get<PaginatedResponse<Notification>>('/notifications/'),
 
+  markAsRead: (id: string) =>
+    api.post(`/notifications/${id}/read`),
+
+  markAllAsRead: () =>
+    api.post('/notifications/read-all'),
+
   unreadCount: () =>
     api.get<{ count: number }>('/notifications/unread-count'),
 

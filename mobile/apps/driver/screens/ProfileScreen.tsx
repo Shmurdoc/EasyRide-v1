@@ -40,7 +40,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
     { icon: 'car', label: 'Vehicle Details', onPress: () => setVehicleModal(true) },
     { icon: 'document-text', label: 'Documents', badge: 'Manage', onPress: () => navigation.navigate('Documents') },
     { icon: 'notifications', label: 'Notifications', onPress: () => {} },
-    { icon: 'help-circle', label: 'Help & Support', onPress: () => Alert.alert('Help & Support', 'Contact us at support@easyryde.com') },
+    { icon: 'help-circle', label: 'Help & Support', onPress: () => navigation.navigate('Support') },
   ];
 
   return (
