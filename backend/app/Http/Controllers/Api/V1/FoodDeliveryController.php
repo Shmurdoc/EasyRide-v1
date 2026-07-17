@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\Food\FoodOrderCancelRequest;
 use App\Http\Requests\Api\V1\Food\FoodOrderCreateRequest;
 use App\Http\Requests\Api\V1\Food\FoodOrderRateRequest;
 use App\Http\Requests\Api\V1\Food\FoodUpdateStatusRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\FoodOrder;
 use App\Models\Restaurant;
 use App\Models\User;
@@ -41,7 +42,7 @@ class FoodDeliveryController extends Controller
     public function show(Request $request, Restaurant $restaurant): JsonResponse
     {
         if ($restaurant->tenant_id !== $request->user()->tenant_id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         return response()->json(
@@ -54,7 +55,7 @@ class FoodDeliveryController extends Controller
     public function menu(Request $request, Restaurant $restaurant): JsonResponse
     {
         if ($restaurant->tenant_id !== $request->user()->tenant_id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $menu = $this->restaurantService->getRestaurantMenu($restaurant);
@@ -81,7 +82,7 @@ class FoodDeliveryController extends Controller
 
             return response()->json($order, 201);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Order Failed', $e->getMessage());
         }
     }
 
@@ -91,7 +92,7 @@ class FoodDeliveryController extends Controller
             && $order->driver_id !== $request->user()->id
             && ! $request->user()->hasAnyRole(['admin', 'super-admin'])
         ) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         return response()->json(
@@ -112,7 +113,7 @@ class FoodDeliveryController extends Controller
     public function cancelOrder(FoodOrderCancelRequest $request, FoodOrder $order): JsonResponse
     {
         if ($order->customer_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         try {
@@ -124,14 +125,14 @@ class FoodDeliveryController extends Controller
 
             return response()->json($order);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Cancel Failed', $e->getMessage());
         }
     }
 
     public function rateOrder(FoodOrderRateRequest $request, FoodOrder $order): JsonResponse
     {
         if ($order->customer_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         try {
@@ -143,7 +144,7 @@ class FoodDeliveryController extends Controller
 
             return response()->json($order);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Rating Failed', $e->getMessage());
         }
     }
 
@@ -174,7 +175,7 @@ class FoodDeliveryController extends Controller
 
             return response()->json($order);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Accept Failed', $e->getMessage());
         }
     }
 
@@ -205,7 +206,7 @@ class FoodDeliveryController extends Controller
 
             return response()->json($order);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Assignment Failed', $e->getMessage());
         }
     }
 
@@ -220,7 +221,7 @@ class FoodDeliveryController extends Controller
 
             return response()->json($order);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Status Update Failed', $e->getMessage());
         }
     }
 }

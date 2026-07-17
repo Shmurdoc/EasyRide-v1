@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\RideStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Chat\ChatSendRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\Ride;
 use App\Services\ChatService;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,7 @@ class ChatController extends Controller
     public function messages(Request $request, Ride $ride): JsonResponse
     {
         if ($ride->rider_id !== $request->user()->id && $ride->driver_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         $messages = $this->chatService->getMessages(
@@ -30,18 +31,18 @@ class ChatController extends Controller
             $request->before,
         );
 
-        return response()->json(['data' => $messages]);
+        return ApiResponse::success($messages);
     }
 
     public function send(ChatSendRequest $request, Ride $ride): JsonResponse
     {
         if ($ride->rider_id !== $request->user()->id && $ride->driver_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         $status = $ride->status instanceof RideStatus ? $ride->status->value : $ride->status;
         if (! in_array($status, [RideStatus::ACCEPTED->value, RideStatus::ARRIVED->value, RideStatus::IN_PROGRESS->value])) {
-            return response()->json(['message' => 'Chat is only available during active rides.'], 422);
+            return ApiResponse::apiError(422, 'Invalid Ride Status', 'Chat is only available during active rides.');
         }
 
         $validated = $request->validated();
@@ -49,9 +50,9 @@ class ChatController extends Controller
         try {
             $message = $this->chatService->sendMessage($ride, $request->user(), $validated['message']);
 
-            return response()->json(['message' => $message], 201);
+            return ApiResponse::success($message, 'Message sent.', 201);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Send Failed', $e->getMessage());
         }
     }
 
@@ -66,6 +67,6 @@ class ChatController extends Controller
     {
         $this->chatService->markAsRead($ride, $request->user());
 
-        return response()->json(['message' => 'Messages marked as read.']);
+        return ApiResponse::success(null, 'Messages marked as read.');
     }
 }

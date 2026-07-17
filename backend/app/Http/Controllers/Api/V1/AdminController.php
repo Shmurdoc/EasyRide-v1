@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UpdateSettingsRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\AdminAuditLog;
 use App\Models\DriverPayout;
 use App\Models\PoolRide;
@@ -107,17 +108,17 @@ class AdminController extends Controller
     public function approveDriver(Request $request, User $driver): JsonResponse
     {
         if (! $driver->hasRole('driver')) {
-            return response()->json(['message' => 'User is not a driver.'], 422);
+            return ApiResponse::apiError(422, 'Invalid User', 'User is not a driver.');
         }
 
         if ($driver->tenant_id !== $request->user()->tenant_id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $profile = $driver->driverProfile;
 
         if (! $profile) {
-            return response()->json(['message' => 'Driver has no profile.'], 422);
+            return ApiResponse::apiError(422, 'No Profile', 'Driver has no profile.');
         }
 
         $profile->update([

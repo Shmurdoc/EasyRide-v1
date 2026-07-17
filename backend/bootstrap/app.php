@@ -47,6 +47,50 @@ return Application::configure(basePath: dirname(__DIR__))
                     ? Limit::perMinute(60)->by($request->user()->id)
                     : Limit::perMinute(30)->by($request->ip());
             });
+
+            RateLimiter::for('promo-apply', function (Request $request) {
+                return Limit::perMinute(10)->by($request->ip());
+            });
+
+            RateLimiter::for('ride-create', function (Request $request) {
+                return Limit::perMinute(5)->by($request->user()?->id ?? $request->ip());
+            });
+
+            RateLimiter::for('ride-cancel', function (Request $request) {
+                return Limit::perMinute(5)->by($request->user()?->id ?? $request->ip());
+            });
+
+            RateLimiter::for('driver-location', function (Request $request) {
+                return Limit::perMinute(30)->by($request->user()?->id ?? $request->ip());
+            });
+
+            RateLimiter::for('payments', function (Request $request) {
+                return Limit::perMinute(10)->by($request->user()?->id ?? $request->ip());
+            });
+
+            RateLimiter::for('wallet-deposit', function (Request $request) {
+                return Limit::perMinute(5)->by($request->user()?->id ?? $request->ip());
+            });
+
+            RateLimiter::for('wallet-withdraw', function (Request $request) {
+                return Limit::perMinute(5)->by($request->user()?->id ?? $request->ip());
+            });
+
+            RateLimiter::for('promo-crud', function (Request $request) {
+                return Limit::perMinute(30)->by($request->user()?->id ?? $request->ip());
+            });
+
+            RateLimiter::for('sos', function (Request $request) {
+                return Limit::perMinute(3)->by($request->user()?->id ?? $request->ip());
+            });
+
+            RateLimiter::for('chat', function (Request $request) {
+                return Limit::perMinute(60)->by($request->user()?->id ?? $request->ip());
+            });
+
+            RateLimiter::for('social-auth', function (Request $request) {
+                return Limit::perMinute(5)->by($request->ip());
+            });
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

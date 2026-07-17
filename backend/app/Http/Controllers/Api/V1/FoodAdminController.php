@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\Food\MenuItemStoreRequest;
 use App\Http\Requests\Api\V1\Food\MenuItemUpdateRequest;
 use App\Http\Requests\Api\V1\Food\RestaurantStoreRequest;
 use App\Http\Requests\Api\V1\Food\RestaurantUpdateRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\FoodOrder;
 use App\Models\MenuItem;
 use App\Models\Restaurant;
@@ -46,7 +47,7 @@ class FoodAdminController extends Controller
     public function updateRestaurant(RestaurantUpdateRequest $request, Restaurant $restaurant): JsonResponse
     {
         if ($restaurant->tenant_id !== $request->user()->tenant_id && ! $request->user()->hasAnyRole(['super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $validated = $request->validated();
@@ -59,7 +60,7 @@ class FoodAdminController extends Controller
     public function storeCategory(CategoryStoreRequest $request, Restaurant $restaurant): JsonResponse
     {
         if ($restaurant->tenant_id !== $request->user()->tenant_id && ! $request->user()->hasAnyRole(['super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $validated = $request->validated();
@@ -75,7 +76,7 @@ class FoodAdminController extends Controller
     public function storeMenuItem(MenuItemStoreRequest $request, Restaurant $restaurant): JsonResponse
     {
         if ($restaurant->tenant_id !== $request->user()->tenant_id && ! $request->user()->hasAnyRole(['super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $validated = $request->validated();
@@ -91,7 +92,7 @@ class FoodAdminController extends Controller
     public function updateMenuItem(MenuItemUpdateRequest $request, MenuItem $item): JsonResponse
     {
         if ($item->restaurant->tenant_id !== $request->user()->tenant_id && ! $request->user()->hasAnyRole(['super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $validated = $request->validated();
@@ -104,7 +105,7 @@ class FoodAdminController extends Controller
     public function destroyMenuItem(Request $request, MenuItem $item): JsonResponse
     {
         if ($item->restaurant->tenant_id !== $request->user()->tenant_id && ! $request->user()->hasAnyRole(['super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $item->delete();

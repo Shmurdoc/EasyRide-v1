@@ -44,10 +44,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // Health check endpoint
-    Route::get('health', HealthCheckController::class);
+    Route::get('health', HealthCheckController::class)->middleware('throttle:api');
 
     // Public config endpoint
-    Route::get('config', ConfigController::class);
+    Route::get('config', ConfigController::class)->middleware('throttle:api');
 
     // Public auth routes
     Route::prefix('auth')->group(function () {
@@ -55,15 +55,15 @@ Route::prefix('v1')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth-password');
         Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth-password');
-        Route::get('{provider}/redirect', [SocialAuthController::class, 'redirect']);
-        Route::get('{provider}/callback', [SocialAuthController::class, 'callback']);
+        Route::get('{provider}/redirect', [SocialAuthController::class, 'redirect'])->middleware('throttle:social-auth');
+        Route::get('{provider}/callback', [SocialAuthController::class, 'callback'])->middleware('throttle:social-auth');
     });
 
     // Public promo validation
     Route::post('promo-codes/validate', [PromoCodeController::class, 'validateCode'])->middleware('throttle:promo-apply');
 
     // Webhook routes (no auth)
-    Route::prefix('webhooks')->group(function () {
+    Route::prefix('webhooks')->middleware('throttle:api')->group(function () {
         Route::post('payfast', [PaymentController::class, 'payfastWebhook']);
         Route::get('payfast/return', [PaymentController::class, 'payfastReturn']);
         Route::post('ozow', [PaymentController::class, 'ozowWebhook']);
@@ -73,13 +73,13 @@ Route::prefix('v1')->group(function () {
         Route::post('stripe', [PaymentController::class, 'stripeWebhook']);
         Route::post('twilio', [PaymentController::class, 'twilioWebhook']);
         // PHBIMH Integration
-        Route::post('phbimh', [PhbimhWebhookController::class, 'handleWebhook'])->middleware('throttle:api');
+        Route::post('phbimh', [PhbimhWebhookController::class, 'handleWebhook']);
     });
 
     // Public discovery routes
-    Route::get('places/search', [PlaceController::class, 'search']);
-    Route::get('places/reverse', [PlaceController::class, 'reverse']);
-    Route::get('rides/fare-estimate', [RideController::class, 'fareEstimate']);
+    Route::get('places/search', [PlaceController::class, 'search'])->middleware('throttle:api');
+    Route::get('places/reverse', [PlaceController::class, 'reverse'])->middleware('throttle:api');
+    Route::get('rides/fare-estimate', [RideController::class, 'fareEstimate'])->middleware('throttle:api');
 
     // Authenticated routes
     Route::middleware('auth:sanctum')->group(function () {

@@ -11,6 +11,7 @@ use App\Http\Requests\Api\V1\Payment\CreateStripeIntentRequest;
 use App\Http\Requests\Api\V1\Payment\DisputeRequest;
 use App\Http\Requests\Api\V1\Payment\RefundRequest;
 use App\Http\Requests\Api\V1\ProcessPaymentRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\Dispute;
 use App\Models\Payment;
 use App\Models\Ride;
@@ -88,10 +89,10 @@ class PaymentController extends Controller
     {
         $user = request()->user();
         if ($payment->payer_id !== $user->id && $payment->payee_id !== $user->id && ! $user->hasRole('admin')) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
-        return response()->json(new PaymentResource($payment->load(['ride', 'payer', 'payee'])));
+        return ApiResponse::success(new PaymentResource($payment->load(['ride', 'payer', 'payee'])));
     }
 
     public function methods(): JsonResponse
@@ -104,16 +105,16 @@ class PaymentController extends Controller
     public function processRidePayment(ProcessPaymentRequest $request, Ride $ride): JsonResponse
     {
         if ($ride->rider_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         $status = $ride->status instanceof RideStatus ? $ride->status->value : $ride->status;
         if ($status !== RideStatus::COMPLETED->value) {
-            return response()->json(['message' => 'Ride is not completed.'], 422);
+            return ApiResponse::apiError(422, 'Invalid Ride Status', 'Ride is not completed.');
         }
 
         if ($ride->payment) {
-            return response()->json(['message' => 'Payment already processed.'], 422);
+            return ApiResponse::apiError(422, 'Payment Already Processed', 'Payment already processed.');
         }
 
         $velocity = $this->paymentService->checkPaymentVelocity(
@@ -122,10 +123,7 @@ class PaymentController extends Controller
         );
 
         if ($velocity !== null) {
-            return response()->json([
-                'message' => $velocity['message'],
-                'code' => $velocity['code'],
-            ], 429);
+            return ApiResponse::tooManyRequests($velocity['message']);
         }
 
         $validated = $request->validated();
@@ -134,21 +132,21 @@ class PaymentController extends Controller
         if ($method === 'wallet') {
             $payment = $this->escrowService->holdPayment($ride, 'wallet');
 
-            return response()->json(['payment' => $payment, 'message' => 'Payment processed via wallet.'], 201);
+            return ApiResponse::success(['payment' => $payment], 'Payment processed via wallet.', 201);
         }
 
         if ($method === 'cash') {
             $payment = $this->cashPaymentService->processCashPayment($ride);
 
-            return response()->json(['payment' => $payment, 'message' => 'Cash payment recorded.'], 201);
+            return ApiResponse::success(['payment' => $payment], 'Cash payment recorded.', 201);
         }
 
         try {
             $result = $this->paymentService->processPayment($ride, $method);
 
-            return response()->json(new PaymentResource($result->load(['ride', 'payer'])), 201);
+            return ApiResponse::success(new PaymentResource($result->load(['ride', 'payer'])), 'Payment processed.', 201);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Payment Failed', $e->getMessage());
         }
     }
 
@@ -317,15 +315,15 @@ class PaymentController extends Controller
         if (! empty($validated['ride_id'])) {
             $ride = Ride::findOrFail($validated['ride_id']);
             if ($ride->rider_id !== $request->user()->id) {
-                return response()->json(['message' => 'Unauthorized.'], 403);
+                return ApiResponse::forbidden();
             }
             if ($amount !== (float) $ride->total_fare) {
-                return response()->json(['message' => 'Amount must match ride total fare.'], 422);
+                return ApiResponse::apiError(422, 'Amount Mismatch', 'Amount must match ride total fare.');
             }
         } else {
             $maxAmount = config('app.max_stripe_amount', 50000);
             if ($amount > $maxAmount) {
-                return response()->json(['message' => 'Amount exceeds maximum of R'.$maxAmount.'.'], 422);
+                return ApiResponse::apiError(422, 'Amount Exceeded', 'Amount exceeds maximum of R'.$maxAmount.'.');
             }
         }
 
@@ -334,7 +332,7 @@ class PaymentController extends Controller
             $validated['currency'] ?? 'zar',
         );
 
-        return response()->json($intent);
+        return ApiResponse::success($intent);
     }
 
     public function confirmStripePayment(ConfirmStripePaymentRequest $request): JsonResponse
@@ -343,7 +341,7 @@ class PaymentController extends Controller
 
         $result = $this->stripeService->confirmPayment($validated['payment_intent_id']);
 
-        return response()->json($result);
+        return ApiResponse::success($result);
     }
 
     public function refund(RefundRequest $request, Payment $payment): JsonResponse
@@ -351,7 +349,7 @@ class PaymentController extends Controller
         $user = $request->user();
 
         if ($payment->payer_id !== $user->id && $payment->payee_id !== $user->id && ! $user->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         try {
@@ -362,27 +360,27 @@ class PaymentController extends Controller
             );
 
             if (! $result['success']) {
-                return response()->json($result, 422);
+                return ApiResponse::apiError(422, 'Refund Failed', $result['message'] ?? 'Refund could not be processed.');
             }
 
-            return response()->json($result);
+            return ApiResponse::success($result);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Refund Failed', $e->getMessage());
         }
     }
 
     public function dispute(DisputeRequest $request, Payment $payment): JsonResponse
     {
         if ($payment->payer_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         if (! $this->escrowService->isWithinDisputeWindow($payment->ride)) {
-            return response()->json(['message' => 'Dispute window has expired (24 hours after ride completion).'], 422);
+            return ApiResponse::apiError(422, 'Dispute Window Expired', 'Dispute window has expired (24 hours after ride completion).');
         }
 
         if ($payment->dispute) {
-            return response()->json(['message' => 'A dispute already exists for this payment.'], 422);
+            return ApiResponse::apiError(422, 'Dispute Exists', 'A dispute already exists for this payment.');
         }
 
         $validated = $request->validated();
@@ -397,6 +395,6 @@ class PaymentController extends Controller
 
         $this->escrowService->holdPendingFundsForDispute($payment);
 
-        return response()->json(['message' => 'Dispute raised successfully.'], 201);
+        return ApiResponse::success(null, 'Dispute raised successfully.', 201);
     }
 }

@@ -56,9 +56,7 @@ class AuthController extends Controller
         if ($user && $user->locked_until && $user->locked_until->isFuture()) {
             $minutesRemaining = (int) ceil($user->locked_until->diffInSeconds(now()) / 60);
 
-            return response()->json([
-                'message' => 'Account is locked due to too many failed attempts. Try again in '.$minutesRemaining.' minute(s).',
-            ], 423);
+            return ApiResponse::apiError(423, 'Account Locked', 'Account is locked due to too many failed attempts. Try again in '.$minutesRemaining.' minute(s).');
         }
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
@@ -110,7 +108,7 @@ class AuthController extends Controller
     public function createDriver(CreateDriverRequest $request): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $validated = $request->validated();
@@ -149,7 +147,7 @@ class AuthController extends Controller
 
         return $status === Password::RESET_LINK_SENT
             ? response()->json(['message' => __($status)])
-            : response()->json(['message' => __($status)], 400);
+            : ApiResponse::apiError(400, 'Reset Failed', __($status));
     }
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
@@ -171,6 +169,6 @@ class AuthController extends Controller
 
         return $status === Password::PASSWORD_RESET
             ? response()->json(['message' => __($status)])
-            : response()->json(['message' => __($status)], 400);
+            : ApiResponse::apiError(400, 'Reset Failed', __($status));
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Notification\UpdateNotificationPreferenceRequest;
 use App\Models\NotificationPreference;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,19 +22,9 @@ class NotificationPreferenceController extends Controller
         return response()->json(['data' => $preference]);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(UpdateNotificationPreferenceRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'push_enabled' => 'sometimes|boolean',
-            'email_enabled' => 'sometimes|boolean',
-            'sms_enabled' => 'sometimes|boolean',
-            'in_app_enabled' => 'sometimes|boolean',
-            'ride_updates' => 'sometimes|boolean',
-            'payment_updates' => 'sometimes|boolean',
-            'promotions' => 'sometimes|boolean',
-            'marketing' => 'sometimes|boolean',
-            'security_alerts' => 'sometimes|boolean',
-        ]);
+        $validated = $request->validated();
 
         $preference = NotificationPreference::firstOrCreate(
             ['user_id' => $request->user()->id],

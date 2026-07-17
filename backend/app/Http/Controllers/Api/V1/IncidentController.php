@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Incident\IncidentAssignRequest;
 use App\Http\Requests\Api\V1\Incident\IncidentResolveRequest;
 use App\Http\Requests\Api\V1\Incident\IncidentStoreRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\IncidentReport;
 use App\Services\IncidentReportingService;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +43,7 @@ class IncidentController extends Controller
     public function index(Request $request): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $incidents = $this->incidentService->getAllIncidents($request->status);
@@ -53,7 +54,7 @@ class IncidentController extends Controller
     public function show(Request $request, IncidentReport $incident): JsonResponse
     {
         if ($incident->reporter_id !== $request->user()->id && ! $request->user()->hasRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $incident = $this->incidentService->getIncident($incident);
@@ -71,7 +72,7 @@ class IncidentController extends Controller
     public function open(Request $request): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $incidents = $this->incidentService->getOpenIncidents();
@@ -82,7 +83,7 @@ class IncidentController extends Controller
     public function assign(IncidentAssignRequest $request, IncidentReport $incident): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $this->incidentService->assignIncident($incident, $request->user()->id);
@@ -93,7 +94,7 @@ class IncidentController extends Controller
     public function escalate(IncidentReport $incident, Request $request): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $this->incidentService->escalateIncident($incident, $request->user()->id);
@@ -104,7 +105,7 @@ class IncidentController extends Controller
     public function resolve(IncidentResolveRequest $request, IncidentReport $incident): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $validated = $request->validated();
@@ -117,7 +118,7 @@ class IncidentController extends Controller
     public function close(Request $request, IncidentReport $incident): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $this->incidentService->closeIncident($incident);
@@ -128,7 +129,7 @@ class IncidentController extends Controller
     public function stats(Request $request): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $stats = $this->incidentService->getIncidentStats();

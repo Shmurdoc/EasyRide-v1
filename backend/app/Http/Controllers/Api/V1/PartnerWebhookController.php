@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Partner\OrderStatusRequest;
+use App\Http\Requests\Api\V1\Partner\ReceivePartnerOrderRequest;
 use App\Models\Delivery;
 use App\Services\PartnerApiService;
 use Illuminate\Http\JsonResponse;
@@ -18,9 +19,10 @@ class PartnerWebhookController extends Controller
         protected PartnerApiService $partnerService,
     ) {}
 
-    public function receiveOrder(Request $request): JsonResponse
+    public function receiveOrder(ReceivePartnerOrderRequest $request): JsonResponse
     {
-        $delivery = $this->partnerService->receiveOrder($request->all());
+        $validated = $request->validated();
+        $delivery = $this->partnerService->receiveOrder($validated);
 
         if (! $delivery) {
             return response()->json(['message' => 'Invalid webhook or order creation failed.'], 422);

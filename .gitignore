@@ -78,6 +78,7 @@ tests/load/
 
 # Backend build artifacts
 backend/.env.testing
+backend/.env
 backend/phpstan.phar
 backend/storage/phpstan/
 backend/storage/*-service-account.json

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Wallet\ConfirmWalletTopUpRequest;
 use App\Http\Requests\Api\V1\Wallet\WalletDepositRequest;
 use App\Http\Requests\Api\V1\Wallet\WalletWithdrawRequest;
 use App\Http\Resources\WalletResource;
+use App\Http\Responses\ApiResponse;
 use App\Services\OzowService;
 use App\Services\PayFastService;
 use App\Services\StripeService;
@@ -64,7 +66,7 @@ class WalletController extends Controller
                 "Wallet deposit via {$method}",
             );
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Deposit Failed', $e->getMessage());
         }
 
         if ($method === 'payfast') {
@@ -97,7 +99,7 @@ class WalletController extends Controller
             ]);
 
             if (! $result['success']) {
-                return response()->json(['message' => $result['error'] ?? 'Ozow payment failed.'], 502);
+                return ApiResponse::apiError(502, 'Payment Failed', $result['error'] ?? 'Ozow payment failed.');
             }
 
             return response()->json([
@@ -118,21 +120,19 @@ class WalletController extends Controller
             ], 201);
         }
 
-        return response()->json(['message' => 'Invalid payment method.'], 422);
+        return ApiResponse::apiError(422, 'Invalid Method', 'Invalid payment method.');
     }
 
-    public function confirm(Request $request): JsonResponse
+    public function confirm(ConfirmWalletTopUpRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'transaction_id' => 'required|uuid',
-        ]);
+        $validated = $request->validated();
 
         $wallet = $this->walletService->getOrCreateWallet($request->user());
 
         $confirmed = $this->walletService->confirmTopUpById($wallet, $validated['transaction_id']);
 
         if (! $confirmed) {
-            return response()->json(['message' => 'Transaction not found or already confirmed.'], 422);
+            return ApiResponse::apiError(422, 'Confirmation Failed', 'Transaction not found or already confirmed.');
         }
 
         return response()->json([
@@ -152,11 +152,7 @@ class WalletController extends Controller
                 (float) $validated['amount'],
             );
         } catch (\RuntimeException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'balance' => (float) $wallet->fresh()->balance,
-                'requested' => (float) $validated['amount'],
-            ], 422);
+            return ApiResponse::apiError(422, 'Withdrawal Failed', $e->getMessage());
         }
 
         return response()->json([

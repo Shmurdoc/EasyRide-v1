@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Delivery\AssignDriverRequest;
 use App\Http\Requests\Api\V1\Delivery\UpdateStatusRequest;
 use App\Http\Requests\Api\V1\StoreDeliveryRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\Delivery;
 use App\Models\User;
 use App\Services\DeliveryService;
@@ -30,7 +31,7 @@ class DeliveryController extends Controller
             ->latest()
             ->paginate($request->per_page ?? 15);
 
-        return response()->json($deliveries);
+        return ApiResponse::paginated($deliveries);
     }
 
     public function store(StoreDeliveryRequest $request): JsonResponse
@@ -67,7 +68,7 @@ class DeliveryController extends Controller
             && $delivery->driver_id !== $user->id
             && ! $user->hasAnyRole(['admin', 'super-admin'])
         ) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         return response()->json(['delivery' => $delivery->load(['sender', 'driver', 'ride'])]);
@@ -80,14 +81,14 @@ class DeliveryController extends Controller
         if ($delivery->driver_id !== $user->id
             && ! $user->hasAnyRole(['admin', 'super-admin'])
         ) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         $validated = $request->validated();
 
         $delivery = $this->deliveryService->updateStatus($delivery, $validated['status']);
 
-        return response()->json($delivery);
+        return ApiResponse::success($delivery);
     }
 
     public function assignDriver(AssignDriverRequest $request, Delivery $delivery): JsonResponse
@@ -97,7 +98,7 @@ class DeliveryController extends Controller
         $user = User::find($validated['driver_id']);
         $delivery->update(['driver_id' => $user->id, 'status' => 'pending']);
 
-        return response()->json($delivery->fresh()->load(['sender', 'driver']));
+        return ApiResponse::success($delivery->fresh()->load(['sender', 'driver']));
     }
 
     public function driverDeliveries(Request $request): JsonResponse
@@ -108,6 +109,6 @@ class DeliveryController extends Controller
             ->latest()
             ->paginate($request->per_page ?? 15);
 
-        return response()->json($deliveries);
+        return ApiResponse::paginated($deliveries);
     }
 }

@@ -1,0 +1,276 @@
+﻿PHPUnit 12.5.30 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.0
+Configuration: E:\EasyRyde\backend\phpunit.xml
+
+...............................................................  63 / 203 ( 31%)
+............................................................... 126 / 203 ( 62%)
+............................................................... 189 / 203 ( 93%)
+..............                                                  203 / 203 (100%)
+
+Time: 09:09.224, Memory: 96.00 MB
+
+[4mAdmin (Tests\Feature\Admin)[0m
+[32m Γ£ö [0mAdmin can get dashboard stats
+[32m Γ£ö [0mAdmin can list users
+[32m Γ£ö [0mAdmin can list rides
+[32m Γ£ö [0mAdmin can approve driver
+[32m Γ£ö [0mAdmin can reject driver
+[32m Γ£ö [0mAdmin can update settings
+[32m Γ£ö [0mRider cannot access admin
+[32m Γ£ö [0mAdmin can create driver
+[32m Γ£ö [0mAdmin can get audit logs
+[32m Γ£ö [0mUnauthenticated cannot access admin
+[32m Γ£ö [0mAdmin can list drivers
+
+[4mAuth (Tests\Feature\Auth)[0m
+[32m Γ£ö [0mUser can register
+[32m Γ£ö [0mUser cannot register with existing email
+[32m Γ£ö [0mUser can login
+[32m Γ£ö [0mUser cannot login with wrong password
+[32m Γ£ö [0mAuthenticated user can access me
+[32m Γ£ö [0mUnauthenticated user cannot access me
+[32m Γ£ö [0mUser can logout
+
+[4mChat (Tests\Feature\Chat)[0m
+[32m Γ£ö [0mRider can send message
+[32m Γ£ö [0mRider can get messages
+[32m Γ£ö [0mDriver can send message
+[32m Γ£ö [0mRider can mark messages read
+[32m Γ£ö [0mRider can get unread count
+[32m Γ£ö [0mRider cannot message other ride
+[32m Γ£ö [0mUnauthenticated cannot send message
+
+[4mConfig (Tests\Feature\Config)[0m
+[32m Γ£ö [0mCan get platform config
+[32m Γ£ö [0mConfig contains zar currency
+[32m Γ£ö [0mConfig contains ride categories
+[32m Γ£ö [0mConfig contains payment methods
+[32m Γ£ö [0mConfig contains features section
+
+[4mConsent (Tests\Feature\Consent)[0m
+[32m Γ£ö [0mUser can view consents
+[32m Γ£ö [0mUser can grant consent
+[32m Γ£ö [0mUser can revoke consent
+[32m Γ£ö [0mUser can view consent history
+[32m Γ£ö [0mGrant consent validates type
+[32m Γ£ö [0mUnauthenticated cannot access consent
+
+[4mData Retention (Tests\Feature\DataRetention)[0m
+[32m Γ£ö [0mUser can export data
+[32m Γ£ö [0mAdmin can view retention info
+[32m Γ£ö [0mNon admin cannot access data retention admin
+[32m Γ£ö [0mUnauthenticated cannot export data
+
+[4mDelivery (Tests\Feature\Delivery)[0m
+[32m Γ£ö [0mRider can create delivery
+[32m Γ£ö [0mRider can get delivery history
+[32m Γ£ö [0mDriver can get nearby deliveries
+[32m Γ£ö [0mUnauthenticated cannot create delivery
+[32m Γ£ö [0mRider can get single delivery
+[32m Γ£ö [0mDriver can assign delivery
+
+[4mDriver (Tests\Feature\Driver)[0m
+[32m Γ£ö [0mAdmin can approve driver
+[32m Γ£ö [0mAdmin can reject driver
+[32m Γ£ö [0mDriver can toggle online
+[32m Γ£ö [0mDriver can register vehicle
+[32m Γ£ö [0mDriver can get earnings
+[32m Γ£ö [0mDriver can get trips
+[32m Γ£ö [0mRider cannot approve driver
+[32m Γ£ö [0mDriver can get nearby rides
+[32m Γ£ö [0mAdmin can list pending drivers
+[32m Γ£ö [0mUnauthenticated cannot toggle online
+
+[4mExample (Tests\Feature\Example)[0m
+[32m Γ£ö [0mThe application returns a successful response
+
+[4mFood Admin (Tests\Feature\FoodAdmin)[0m
+[32m Γ£ö [0mAdmin can list restaurants
+[32m Γ£ö [0mAdmin can create restaurant
+[32m Γ£ö [0mAdmin can update restaurant
+[32m Γ£ö [0mAdmin can create category
+[32m Γ£ö [0mAdmin can create menu item
+[32m Γ£ö [0mAdmin can update menu item
+[32m Γ£ö [0mAdmin can delete menu item
+[32m Γ£ö [0mNon admin cannot access food admin
+[32m Γ£ö [0mUnauthenticated cannot access food admin
+
+[4mFood Delivery (Tests\Feature\FoodDelivery)[0m
+[32m Γ£ö [0mList restaurants
+[32m Γ£ö [0mShow restaurant
+[32m Γ£ö [0mView menu
+[32m Γ£ö [0mCreate food order
+[32m Γ£ö [0mCreate order validates items
+[32m Γ£ö [0mView my orders
+[32m Γ£ö [0mDriver available orders
+[32m Γ£ö [0mDriver accepts order
+[32m Γ£ö [0mDriver orders list
+[32m Γ£ö [0mDriver updates order status
+[32m Γ£ö [0mCancel order
+[32m Γ£ö [0mRate delivered order
+
+[4mHealth (Tests\Feature\Health)[0m
+[32m Γ£ö [0mHealth endpoint returns ok
+
+[4mHealth Check Controller (Tests\Feature\HealthCheckController)[0m
+[32m Γ£ö [0mHealth endpoint returns response
+[32m Γ£ö [0mHealth returns correct json structure
+[32m Γ£ö [0mHealth checks database is accessible
+[32m Γ£ö [0mHealth checks cache is accessible
+[32m Γ£ö [0mHealth checks disk is accessible
+
+[4mIncident (Tests\Feature\Incident)[0m
+[32m Γ£ö [0mUser can report incident
+[32m Γ£ö [0mReport incident validates required fields
+[32m Γ£ö [0mUser can view their incidents
+[32m Γ£ö [0mUser can view single incident
+[32m Γ£ö [0mAdmin can view all incidents
+[32m Γ£ö [0mAdmin can view open incidents
+[32m Γ£ö [0mAdmin can view incident stats
+[32m Γ£ö [0mAdmin can resolve incident
+[32m Γ£ö [0mAdmin can close incident
+[32m Γ£ö [0mNon admin cannot access incident admin
+[32m Γ£ö [0mUnauthenticated cannot report incident
+
+[4mIntegration (Tests\Feature\Integration)[0m
+[32m Γ£ö [0mFlow1 rider registers login creates ride
+[32m Γ£ö [0mFlow2 driver accepts completes ride and payment recorded
+[32m Γ£ö [0mFlow3 wallet topup and balance verification
+[32m Γ£ö [0mFlow4 admin dashboard users drivers rides
+
+[4mKyc (Tests\Feature\Kyc)[0m
+[32m Γ£ö [0mUser can view kyc verifications
+[32m Γ£ö [0mAdmin can view pending verifications
+[32m Γ£ö [0mNon admin cannot access kyc admin
+[32m Γ£ö [0mUnauthenticated cannot access kyc
+
+[4mNotification (Tests\Feature\Notification)[0m
+[32m Γ£ö [0mRider can get notifications
+[32m Γ£ö [0mRider can get unread count
+[32m Γ£ö [0mRider can mark notification read
+[32m Γ£ö [0mRider can mark all read
+[32m Γ£ö [0mRider can register push token
+[32m Γ£ö [0mRider can unregister push token
+[32m Γ£ö [0mRider only sees own notifications
+[32m Γ£ö [0mUnauthenticated cannot get notifications
+[32m Γ£ö [0mDriver can get notifications
+
+[4mPayment (Tests\Feature\Payment)[0m
+[32m Γ£ö [0mRider can pay with cash
+[32m Γ£ö [0mRider can pay with wallet
+[32m Γ£ö [0mRider can get payment history
+[32m Γ£ö [0mAdmin can refund payment
+[32m Γ£ö [0mRider cannot refund payment
+[32m Γ£ö [0mRider can dispute payment
+[32m Γ£ö [0mRider can get payment methods
+[32m Γ£ö [0mUnauthenticated cannot pay
+[32m Γ£ö [0mPayment is recorded for ride
+
+[4mPlace (Tests\Feature\Place)[0m
+[32m Γ£ö [0mCan search places
+[32m Γ£ö [0mSearch places partial match
+[32m Γ£ö [0mSearch places no match
+[32m Γ£ö [0mSearch places requires min length
+[32m Γ£ö [0mSearch places requires query
+[32m Γ£ö [0mSearch places respects limit
+[32m Γ£ö [0mSearch places returns correct structure
+
+[4mPromo Code (Tests\Feature\PromoCode)[0m
+[32m Γ£ö [0mRider can create promo code
+[32m Γ£ö [0mRider can list promo codes
+[32m Γ£ö [0mRider can show promo code
+[32m Γ£ö [0mRider can update promo code
+[32m Γ£ö [0mRider can delete promo code
+[32m Γ£ö [0mCreate promo code requires unique code
+[32m Γ£ö [0mValidate promo code public
+[32m Γ£ö [0mValidate invalid promo code
+[32m Γ£ö [0mUnauthenticated cannot access promo codes
+
+[4mRating (Tests\Feature\Rating)[0m
+[32m Γ£ö [0mUser can get ratings received
+[32m Γ£ö [0mUser can get ratings given
+[32m Γ£ö [0mUser can show rating
+[32m Γ£ö [0mUser cannot view other users rating
+[32m Γ£ö [0mUnauthenticated cannot access ratings
+
+[4mReferral (Tests\Feature\Referral)[0m
+[32m Γ£ö [0mUser can view their referral code
+[32m Γ£ö [0mUser can apply referral code
+[32m Γ£ö [0mReferral code validates invalid code
+[32m Γ£ö [0mUser can view referral stats
+[32m Γ£ö [0mUnauthenticated cannot view referral code
+
+[4mReporting Api (Tests\Feature\ReportingApi)[0m
+[32m Γ£ö [0mAdmin can access revenue report
+[32m Γ£ö [0mAdmin can access ride report
+[32m Γ£ö [0mAdmin can access driver report
+[32m Γ£ö [0mReport fails without authentication
+[32m Γ£ö [0mReport fails for non admin
+[32m Γ£ö [0mReport accepts date filters
+[32m Γ£ö [0mReport export returns csv
+
+[4mRide (Tests\Feature\Ride)[0m
+[32m Γ£ö [0mRider can create ride
+[32m Γ£ö [0mRider can get current ride
+[32m Γ£ö [0mRider can cancel ride
+[32m Γ£ö [0mDriver can accept ride
+[32m Γ£ö [0mDriver can start ride
+[32m Γ£ö [0mDriver can complete ride
+[32m Γ£ö [0mRider can rate completed ride
+[32m Γ£ö [0mUnauthenticated user cannot create ride
+[32m Γ£ö [0mRider can get ride history
+[32m Γ£ö [0mRider can apply promo to ride
+[32m Γ£ö [0mDriver cannot start ride not assigned
+[32m Γ£ö [0mRider cannot complete ride not their ride
+
+[4mRide Api (Tests\Feature\RideApi)[0m
+[32m Γ£ö [0mCreate ride returns 201
+[32m Γ£ö [0mCreate ride validation fails without required fields
+[32m Γ£ö [0mDriver accept ride returns 200
+[32m Γ£ö [0mCancel ride returns 200
+
+[4mScheduled Ride (Tests\Feature\ScheduledRide)[0m
+[32m Γ£ö [0mRider can schedule ride
+[32m Γ£ö [0mRider can view upcoming scheduled rides
+[32m Γ£ö [0mSchedule ride validates required fields
+[32m Γ£ö [0mSchedule ride validates category
+[32m Γ£ö [0mUnauthenticated cannot access scheduled rides
+
+[4mSos (Tests\Feature\Sos)[0m
+[32m Γ£ö [0mUser can trigger sos
+[32m Γ£ö [0mTrigger sos validates coordinates
+[32m Γ£ö [0mUser can cancel own sos
+[32m Γ£ö [0mAdmin can view active sos
+[32m Γ£ö [0mNon admin cannot view active sos
+[32m Γ£ö [0mUnauthenticated cannot trigger sos
+
+[4mUser (Tests\Feature\User)[0m
+[32m Γ£ö [0mRider can view users list
+[32m Γ£ö [0mRider can show user
+[32m Γ£ö [0mRider can update own profile
+[32m Γ£ö [0mRider can delete own account
+[32m Γ£ö [0mAdmin can get user stats
+[32m Γ£ö [0mUnauthenticated cannot access users
+[32m Γ£ö [0mUpdate user validates email
+
+[4mWallet (Tests\Feature\Wallet)[0m
+[32m Γ£ö [0mRider can get wallet balance
+[32m Γ£ö [0mRider can get transactions
+[32m Γ£ö [0mRider can deposit to wallet
+[32m Γ£ö [0mRider can withdraw from wallet
+[32m Γ£ö [0mWithdraw fails insufficient balance
+[32m Γ£ö [0mWallet created automatically on first access
+[32m Γ£ö [0mUnauthenticated cannot access wallet
+[32m Γ£ö [0mDeposit creates transaction record
+[32m Γ£ö [0mNegative deposit amount rejected
+
+[4mWebhook Api (Tests\Feature\WebhookApi)[0m
+[32m Γ£ö [0mStripe webhook accepts valid request
+[32m Γ£ö [0mStripe webhook rejects missing signature
+[32m Γ£ö [0mPayfast webhook accepts notification
+[32m Γ£ö [0mOzow webhook accepts notification
+[32m Γ£ö [0mWebhook rejects invalid payload
+[32m Γ£ö [0mTwilio webhook accepts status callback
+
+[30;42mOK (203 tests, 458 assertions)[0m

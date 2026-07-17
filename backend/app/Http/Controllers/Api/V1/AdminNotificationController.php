@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Admin\SendAdminNotificationRequest;
 use App\Models\AdminNotification;
 use App\Models\User;
 use App\Services\NotificationService;
@@ -28,15 +29,9 @@ class AdminNotificationController extends Controller
         ]);
     }
 
-    public function send(Request $request): JsonResponse
+    public function send(SendAdminNotificationRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:100',
-            'body' => 'required|string|max:500',
-            'type' => 'required|string|in:general,promo,alert,ride_update,account',
-            'audience' => 'required|string|in:all,riders,drivers,user',
-            'user_id' => 'required_if:audience,user|nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $adminNotification = AdminNotification::create([
             'title' => $validated['title'],

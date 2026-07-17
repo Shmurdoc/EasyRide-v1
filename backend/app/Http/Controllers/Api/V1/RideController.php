@@ -13,6 +13,7 @@ use App\Http\Requests\Api\V1\Ride\RideCreateRequest;
 use App\Http\Requests\Api\V1\Ride\RideRateRequest;
 use App\Http\Requests\Api\V1\Ride\UpdateLocationRequest;
 use App\Http\Resources\RideResource;
+use App\Http\Responses\ApiResponse;
 use App\Models\Ride;
 use App\Services\FareCalculationService;
 use App\Services\PromoCodeService;
@@ -58,17 +59,17 @@ class RideController extends Controller
 
             return response()->json(['ride' => new RideResource($ride->load('rider'))], 201);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Creation Failed', $e->getMessage());
         }
     }
 
     public function show(Request $request, Ride $ride): JsonResponse
     {
         if ($ride->rider_id !== $request->user()->id && $ride->driver_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
-        return response()->json(
+        return ApiResponse::success(
             new RideResource($ride->load([
                 'rider',
                 'driver',
@@ -84,7 +85,7 @@ class RideController extends Controller
     public function cancel(RideCancelRequest $request, Ride $ride): JsonResponse
     {
         if ($ride->rider_id !== $request->user()->id && $ride->driver_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         try {
@@ -96,16 +97,16 @@ class RideController extends Controller
                 (string) $request->user()->id,
             );
 
-            return response()->json(new RideResource($cancelledRide));
+            return ApiResponse::success(new RideResource($cancelledRide));
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Cancellation Failed', $e->getMessage());
         }
     }
 
     public function rate(RideRateRequest $request, Ride $ride): JsonResponse
     {
         if ($ride->rider_id !== $request->user()->id) {
-            return response()->json(['message' => 'Only the rider can rate.'], 403);
+            return ApiResponse::forbidden('Only the rider can rate.');
         }
 
         try {
@@ -117,21 +118,21 @@ class RideController extends Controller
                 $validated['comment'] ?? null,
             );
 
-            return response()->json(new RideResource($ratedRide), 201);
+            return ApiResponse::success(new RideResource($ratedRide), 'Ride rated.', 201);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Rating Failed', $e->getMessage());
         }
     }
 
     public function applyPromo(RideApplyPromoRequest $request, Ride $ride): JsonResponse
     {
         if ($ride->rider_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         $status = $ride->status instanceof RideStatus ? $ride->status->value : $ride->status;
         if ($status !== RideStatus::SEARCHING->value) {
-            return response()->json(['message' => 'Promo code cannot be applied at this stage.'], 422);
+            return ApiResponse::apiError(422, 'Invalid Ride Status', 'Promo code cannot be applied at this stage.');
         }
 
         try {
@@ -153,13 +154,13 @@ class RideController extends Controller
 
             $this->promoCodeService->incrementUsage($promo, $request->user()->id);
 
-            return response()->json([
+            return ApiResponse::success([
                 'promo_code' => $promo,
                 'discount' => $discount,
                 'new_total' => round((float) $ride->total_fare - $discount['discount'], 2),
             ]);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Promo Failed', $e->getMessage());
         }
     }
 
@@ -172,44 +173,44 @@ class RideController extends Controller
                 new RideResource($acceptedRide->load(['driver', 'driver.driverProfile', 'driver.vehicle']))
             );
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Accept Failed', $e->getMessage());
         }
     }
 
     public function driverArrived(Request $request, Ride $ride): JsonResponse
     {
         if ($ride->driver_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         try {
             $arrivedRide = $this->rideService->driverArrived($ride);
 
-            return response()->json(new RideResource($arrivedRide));
+            return ApiResponse::success(new RideResource($arrivedRide));
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Update Failed', $e->getMessage());
         }
     }
 
     public function startRide(Request $request, Ride $ride): JsonResponse
     {
         if ($ride->driver_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         try {
             $startedRide = $this->rideService->startRide($ride);
 
-            return response()->json(new RideResource($startedRide));
+            return ApiResponse::success(new RideResource($startedRide));
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Start Failed', $e->getMessage());
         }
     }
 
     public function completeRide(Request $request, Ride $ride): JsonResponse
     {
         if ($ride->driver_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         try {
@@ -219,12 +220,12 @@ class RideController extends Controller
                 (float) $request->input('duration_minutes', $ride->duration_minutes),
             );
 
-            return response()->json([
+            return ApiResponse::success([
                 'ride' => new RideResource($completedRide->load('payment')),
                 'rating_required' => true,
             ]);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Completion Failed', $e->getMessage());
         }
     }
 
@@ -256,9 +257,9 @@ class RideController extends Controller
                 (float) $request->validated('longitude'),
             );
 
-            return response()->json(['message' => 'Location updated.']);
+            return ApiResponse::success(null, 'Location updated.');
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Update Failed', $e->getMessage());
         }
     }
 
@@ -269,9 +270,9 @@ class RideController extends Controller
         try {
             $noShowRide = $this->rideService->markNoShow($ride, (string) $request->user()->id);
 
-            return response()->json(new RideResource($noShowRide));
+            return ApiResponse::success(new RideResource($noShowRide));
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Update Failed', $e->getMessage());
         }
     }
 
@@ -300,7 +301,7 @@ class RideController extends Controller
             $surgeBreakdown['combined_multiplier'],
         );
 
-        return response()->json([
+        return ApiResponse::success([
             'distance_km' => $route['distance_km'],
             'duration_minutes' => $route['duration_minutes'],
             'breakdown' => [
@@ -320,7 +321,7 @@ class RideController extends Controller
         $ride = $this->rideService->getCurrentRideForUser($request->user());
 
         if (! $ride) {
-            return response()->json(['message' => 'No active ride.'], 404);
+            return ApiResponse::notFound('Active ride');
         }
 
         return response()->json(
@@ -337,15 +338,15 @@ class RideController extends Controller
     public function track(Request $request, Ride $ride): JsonResponse
     {
         if ($ride->rider_id !== $request->user()->id && $ride->driver_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
         try {
             $trackingData = $this->rideService->trackRide($ride);
 
-            return response()->json($trackingData);
+            return ApiResponse::success($trackingData);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Tracking Failed', $e->getMessage());
         }
     }
 
@@ -356,7 +357,7 @@ class RideController extends Controller
         $radius = (float) ($request->input('radius', 10));
 
         if (! $latitude || ! $longitude) {
-            return response()->json(['message' => 'Latitude and longitude are required.'], 422);
+            return ApiResponse::validationErrors('Latitude and longitude are required.');
         }
 
         $drivers = $this->rideService->findNearbyDrivers(
@@ -365,7 +366,7 @@ class RideController extends Controller
             $radius,
         );
 
-        return response()->json([
+        return ApiResponse::success([
             'drivers' => $drivers,
             'count' => $drivers->count(),
         ]);

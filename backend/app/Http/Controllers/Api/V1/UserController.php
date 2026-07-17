@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\User\UserUpdateRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,7 +27,7 @@ class UserController extends Controller
     public function show(Request $request, User $user): JsonResponse
     {
         if ($request->user()->tenant_id !== $user->tenant_id && ! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         return response()->json($user->load(['tenant', 'driverProfile', 'vehicle']));
@@ -37,11 +38,11 @@ class UserController extends Controller
         $currentUser = $request->user();
 
         if ($currentUser->id !== $user->id && ! $currentUser->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         if (! $currentUser->hasAnyRole(['admin', 'super-admin']) && $currentUser->tenant_id !== $user->tenant_id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $validated = $request->validated();
@@ -59,7 +60,7 @@ class UserController extends Controller
         $isAdminDelete = $currentUser->hasAnyRole(['admin', 'super-admin']) && $currentUser->tenant_id === $user->tenant_id;
 
         if (! $isSelfDelete && ! $isAdminDelete) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $user->delete();

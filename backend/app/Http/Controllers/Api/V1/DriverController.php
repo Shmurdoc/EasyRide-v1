@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\Driver\ToggleOnlineRequest;
 use App\Http\Requests\Api\V1\Driver\VehicleRegisterRequest;
 use App\Http\Requests\Api\V1\Ride\UpdateLocationRequest;
 use App\Http\Requests\Api\V1\UpdateDriverProfileRequest;
+use App\Http\Responses\ApiResponse;
 use App\Services\DriverService;
 use App\Services\RideService;
 use Illuminate\Http\JsonResponse;
@@ -29,7 +30,7 @@ class DriverController extends Controller
             $request->per_page ?? 15,
         );
 
-        return response()->json($drivers);
+        return ApiResponse::paginated($drivers);
     }
 
     public function show(Request $request, string $driverId): JsonResponse
@@ -37,10 +38,10 @@ class DriverController extends Controller
         $driver = $this->driverService->getDriver($driverId, $request->user());
 
         if (! $driver) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden();
         }
 
-        return response()->json([
+        return ApiResponse::success([
             'user' => $driver,
             'average_rating' => $driver->driverProfile?->average_rating ?? 0,
             'rating_count' => $driver->driverProfile?->rating_count ?? 0,
@@ -55,9 +56,9 @@ class DriverController extends Controller
                 $request->validated(),
             );
 
-            return response()->json($profile);
+            return ApiResponse::success($profile);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Update Failed', $e->getMessage());
         }
     }
 
@@ -68,7 +69,7 @@ class DriverController extends Controller
             $request->validated(),
         );
 
-        return response()->json($vehicle, 201);
+        return ApiResponse::success($vehicle, 'Vehicle registered.', 201);
     }
 
     public function toggleOnline(ToggleOnlineRequest $request): JsonResponse
@@ -80,9 +81,9 @@ class DriverController extends Controller
                 $request->only(['current_latitude', 'current_longitude']),
             );
 
-            return response()->json($result);
+            return ApiResponse::success($result);
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 403);
+            return ApiResponse::forbidden($e->getMessage());
         }
     }
 
@@ -96,9 +97,9 @@ class DriverController extends Controller
                 $request->input('timestamp'),
             );
 
-            return response()->json(['message' => 'Location updated.']);
+            return ApiResponse::success(null, 'Location updated.');
         } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return ApiResponse::apiError(422, 'Update Failed', $e->getMessage());
         }
     }
 
@@ -117,14 +118,14 @@ class DriverController extends Controller
             $request->per_page ?? 15,
         );
 
-        return response()->json($trips);
+        return ApiResponse::paginated($trips);
     }
 
     public function stats(Request $request): JsonResponse
     {
         $stats = $this->driverService->getStats($request->user());
 
-        return response()->json(['data' => $stats]);
+        return ApiResponse::success($stats);
     }
 
     public function nearbyRides(Request $request): JsonResponse
@@ -133,7 +134,7 @@ class DriverController extends Controller
         $longitude = $request->user()->current_longitude;
 
         if (! $latitude || ! $longitude) {
-            return response()->json(['message' => 'Location not set.'], 422);
+            return ApiResponse::apiError(422, 'Location Required', 'Location not set.');
         }
 
         $rides = $this->rideService->findNearbyRides(
@@ -143,6 +144,6 @@ class DriverController extends Controller
             $request->user()->tenant_id,
         );
 
-        return response()->json($rides);
+        return ApiResponse::success($rides);
     }
 }

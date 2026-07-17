@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Kyc\KycRejectRequest;
 use App\Http\Requests\Api\V1\Kyc\KycSubmitRequest;
+use App\Http\Responses\ApiResponse;
 use App\Models\KycVerification;
 use App\Services\KycService;
 use Illuminate\Http\JsonResponse;
@@ -46,7 +47,7 @@ class KycController extends Controller
     public function pending(Request $request): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $verifications = $this->kycService->getPendingVerifications();
@@ -57,7 +58,7 @@ class KycController extends Controller
     public function approve(Request $request, KycVerification $verification): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $this->kycService->approveVerification($verification, $request->user()->id);
@@ -68,7 +69,7 @@ class KycController extends Controller
     public function reject(KycRejectRequest $request, KycVerification $verification): JsonResponse
     {
         if (! $request->user()->hasAnyRole(['admin', 'super-admin'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return ApiResponse::forbidden('Unauthorized.');
         }
 
         $validated = $request->validated();
