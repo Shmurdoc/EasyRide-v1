@@ -18,6 +18,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import ChatScreen from './screens/ChatScreen';
 import FoodDeliveryScreen from './screens/FoodDeliveryScreen';
 import FoodOrderDetailScreen from './screens/FoodOrderDetailScreen';
+import DocumentsScreen from './screens/DocumentsScreen';
 import ConsentScreen from './screens/ConsentScreen';
 
 const Stack = createNativeStackNavigator();
@@ -49,6 +50,7 @@ function RootNavigator() {
             <Stack.Screen name="Consent" component={ConsentScreen} />
             <Stack.Screen name="ActiveRide" component={ActiveRideScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="Documents" component={DocumentsScreen} />
             <Stack.Screen name="FoodOrderDetail" component={FoodOrderDetailScreen} />
           </>
         )}

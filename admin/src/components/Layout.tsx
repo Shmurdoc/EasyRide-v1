@@ -4,8 +4,15 @@ const navItems = [
   { to: '/', label: 'Dashboard', icon: '📊' },
   { to: '/users', label: 'Users', icon: '👥' },
   { to: '/drivers', label: 'Drivers', icon: '🚗' },
+  { to: '/live-map', label: 'Live Map', icon: '📍' },
   { to: '/rides', label: 'Rides', icon: '🗺️' },
   { to: '/payments', label: 'Payments', icon: '💳' },
+  { to: '/kyc', label: 'KYC Verification', icon: '📋' },
+  { to: '/reports', label: 'Reports', icon: '📈' },
+  { to: '/promo-codes', label: 'Promo Codes', icon: '🏷️' },
+  { to: '/wallet-payouts', label: 'Wallet & Payouts', icon: '💰' },
+  { to: '/notifications', label: 'Notifications', icon: '🔔' },
+  { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
 export default function Layout() {

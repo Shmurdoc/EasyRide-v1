@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DriverController as AdminDriverController;
+use App\Http\Controllers\Admin\LiveMapController as AdminLiveMapController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\RideController as AdminRideController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -275,6 +276,9 @@ Route::prefix('v1')->group(function () {
             Route::post('settings', [AdminController::class, 'updateSettings']);
             Route::get('audit-logs', [AdminController::class, 'auditLogs']);
 
+            // Live Map
+            Route::get('live-map/drivers', AdminLiveMapController::class);
+
             // Food Delivery Admin
             Route::prefix('food')->group(function () {
                 Route::get('restaurants', [FoodAdminController::class, 'restaurants']);
@@ -366,6 +370,31 @@ Route::prefix('v1')->group(function () {
                 Route::get('/', [AdminPaymentController::class, 'index']);
                 Route::post('{payment}/refund', [AdminPaymentController::class, 'refund']);
                 Route::get('reconciliation', [AdminPaymentController::class, 'reconciliation']);
+            });
+
+            // Admin Wallet & Payout Management
+            Route::prefix('wallets')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Admin\WalletController::class, 'driverWallets']);
+                Route::get('stats', [\App\Http\Controllers\Admin\WalletController::class, 'overview']);
+                Route::get('transactions', [\App\Http\Controllers\Admin\WalletController::class, 'transactionHistory']);
+                Route::get('cash-reconciliation', [\App\Http\Controllers\Admin\WalletController::class, 'cashReconciliation']);
+                Route::post('cash-reconciliation/{payment}/reconcile', [\App\Http\Controllers\Admin\WalletController::class, 'reconcilePayment']);
+                Route::get('{wallet}/transactions', [\App\Http\Controllers\Admin\WalletController::class, 'walletTransactions']);
+                Route::get('payout-queue', [\App\Http\Controllers\Admin\WalletController::class, 'payoutQueue']);
+                Route::post('payouts/bulk-approve', [\App\Http\Controllers\Admin\WalletController::class, 'bulkApprovePayouts']);
+                Route::post('payouts/{payout}/approve', [\App\Http\Controllers\Admin\WalletController::class, 'approvePayout']);
+                Route::post('payouts/{payout}/reject', [\App\Http\Controllers\Admin\WalletController::class, 'rejectPayout']);
+                Route::post('payouts/{payout}/process', [\App\Http\Controllers\Admin\WalletController::class, 'processPayout']);
+            });
+
+            // Admin KYC Management
+            Route::prefix('manage/kyc')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Admin\KycController::class, 'index']);
+                Route::get('stats', [\App\Http\Controllers\Admin\KycController::class, 'stats']);
+                Route::get('{verification}', [\App\Http\Controllers\Admin\KycController::class, 'show']);
+                Route::post('{verification}/approve', [\App\Http\Controllers\Admin\KycController::class, 'approve']);
+                Route::post('{verification}/reject', [\App\Http\Controllers\Admin\KycController::class, 'reject']);
+                Route::post('bulk-approve', [\App\Http\Controllers\Admin\KycController::class, 'bulkApprove']);
             });
         });
 

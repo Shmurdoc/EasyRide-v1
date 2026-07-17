@@ -3,12 +3,29 @@ import { View, TouchableOpacity, StyleSheet, Alert, AppState, ScrollView, Refres
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 import MapView, { Marker } from 'react-native-maps';
 import { useAuth, useSocket, drivers, foodDelivery, COLORS, SPACING, RADIUS, AnimatedNumber, GlassCard, Avatar } from '@easyryde/shared';
 import type { DriverNav } from '@easyryde/shared';
 import type MapViewType from 'react-native-maps';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const BACKGROUND_LOCATION_TASK = 'background-location-task';
+
+TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
+  if (error) {
+    console.warn('[BackgroundLocation] Error:', error.message);
+    return;
+  }
+  if (data && 'locations' in data) {
+    const locations = data.locations as Location.LocationObject[];
+    for (const loc of locations) {
+      const { latitude, longitude } = loc.coords;
+      drivers.updateLocation(latitude, longitude).catch(() => {});
+    }
+  }
+});
 
 type RideRequest = {
   rideId: string;
@@ -48,12 +65,13 @@ export default function DashboardScreen({ navigation }: { navigation: DriverNav 
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  const vehicle = (user as any)?.vehicle;
   const driverData = {
     name: user?.name || 'Driver',
-    vehicle: 'Toyota Corolla',
-    plate: 'LPS 123 GP',
-    color: 'White',
-    year: '2023',
+    vehicle: vehicle ? `${vehicle.make} ${vehicle.model}` : 'No vehicle registered',
+    plate: vehicle?.license_plate || '—',
+    color: vehicle?.color || '—',
+    year: vehicle?.year ? String(vehicle.year) : '—',
     acceptanceRate: 96,
     cancellationRate: 2.1,
     zone: 'Phalaborwa CBD',
@@ -205,7 +223,25 @@ export default function DashboardScreen({ navigation }: { navigation: DriverNav 
 
   async function startBackgroundLocation() {
     const { status: bgStatus } = await Location.getBackgroundPermissionsAsync();
-    if (bgStatus !== 'granted') await Location.requestBackgroundPermissionsAsync();
+    if (bgStatus !== 'granted') {
+      await Location.requestBackgroundPermissionsAsync();
+      return;
+    }
+
+    const isTaskDefined = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
+    if (!isTaskDefined) {
+      await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
+        accuracy: Location.Accuracy.Balanced,
+        distanceInterval: 100,
+        deferredUpdatesInterval: 30000,
+        showsBackgroundLocationIndicator: true,
+        foregroundService: {
+          notificationTitle: 'EasyRyde Driver',
+          notificationBody: 'Tracking your location for ride requests',
+          notificationColor: '#16a34a',
+        },
+      });
+    }
   }
 
   function stopForegroundLocation() {
@@ -214,7 +250,12 @@ export default function DashboardScreen({ navigation }: { navigation: DriverNav 
     setLocationWatcher(null);
   }
 
-  async function stopBackgroundLocation() {}
+  async function stopBackgroundLocation() {
+    const isTaskDefined = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
+    if (isTaskDefined) {
+      await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+    }
+  }
 
   const toggleOnline = async () => {
     try {

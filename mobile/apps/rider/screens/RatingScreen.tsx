@@ -28,6 +28,7 @@ import {
   Typography,
   Avatar,
 } from '@easyryde/shared';
+import { rides } from '@easyryde/shared';
 import type { RiderNav, RiderRoute } from '@easyryde/shared';
 
 const FEEDBACK_TAGS = [
@@ -93,8 +94,13 @@ export default function RatingScreen({ navigation, route }: Props) {
     }
     setSubmitting(true);
     try {
-      // TODO: Submit rating via API
-      // await rides.rate(rideId, rating, { tags: selectedTags, feedback, tip: selectedTip });
+      const commentParts: string[] = [];
+      if (selectedTags.length > 0) commentParts.push(`Tags: ${selectedTags.join(', ')}`);
+      if (feedback.trim()) commentParts.push(feedback.trim());
+      if (selectedTip) commentParts.push(`Tip: R${selectedTip}`);
+      const comment = commentParts.length > 0 ? commentParts.join(' | ') : undefined;
+
+      await rides.rate(rideId, rating, comment);
       Alert.alert('Thank You!', 'Your feedback has been submitted', [
         { text: 'OK', onPress: () => navigation.navigate('Main') },
       ]);

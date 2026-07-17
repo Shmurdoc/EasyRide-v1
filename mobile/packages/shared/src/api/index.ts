@@ -285,4 +285,49 @@ export const reports = {
   drivers: () => api.get('/admin/reports/drivers'),
 };
 
+export const kyc = {
+  submit: (data: {
+    verification_type: string;
+    document_type: string;
+    document_number: string;
+    document_front: File | Blob;
+    document_back?: File | Blob;
+  }) => {
+    const formData = new FormData();
+    formData.append('verification_type', data.verification_type);
+    formData.append('document_type', data.document_type);
+    formData.append('document_number', data.document_number);
+    formData.append('document_front', data.document_front);
+    if (data.document_back) {
+      formData.append('document_back', data.document_back);
+    }
+    return api.post<{ message: string; verification: KycVerification }>('/kyc/', formData as any);
+  },
+
+  myVerifications: () =>
+    api.get<{ verifications: KycVerification[] }>('/kyc/my'),
+
+  download: (verificationId: string, documentType: string) =>
+    api.get(`/kyc/${verificationId}/${documentType}`),
+};
+
+export type KycVerification = {
+  id: string;
+  user_id: string;
+  verification_type: string;
+  document_type: string;
+  document_number: string;
+  document_front_path: string;
+  document_back_path?: string;
+  selfie_path?: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'expired';
+  rejection_reason?: string;
+  verified_at?: string;
+  verified_by?: number;
+  expires_at?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
 export { foodDelivery } from './foodDelivery';

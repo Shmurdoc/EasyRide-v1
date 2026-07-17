@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth, drivers, COLORS, SPACING, RADIUS, Avatar } from '@easyryde/shared';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: { navigation: any }) {
   const { user, logout } = useAuth();
   const [vehicleModal, setVehicleModal] = useState(false);
   const [vehicleForm, setVehicleForm] = useState({ make: '', model: '', year: '', license_plate: '', color: '', category: 'standard' });
@@ -38,7 +38,7 @@ export default function ProfileScreen() {
   const menuItems = [
     { icon: 'person', label: 'My Profile', onPress: () => {} },
     { icon: 'car', label: 'Vehicle Details', onPress: () => setVehicleModal(true) },
-    { icon: 'document-text', label: 'Documents', badge: 'All Verified', onPress: () => {} },
+    { icon: 'document-text', label: 'Documents', badge: 'Manage', onPress: () => navigation.navigate('Documents') },
     { icon: 'notifications', label: 'Notifications', onPress: () => {} },
     { icon: 'help-circle', label: 'Help & Support', onPress: () => Alert.alert('Help & Support', 'Contact us at support@easyryde.com') },
   ];
