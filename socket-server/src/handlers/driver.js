@@ -111,7 +111,12 @@ module.exports = function registerDriverHandlers(socket, io) {
               rider_id: rideData.rider_id,
             });
           }
-        } catch (_) {}
+        } catch (_) {
+          console.warn(
+            `[Driver:${userId}] Failed to fetch ride data for key=${key}:`,
+            _.message
+          );
+        }
       }
 
       socket.emit('driver:nearby-requests:result', { rides });

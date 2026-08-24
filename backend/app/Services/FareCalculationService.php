@@ -20,6 +20,8 @@ class FareCalculationService
         'delivery' => ['base' => 20, 'per_km' => 10, 'per_min' => 1, 'min' => 30],
     ];
 
+    private const float DEFAULT_SERVICE_FEE = 10.0;
+
     public function __construct(
         protected RouteService $routeService,
         protected SurgePricingService $surgePricingService,
@@ -104,6 +106,7 @@ class FareCalculationService
         }
 
         $totalFare = max($subtotal - $discount, 0.0);
+        $serviceFee = $this->getServiceFee();
 
         return [
             'base_fare' => $rates->base_fare,
@@ -114,6 +117,7 @@ class FareCalculationService
             'subtotal' => round($subtotal, 2),
             'discount' => round($discount, 2),
             'promo_id' => $promoId,
+            'service_fee' => $serviceFee,
             'total_fare' => round($totalFare, 2),
         ];
     }
@@ -206,5 +210,18 @@ class FareCalculationService
             'discount' => round($discount, 2),
             'type' => $promo->type,
         ];
+    }
+
+    private function getServiceFee(): float
+    {
+        static $fee = null;
+        if ($fee !== null) {
+            return $fee;
+        }
+
+        $fee = (float) (SystemSetting::where('key', 'service_fee_amount')->value('value')
+            ?? self::DEFAULT_SERVICE_FEE);
+
+        return $fee;
     }
 }

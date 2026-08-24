@@ -39,6 +39,7 @@ export default function UsersScreen() {
       setMeta(data.meta);
     } catch (err) {
       console.error('[Users] Failed to load:', err);
+      toast.error('Failed to load users');
     } finally { setLoading(false); }
   }, [page, search, statusFilter]);
 

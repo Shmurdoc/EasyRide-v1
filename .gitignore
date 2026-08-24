@@ -97,3 +97,10 @@ mobile/apps/*/.expo/
 mobile/**/.tsbuildinfo
 mobile/**/tsconfig.tsbuildinfo
 *.tsbuildinfo
+
+# Mobile build artifacts
+mobile/dist/*.apk
+mobile/packages/*/dist/
+mobile/packages/theme/dist/
+mobile/apps/*/jest-expo-*.tgz
+mobile/dist/

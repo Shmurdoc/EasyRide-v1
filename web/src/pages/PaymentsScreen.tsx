@@ -59,6 +59,7 @@ export default function PaymentsScreen() {
       setMeta(data.meta);
     } catch (err) {
       console.error('[Payments] Failed to load:', err);
+      toast.error('Failed to load payments');
     } finally { setLoading(false); }
   }, [page, statusFilter, methodFilter]);
 

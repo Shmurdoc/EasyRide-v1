@@ -12,7 +12,7 @@ use Stripe\Webhook;
 
 class StripeService
 {
-    protected readonly ?StripeClient $stripe;
+    protected ?StripeClient $stripe;
 
     public function __construct()
     {

@@ -121,7 +121,7 @@ class PeakHourController extends Controller
         ]);
     }
 
-    private function logActivity(Request $request, PeakHour $peakHour, string $action, array $oldValues = null): void
+    private function logActivity(Request $request, PeakHour $peakHour, string $action, ?array $oldValues = null): void
     {
         AdminAuditLog::create([
             'tenant_id' => $request->user()->tenant_id,

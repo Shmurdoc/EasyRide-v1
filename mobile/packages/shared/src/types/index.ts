@@ -277,6 +277,7 @@ export interface FareEstimate {
     time_fare: number;
     surge: number;
     subtotal: number;
+    service_fee: number;
     total_fare: number;
   };
 }

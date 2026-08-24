@@ -94,6 +94,7 @@ class ProductionSeeder extends Seeder
         $platformSettings = [
             ['app_name', 'EasyRyde', 'text', 'Application name'],
             ['platform_fee_percent', '15', 'number', 'Platform fee percentage'],
+            ['service_fee_amount', '10', 'number', 'Flat service fee charged on every ride'],
             ['driver_search_radius', '5', 'number', 'Default driver search radius in km'],
             ['max_surge_multiplier', '2.5', 'number', 'Maximum surge pricing multiplier'],
         ];

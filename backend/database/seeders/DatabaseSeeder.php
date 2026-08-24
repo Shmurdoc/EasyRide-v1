@@ -187,6 +187,7 @@ class DatabaseSeeder extends Seeder
             ['fraud_collusion_pair_cancels', '3', 'number', 'Cancel-pair threshold before collusion flag'],
             ['fraud_unpaid_fines_block_rides', 'false', 'boolean', 'Block drivers with unpaid fines from accepting work'],
             ['parcel_weight_surcharge_per_kg', '2', 'number', 'Per-kg surcharge above 1kg for parcel deliveries'],
+            ['service_fee_amount', '10', 'number', 'Flat service fee charged on every ride'],
         ];
 
         foreach ($settings as $setting) {

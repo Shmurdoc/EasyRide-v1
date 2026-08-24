@@ -47,6 +47,7 @@ export default function RidesScreen() {
       setMeta(data.meta);
     } catch (err) {
       console.error('[Rides] Failed to load:', err);
+      toast.error('Failed to load rides');
     } finally { setLoading(false); }
   }, [page, statusFilter, search]);
 

@@ -4,6 +4,7 @@ import client from '@/api/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart } from 'recharts';
 import dayjs from 'dayjs';
 import { Link } from 'react-router-dom';
+import { useToast } from '@/components/Toast';
 
 interface DashboardData {
   total_users: number;
@@ -26,6 +27,7 @@ export default function DashboardScreen() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [revenueChart, setRevenueChart] = useState<RevenuePoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   useEffect(() => {
     async function load() {
@@ -38,6 +40,7 @@ export default function DashboardScreen() {
         setRevenueChart(revenueRes.data?.daily || []);
       } catch (err) {
         console.error('[Dashboard] Failed to load:', err);
+        if (!data) toast.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }

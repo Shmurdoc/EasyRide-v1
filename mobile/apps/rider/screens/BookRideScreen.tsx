@@ -74,18 +74,16 @@ const VEHICLE_OPTIONS: VehicleOption[] = [
 ];
 
 const SAVED_PLACES = [
-  { id: 'home', name: 'Home', address: '45 Selati Road, Phalaborwa', icon: 'home' as const },
-  { id: 'work', name: 'Work', address: 'Shoprite Business Park, Phalaborwa', icon: 'briefcase' as const },
-  { id: 'airport', name: 'Airport', address: 'Phalaborwa Airport', icon: 'airplane' as const },
+  { id: 'home', name: 'Home', address: '45 Selati Road, Phalaborwa', icon: 'home' as const, lat: -23.948, lng: 29.468 },
+  { id: 'work', name: 'Work', address: 'Shoprite Business Park, Phalaborwa', icon: 'briefcase' as const, lat: -23.945, lng: 29.475 },
+  { id: 'airport', name: 'Airport', address: 'Phalaborwa Airport', icon: 'airplane' as const, lat: -23.937, lng: 29.478 },
 ];
 
 const RECENT_DESTINATIONS = [
-  { id: 'r1', name: 'Kruger National Park Gate', address: 'R71 Road, Phalaborwa' },
-  { id: 'r2', name: 'Mall of Phalaborwa', address: 'Schoeman Street' },
-  { id: 'r3', name: 'Namakgale Township', address: 'Namakgale, Phalaborwa' },
+  { id: 'r1', name: 'Kruger National Park Gate', address: 'R71 Road, Phalaborwa', lat: -23.946, lng: 29.473 },
+  { id: 'r2', name: 'Mall of Phalaborwa', address: 'Schoeman Street', lat: -23.944, lng: 29.471 },
+  { id: 'r3', name: 'Namakgale Township', address: 'Namakgale, Phalaborwa', lat: -23.938, lng: 29.459 },
 ];
-
-const SERVICE_FEE = 10;
 
 const MAP_REGION = {
   latitude: PHALABORWA_CENTER.latitude,
@@ -216,8 +214,8 @@ export default function BookRideScreen({
       id: saved.id,
       name: saved.name,
       address: saved.address,
-      lat: pickup.latitude + (Math.random() - 0.5) * 0.05,
-      lng: pickup.longitude + (Math.random() - 0.5) * 0.05,
+      lat: saved.lat,
+      lng: saved.lng,
     };
     handleSelectDestination(place);
   };
@@ -227,8 +225,8 @@ export default function BookRideScreen({
       id: recent.id,
       name: recent.name,
       address: recent.address,
-      lat: pickup.latitude + (Math.random() - 0.5) * 0.05,
-      lng: pickup.longitude + (Math.random() - 0.5) * 0.05,
+      lat: recent.lat,
+      lng: recent.lng,
     };
     handleSelectDestination(place);
   };
@@ -244,8 +242,9 @@ export default function BookRideScreen({
   };
 
   const getTotal = (): number => {
-    if (fareEstimate) return fareEstimate.breakdown.total_fare + SERVICE_FEE;
-    if (selectedVehicle) return selectedVehicle.basePrice + SERVICE_FEE;
+    const serviceFee = fareEstimate?.breakdown?.service_fee ?? 0;
+    if (fareEstimate) return fareEstimate.breakdown.total_fare + serviceFee;
+    if (selectedVehicle) return selectedVehicle.basePrice + serviceFee;
     return 0;
   };
 
@@ -407,8 +406,8 @@ export default function BookRideScreen({
                       onPress={() => {
                         const place: Place = {
                           id: recent.id, name: recent.name, address: recent.address,
-                          lat: pickup.latitude + (Math.random() - 0.5) * 0.05,
-                          lng: pickup.longitude + (Math.random() - 0.5) * 0.05,
+                          lat: recent.lat,
+                          lng: recent.lng,
                         };
                         handleSelectDestination(place);
                       }}
@@ -710,7 +709,7 @@ export default function BookRideScreen({
               )}
               <View style={styles.fareRow}>
                 <Text style={styles.fareLabel}>Service Fee</Text>
-                <Text style={styles.fareValue}>R{SERVICE_FEE.toFixed(2)}</Text>
+                <Text style={styles.fareValue}>R{(fareEstimate?.breakdown?.service_fee ?? 0).toFixed(2)}</Text>
               </View>
               <View style={styles.fareTotalRow}>
                 <Text style={styles.fareTotalLabel}>Total</Text>

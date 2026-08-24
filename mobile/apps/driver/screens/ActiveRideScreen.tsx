@@ -73,10 +73,28 @@ export default function ActiveRideScreen({ route, navigation }: { route: DriverR
   }, [phase]);
 
   useEffect(() => {
-    if (phase !== 'in_progress') return;
-    const interval = setInterval(() => { setTripProgress((prev) => { if (prev >= 100) { clearInterval(interval); return 100; } return prev + 2; }); }, 200);
-    return () => clearInterval(interval);
-  }, [phase]);
+    if (phase !== 'in_progress' || !ride) return;
+    const pickup = { latitude: ride.pickup_latitude, longitude: ride.pickup_longitude };
+    const dropoff = { latitude: ride.dropoff_latitude, longitude: ride.dropoff_longitude };
+    const totalDistance = haversineKm(pickup, dropoff);
+    if (totalDistance <= 0) return;
+
+    let subscription: Location.LocationSubscription | null = null;
+    (async () => {
+      try {
+        subscription = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.High, timeInterval: 3000, distanceInterval: 50 },
+          (loc) => {
+            const fromPickup = haversineKm(pickup, { latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+            setTripProgress(Math.min(Math.round((fromPickup / totalDistance) * 100), 100));
+          },
+        );
+      } catch (err) {
+        console.warn('Failed to watch position for progress:', err);
+      }
+    })();
+    return () => { if (subscription) subscription.remove(); };
+  }, [phase, ride]);
 
   async function loadRide() { try { const data = await rides.get(rideId); setRide(data); setLoadError(false); if (data.status === 'in_progress') setPhase('in_progress'); else if (data.status === 'arrived') setPhase('arrived'); } catch (err) { console.warn('Failed to load ride:', err); setLoadError(true); } finally { setLoading(false); } }
 
@@ -300,6 +318,17 @@ export default function ActiveRideScreen({ route, navigation }: { route: DriverR
       )}
     </View>
   );
+}
+
+function haversineKm(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }): number {
+  const R = 6371;
+  const toRad = (d: number) => d * Math.PI / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const sinLat = Math.sin(dLat / 2);
+  const sinLon = Math.sin(dLon / 2);
+  const A = sinLat * sinLat + Math.cos(toRad(a.latitude)) * Math.cos(toRad(b.latitude)) * sinLon * sinLon;
+  return R * 2 * Math.atan2(Math.sqrt(A), Math.sqrt(1 - A));
 }
 
 const makeStyles = (colors: any, spacing: any, radius: any, shadows: any) => StyleSheet.create({

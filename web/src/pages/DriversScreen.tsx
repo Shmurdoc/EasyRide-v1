@@ -57,6 +57,7 @@ export default function DriversScreen() {
       setMeta(data.meta);
     } catch (err) {
       console.error('[Drivers] Failed to load:', err);
+      toast.error('Failed to load drivers');
     } finally { setLoading(false); }
   }, [page, statusFilter, search]);
 

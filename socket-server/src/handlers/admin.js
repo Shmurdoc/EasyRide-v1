@@ -105,7 +105,12 @@ module.exports = function registerAdminHandlers(socket, io) {
               ...rideData,
             });
           }
-        } catch (_) {}
+        } catch (_) {
+          console.warn(
+            `[Admin:${userId}] Failed to fetch ride data for key=${key}:`,
+            _.message
+          );
+        }
       }
 
       socket.emit('admin:active-rides:result', { rides });

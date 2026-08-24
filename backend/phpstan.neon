@@ -1,5 +1,9 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
 parameters:
-    level: 5
+    level: 7
     reportUnmatchedIgnoredErrors: false
     paths:
         - app
@@ -7,6 +11,9 @@ parameters:
         - database
         - routes
     tmpDir: storage/phpstan
+    excludePaths:
+        - database/migrations
+    checkModelProperties: true
     ignoreErrors:
         -
             identifier: property.notFound

@@ -120,7 +120,7 @@ class SurgeZoneController extends Controller
         ]);
     }
 
-    private function logActivity(Request $request, SurgeZone $surgeZone, string $action, array $oldValues = null): void
+    private function logActivity(Request $request, SurgeZone $surgeZone, string $action, ?array $oldValues = null): void
     {
         AdminAuditLog::create([
             'tenant_id' => $request->user()->tenant_id,

@@ -325,6 +325,7 @@ class RideController extends Controller
                 'surge' => $surgeBreakdown['combined_multiplier'],
                 'surge_breakdown' => $surgeBreakdown,
                 'subtotal' => $fare['subtotal'],
+                'service_fee' => $fare['service_fee'],
                 'total_fare' => $fare['total_fare'],
             ],
         ]);
