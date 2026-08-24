@@ -68,12 +68,24 @@ class PromoCodeService
     public function incrementUsage(PromoCode $promo, ?string $userId = null): void
     {
         DB::transaction(function () use ($promo, $userId) {
-            DB::table('promo_codes')
-                ->where('id', $promo->id)
-                ->where('used_count', '<', $promo->max_uses > 0 ? $promo->max_uses : PHP_INT_MAX)
-                ->update(['used_count' => DB::raw('used_count + 1')]);
+            $lockedPromo = DB::table('promo_codes')->where('id', $promo->id)->lockForUpdate()->first();
+
+            if (! $lockedPromo) {
+                return;
+            }
 
             if ($userId !== null) {
+                $maxPerUser = (int) ($lockedPromo->max_uses_per_user ?? 1);
+
+                $userUsageCount = DB::table('promo_code_usages')
+                    ->where('promo_code_id', $promo->id)
+                    ->where('user_id', $userId)
+                    ->count();
+
+                if ($userUsageCount >= $maxPerUser) {
+                    throw new \RuntimeException('You have already used this promo code the maximum number of times.');
+                }
+
                 DB::table('promo_code_usages')->insert([
                     'id' => \Illuminate\Support\Str::uuid(),
                     'promo_code_id' => $promo->id,
@@ -81,6 +93,11 @@ class PromoCodeService
                     'used_at' => now(),
                 ]);
             }
+
+            DB::table('promo_codes')
+                ->where('id', $promo->id)
+                ->where('used_count', '<', $lockedPromo->max_uses > 0 ? $lockedPromo->max_uses : 2147483647)
+                ->update(['used_count' => DB::raw('used_count + 1')]);
         });
     }
 

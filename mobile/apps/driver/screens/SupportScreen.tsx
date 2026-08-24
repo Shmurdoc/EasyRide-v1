@@ -154,8 +154,8 @@ export default function SupportScreen({ navigation }: { navigation: any }) {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Ionicons name="warning" size={16} color={COLORS.errorLight} />
-          <Text style={[styles.sectionHeaderText, { color: COLORS.errorLight }]}>EMERGENCY</Text>
+          <Ionicons name="warning" size={16} color={COLORS.error} />
+          <Text style={[styles.sectionHeaderText, { color: COLORS.error }]}>EMERGENCY</Text>
         </View>
         <TouchableOpacity style={styles.sosBtn} onPress={handleSos} activeOpacity={0.7}>
           <View style={styles.sosIconContainer}>
@@ -259,17 +259,17 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: 24,
     borderWidth: 1,
-    borderColor: COLORS.errorLight,
+    borderColor: COLORS.error,
   },
   sosIconContainer: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.errorLight,
+    backgroundColor: COLORS.error,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
-  sosTitle: { fontSize: 18, fontWeight: '700', color: COLORS.errorLight },
+  sosTitle: { fontSize: 18, fontWeight: '700', color: COLORS.error },
   sosSubtitle: { fontSize: 13, color: COLORS.textMuted, marginTop: 4 },
 });

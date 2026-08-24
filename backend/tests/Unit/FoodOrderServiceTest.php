@@ -9,7 +9,10 @@ use App\Models\MenuItem;
 use App\Models\Restaurant;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\DriverFraudGuardService;
+use App\Services\FleetModeService;
 use App\Services\FoodOrderService;
+use App\Services\SettingService;
 use App\Services\PaymentService;
 use App\Services\WalletService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -91,7 +94,7 @@ class FoodOrderServiceTest extends TestCase
         $paymentService = Mockery::mock(PaymentService::class);
         $walletService = Mockery::mock(WalletService::class);
 
-        $foodOrderService = new FoodOrderService($paymentService, $walletService);
+        $foodOrderService = new FoodOrderService($paymentService, $walletService, Mockery::mock(DriverFraudGuardService::class), new FleetModeService(new SettingService));
 
         $result = $foodOrderService->createOrder($restaurant, $rider, [
             ['menu_item_id' => $menuItem->id, 'quantity' => 2],
@@ -117,7 +120,7 @@ class FoodOrderServiceTest extends TestCase
         $paymentService = Mockery::mock(PaymentService::class);
         $walletService = Mockery::mock(WalletService::class);
 
-        $foodOrderService = new FoodOrderService($paymentService, $walletService);
+        $foodOrderService = new FoodOrderService($paymentService, $walletService, Mockery::mock(DriverFraudGuardService::class), new FleetModeService(new SettingService));
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Restaurant is not available');
@@ -140,7 +143,7 @@ class FoodOrderServiceTest extends TestCase
         $paymentService = Mockery::mock(PaymentService::class);
         $walletService = Mockery::mock(WalletService::class);
 
-        $foodOrderService = new FoodOrderService($paymentService, $walletService);
+        $foodOrderService = new FoodOrderService($paymentService, $walletService, Mockery::mock(DriverFraudGuardService::class), new FleetModeService(new SettingService));
 
         $this->expectException(\RuntimeException::class);
 
@@ -162,7 +165,7 @@ class FoodOrderServiceTest extends TestCase
         $paymentService = Mockery::mock(PaymentService::class);
         $walletService = Mockery::mock(WalletService::class);
 
-        $foodOrderService = new FoodOrderService($paymentService, $walletService);
+        $foodOrderService = new FoodOrderService($paymentService, $walletService, Mockery::mock(DriverFraudGuardService::class), new FleetModeService(new SettingService));
 
         $this->expectException(\RuntimeException::class);
 

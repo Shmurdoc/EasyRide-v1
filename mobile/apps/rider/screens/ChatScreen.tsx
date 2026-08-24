@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, TextInput, FlatList, TouchableOpacity, StyleSheet,
@@ -21,6 +22,8 @@ function formatTime(timestamp: string): string {
 }
 
 export default function ChatScreen({ route, navigation }: { route: RiderRoute<'Chat'>; navigation: RiderNav }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { rideId, receiverId } = route.params;
   const { user, token } = useAuth();
   const { isConnected, isReconnecting, reconnectAttempt, emit, on, joinRoom, leaveRoom } = useSocket({ token: token || '' });
@@ -134,9 +137,9 @@ export default function ChatScreen({ route, navigation }: { route: RiderRoute<'C
       {isTyping && (
         <View style={styles.typingRow}>
           <View style={styles.typingDots}>
-            <View style={[styles.typingDot, { animationDelay: '0ms' }]} />
-            <View style={[styles.typingDot, { animationDelay: '200ms' }]} />
-            <View style={[styles.typingDot, { animationDelay: '400ms' }]} />
+            <View style={styles.typingDot} />
+            <View style={styles.typingDot} />
+            <View style={styles.typingDot} />
           </View>
           <Typography variant="small" color={COLORS.textDim}>typing...</Typography>
         </View>
@@ -182,7 +185,7 @@ export default function ChatScreen({ route, navigation }: { route: RiderRoute<'C
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

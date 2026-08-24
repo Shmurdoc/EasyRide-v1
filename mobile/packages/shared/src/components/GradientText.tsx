@@ -31,7 +31,7 @@ export function GradientText({
   if (!LinearGradient) {
     // Fallback: render with first color from gradient
     return (
-      <Text style={[style, { color: (colors as string[])[0] || GRADIENTS.primary[0] }]} numberOfLines={numberOfLines} ellipsizeMode={ellipsizeMode}>
+        <Text style={[style, { color: (colors as unknown as string[])[0] || GRADIENTS.primary[0] }]} numberOfLines={numberOfLines} ellipsizeMode={ellipsizeMode}>
         {children}
       </Text>
     );

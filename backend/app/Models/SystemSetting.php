@@ -15,13 +15,14 @@ class SystemSetting extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        'tenant_id', 'key', 'value', 'description', 'type',
+        'tenant_id', 'key', 'value', 'description', 'type', 'options',
     ];
 
     protected function casts(): array
     {
         return [
             'value' => 'string',
+            'options' => 'array',
         ];
     }
 
@@ -38,5 +39,19 @@ class SystemSetting extends Model
             'json' => json_decode($value, true),
             default => $value,
         };
+    }
+
+    public function isValidEnumValue(mixed $value): bool
+    {
+        if ($this->type !== 'enum') {
+            return true;
+        }
+
+        $options = is_array($this->options) ? $this->options : [];
+        if (empty($options)) {
+            return true;
+        }
+
+        return in_array($value, $options, true);
     }
 }

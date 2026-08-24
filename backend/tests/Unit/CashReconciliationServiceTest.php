@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Services\Payment\CashReconciliationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CashReconciliationServiceTest extends TestCase
@@ -34,7 +35,7 @@ class CashReconciliationServiceTest extends TestCase
     public function test_reconcile_by_driver_returns_array(): void
     {
         $service = app(CashReconciliationService::class);
-        $result = $service->reconcileByDriver('nonexistent', now()->toDateString());
+        $result = $service->reconcileByDriver(Str::uuid()->toString(), now()->toDateString());
 
         $this->assertIsArray($result);
     }

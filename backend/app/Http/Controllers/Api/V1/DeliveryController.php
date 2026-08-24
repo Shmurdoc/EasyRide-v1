@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Delivery\AssignDriverRequest;
+use App\Http\Requests\Api\V1\Delivery\CancelDeliveryRequest;
+use App\Http\Requests\Api\V1\Delivery\QuoteDeliveryRequest;
 use App\Http\Requests\Api\V1\Delivery\UpdateStatusRequest;
 use App\Http\Requests\Api\V1\StoreDeliveryRequest;
 use App\Http\Responses\ApiResponse;
@@ -29,7 +31,7 @@ class DeliveryController extends Controller
             ->when($request->status, fn ($q, $v) => $q->where('status', $v))
             ->with(['sender', 'driver'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return ApiResponse::paginated($deliveries);
     }
@@ -46,6 +48,7 @@ class DeliveryController extends Controller
             'payment_status' => 'pending',
             'item_description' => $validated['item_description'],
             'item_value' => $validated['item_value'] ?? null,
+            'package_weight_kg' => $validated['weight_kg'] ?? 1.0,
             'recipient_name' => $validated['recipient_name'],
             'recipient_phone' => $validated['recipient_phone'],
             'pickup_address' => $validated['pickup_address'],
@@ -58,6 +61,55 @@ class DeliveryController extends Controller
         ]);
 
         return response()->json(['delivery' => $delivery], 201);
+    }
+
+    public function quote(QuoteDeliveryRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $quote = $this->deliveryService->quoteByCoordinates([
+            'tenant_id' => $request->user()->tenant_id,
+            'pickup_lat' => $validated['pickup_lat'],
+            'pickup_lng' => $validated['pickup_lng'],
+            'dropoff_lat' => $validated['dropoff_lat'],
+            'dropoff_lng' => $validated['dropoff_lng'],
+            'package_weight_kg' => $validated['weight_kg'] ?? 1.0,
+        ]);
+
+        return ApiResponse::success(['quote' => $quote]);
+    }
+
+    public function driverAccept(Request $request, Delivery $delivery): JsonResponse
+    {
+        try {
+            $delivery = $this->deliveryService->acceptDelivery($delivery, $request->user());
+
+            return ApiResponse::success($delivery);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::apiError(422, 'Accept Failed', $e->getMessage());
+        }
+    }
+
+    public function driverCancel(CancelDeliveryRequest $request, Delivery $delivery): JsonResponse
+    {
+        try {
+            $delivery = $this->deliveryService->driverCancelDelivery(
+                $delivery,
+                $request->user(),
+                $request->validated('cancellation_reason') ?? '',
+            );
+
+            return ApiResponse::success($delivery);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::apiError(422, 'Cancellation Failed', $e->getMessage());
+        }
+    }
+
+    public function availableDeliveries(Request $request): JsonResponse
+    {
+        $deliveries = $this->deliveryService->getAvailableDeliveries($request->user());
+
+        return ApiResponse::success($deliveries);
     }
 
     public function show(Request $request, Delivery $delivery): JsonResponse
@@ -86,7 +138,13 @@ class DeliveryController extends Controller
 
         $validated = $request->validated();
 
-        $delivery = $this->deliveryService->updateStatus($delivery, $validated['status']);
+        $delivery = $this->deliveryService->updateStatus(
+            $delivery,
+            $validated['status'],
+            $request->user()->id,
+            $validated['reason'] ?? null,
+            $validated['pod_photo_url'] ?? null,
+        );
 
         return ApiResponse::success($delivery);
     }
@@ -107,7 +165,7 @@ class DeliveryController extends Controller
             ->when($request->status, fn ($q, $v) => $q->where('status', $v))
             ->with(['sender', 'ride'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return ApiResponse::paginated($deliveries);
     }

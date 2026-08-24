@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '@easyryde/shared';
-import { ADMIN_COLORS, ADMIN_GRADIENTS } from '../constants/theme';
+import { useAuth, useBusinessTheme } from '@easyryde/shared';
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
+  const { activeTheme } = useBusinessTheme();
+  const { colors: biz } = activeTheme;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,14 +36,15 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <LinearGradient colors={ADMIN_GRADIENTS.header} style={[styles.container, { paddingTop: insets.top + 40 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 40 }]}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.logoSection}>
-            <View style={styles.logoCircle}>
-              <Ionicons name="shield-checkmark" size={40} color="#ffffff" />
+            <View style={[styles.logoCircle, { backgroundColor: biz.primary, borderColor: biz.primaryLight }]}>
+              <LinearGradient colors={biz.gradient} style={StyleSheet.absoluteFill} />
+              <Text style={styles.logoMark}>{activeTheme.logo.mark}</Text>
             </View>
-            <Text style={styles.brand}>EasyRyde</Text>
-            <Text style={styles.subtitle}>Admin Panel</Text>
+            <Text style={styles.brand}>{activeTheme.logo.text}</Text>
+            <Text style={styles.subtitle}>{activeTheme.branding.tagline}</Text>
           </View>
 
           <View style={styles.formCard}>
@@ -51,11 +54,11 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="mail-outline" size={18} color="rgba(255,255,255,0.35)" />
+                <Ionicons name="mail-outline" size={18} color={biz.textMuted} />
                 <TextInput
                   style={styles.input}
                   placeholder="admin@easyryde.com"
-                  placeholderTextColor="rgba(255,255,255,0.25)"
+                  placeholderTextColor={biz.textMuted}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -68,23 +71,23 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="lock-closed-outline" size={18} color="rgba(255,255,255,0.35)" />
+                <Ionicons name="lock-closed-outline" size={18} color={biz.textMuted} />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter password"
-                  placeholderTextColor="rgba(255,255,255,0.25)"
+                  placeholderTextColor={biz.textMuted}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="rgba(255,255,255,0.35)" />
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={biz.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
 
             <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={loading} activeOpacity={0.8}>
-              <LinearGradient colors={['#6366f1', '#4f46e5']} style={styles.loginBtnGradient}>
+              <LinearGradient colors={[biz.primaryDark, biz.primary]} style={styles.loginBtnGradient}>
                 {loading ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
@@ -99,16 +102,17 @@ export default function LoginScreen() {
 
           <Text style={styles.footer}>EasyRyde Admin v4.0 — Phalaborwa, Limpopo</Text>
         </ScrollView>
-      </LinearGradient>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#050E1A' },
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 40 },
   logoSection: { alignItems: 'center', marginBottom: 40 },
-  logoCircle: { width: 72, height: 72, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  logoCircle: { width: 72, height: 72, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  logoMark: { fontSize: 28, fontWeight: '800', color: '#ffffff' },
   brand: { fontSize: 28, fontWeight: '800', color: '#ffffff', marginTop: 14 },
   subtitle: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.5)', marginTop: 4 },
   formCard: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 20, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },

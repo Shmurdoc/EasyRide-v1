@@ -24,7 +24,7 @@ class RatingController extends Controller
         $ratings = Rating::where('ratee_id', $request->user()->id)
             ->with(['rater', 'ride'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($ratings);
     }
@@ -34,7 +34,7 @@ class RatingController extends Controller
         $ratings = Rating::where('rater_id', $request->user()->id)
             ->with(['ratee', 'ride'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($ratings);
     }

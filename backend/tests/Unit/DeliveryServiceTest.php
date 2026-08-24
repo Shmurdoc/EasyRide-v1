@@ -32,7 +32,13 @@ class DeliveryServiceTest extends TestCase
         $delivery = Delivery::factory()->create(['status' => 'picked_up']);
         $service = app(DeliveryService::class);
 
-        $updated = $service->updateStatus($delivery, 'delivered');
+        $service->updateStatus($delivery->fresh(), 'in_transit');
+        $service->updateStatus($delivery->fresh(), 'at_dropoff');
+        $updated = $service->updateStatus(
+            $delivery->fresh(),
+            'delivered',
+            podPhotoUrl: 'https://cdn.example.com/pod/1.jpg',
+        );
 
         $this->assertEquals('delivered', $updated->status);
         $this->assertNotNull($updated->delivered_at);

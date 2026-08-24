@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,80 +9,54 @@ import {
   RefreshControl,
   ActivityIndicator,
   Platform,
+  Animated,
+  Pressable,
 } from 'react-native';
-import MapView, { PROVIDER_DEFAULT } from 'react-native-maps';
-import * as Location from 'expo-location';
+import { ErrorBoundary } from '@easyryde/shared';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import {
   useAuth,
   rides,
-  COLORS,
-  MAP_REGION,
-  PHALABORWA_CENTER,
-  SPACING,
-  RADIUS,
+  GRADIENTS,
   formatCurrency,
   formatDate,
+  useTheme,
+  useAppTheme,
+  SPACING,
+  RADIUS,
 } from '@easyryde/shared';
 import type { RiderNav, RiderMainTabParamList } from '@easyryde/shared';
 import type { RouteProp } from '@react-navigation/native';
 import type { Ride } from '@easyryde/shared';
 
-const DARK_MAP_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#1d2c4d' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#1a3646' }] },
-  { featureType: 'administrative.country', elementType: 'geometry', stylers: [{ color: '#121212' }] },
-  { featureType: 'administrative.land_parcel', elementType: 'labels.text.fill', stylers: [{ color: '#64779e' }] },
-  { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#1d3c4d' }] },
-  { featureType: 'landscape.man_made', elementType: 'geometry.stroke', stylers: [{ color: '#334e87' }] },
-  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#023e58' }] },
-  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#283d6a' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#6f9ba5' }] },
-  { featureType: 'poi.park', elementType: 'geometry.fill', stylers: [{ color: '#023e58' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#3C7680' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#304a7d' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#98a5be' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#2c6675' }] },
-  { featureType: 'transit', elementType: 'labels.text.fill', stylers: [{ color: '#98a5be' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e1626' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4e6d70' }] },
+interface PromoSlide {
+  id: string;
+  kicker: string;
+  title: string;
+  subtitle: string;
+  code?: string;
+}
+
+const PROMOS: PromoSlide[] = [
+  { id: '1', kicker: 'RIDES · THIS WEEK', title: '20% off your first ride', subtitle: 'Use code at checkout — all ride categories.', code: 'PHB20' },
+  { id: '2', kicker: 'FOOD · FREE DELIVERY', title: 'Free delivery on R150+', subtitle: 'Order from local restaurants, delivered hot.' },
+  { id: '3', kicker: 'REFER & EARN', title: 'Get R50 credit each', subtitle: 'Invite friends — you both earn when they ride.' },
 ];
 
-interface ServiceCard {
+interface QuickTile {
   id: string;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-  badge?: string;
   route?: string;
-  serviceType: string;
+  primary?: boolean;
 }
 
-const SERVICES: ServiceCard[] = [
-  { id: 'ride', label: 'Ride', icon: 'car-sport', badge: 'Promo', route: 'BookRide', serviceType: 'ride' },
-  { id: 'delivery', label: 'Delivery', icon: 'cube', serviceType: 'delivery' },
-  { id: 'airport', label: 'Airport', icon: 'airplane', serviceType: 'airport' },
-  { id: 'parcel', label: 'Parcel', icon: 'package', serviceType: 'parcel' },
-];
-
-interface SavedPlaceItem {
-  id: string;
-  name: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}
-
-const SAVED_PLACES: SavedPlaceItem[] = [
-  { id: 'home', name: 'Home', icon: 'home' },
-  { id: 'work', name: 'Work', icon: 'briefcase' },
-  { id: 'airport', name: 'Airport', icon: 'airplane' },
-];
-
-const RIDE_TYPES = [
-  { id: 'standard', label: 'Standard', icon: 'car-sport' as const, desc: 'Everyday rides' },
-  { id: 'premium', label: 'Premium', icon: 'diamond' as const, desc: 'Luxury vehicles' },
-  { id: 'minivan', label: 'Minivan', icon: 'bus' as const, desc: 'Groups up to 6' },
-  { id: 'pets', label: 'Pets', icon: 'paw' as const, desc: 'Pet-friendly' },
+const QUICK_TILES: QuickTile[] = [
+  { id: 'ride', label: 'Ride', icon: 'car-sport', route: 'BookRide', primary: true },
+  { id: 'food', label: 'Food', icon: 'restaurant', route: 'RestaurantList' },
+  { id: 'trips', label: 'Trips', icon: 'map', route: 'RideHistory' },
 ];
 
 type Props = {
@@ -90,32 +64,47 @@ type Props = {
   route: RouteProp<RiderMainTabParamList, 'Home'>;
 };
 
-export default function HomeScreen({ navigation, route }: Props) {
+function PressTile({ children, onPress, style }: { children: React.ReactNode; onPress?: () => void; style?: any }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const handlePressIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 40, bounciness: 3 }).start();
+  const handlePressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 3 }).start();
+  return (
+    <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress}>
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    </Pressable>
+  );
+}
+
+function HomeScreenInner({ navigation }: Props) {
   const { user } = useAuth();
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const { colors, typography, spacing, radius, shadows } = useTheme();
+  const { mode, toggle } = useAppTheme();
   const [recentRides, setRecentRides] = useState<Ride[]>([]);
   const [totalSpent, setTotalSpent] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
-  const [selectedRideType, setSelectedRideType] = useState('standard');
+  const [promoIndex, setPromoIndex] = useState(0);
+  const promoScrollRef = useRef<ScrollView>(null);
+  const metrics = { card: 300, gap: SPACING.md };
 
   const firstName = user?.name?.split(' ')[0] || 'Rider';
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPromoIndex((prev) => {
+        const next = (prev + 1) % PROMOS.length;
+        promoScrollRef.current?.scrollTo({ x: next * (metrics.card + metrics.gap), animated: true });
+        return next;
+      });
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
 
   const requestLocation = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocationPermission(status === 'granted');
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({});
-        setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
-      } else {
-        setLocation({ lat: PHALABORWA_CENTER.latitude, lng: PHALABORWA_CENTER.longitude });
-      }
-    } catch {
-      setLocationPermission(false);
-      setLocation({ lat: PHALABORWA_CENTER.latitude, lng: PHALABORWA_CENTER.longitude });
-    }
+      if (status !== 'granted') return;
+    } catch {}
   }, []);
 
   const fetchRecentRides = useCallback(async () => {
@@ -161,517 +150,258 @@ export default function HomeScreen({ navigation, route }: Props) {
 
   const getTimeOfDay = (): string => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Morning';
-    if (hour < 17) return 'Afternoon';
-    return 'Evening';
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
   };
-
-  const handleServicePress = (service: ServiceCard) => {
-    if (service.route) {
-      navigation.navigate(service.route as any, { serviceType: service.serviceType } as any);
-    }
-  };
-
-  const handleSearchPress = () => {
-    navigation.navigate('BookRide');
-  };
-
-  const handleProfilePress = () => {
-    navigation.navigate('Profile');
-  };
-
-  const mapRegion = location
-    ? { latitude: location.lat, longitude: location.lng, latitudeDelta: 0.025, longitudeDelta: 0.025 }
-    : MAP_REGION;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.bg} />
 
-      {/* Map as background */}
-      <MapView
-        provider={PROVIDER_DEFAULT}
-        style={StyleSheet.absoluteFill}
-        region={mapRegion}
-        customMapStyle={DARK_MAP_STYLE}
-        showsUserLocation={locationPermission === true}
-        showsMyLocationButton={false}
-        showsCompass={false}
-        showsScale={false}
-        toolbarEnabled={false}
-      />
-
-      {/* Scrollable overlay content */}
       <ScrollView
-        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={COLORS.primary}
-            colors={[COLORS.primary]}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} colors={[colors.brand]} />
         }
       >
-        {/* Header with orange gradient */}
-        <LinearGradient
-          colors={['#FFAD7A', '#e89b6a'] as [string, string]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.headerGradient}
-        >
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.greetingText}>Good {getTimeOfDay()},</Text>
-              <Text style={styles.nameText}>{firstName} 👋</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.profileButton}
-              onPress={handleProfilePress}
-              activeOpacity={0.7}
-            >
-              {user?.avatar_url ? (
-                <View style={styles.avatarContainer}>
-                  <Ionicons name="person" size={22} color={COLORS.primary} />
-                </View>
-              ) : (
-                <View style={styles.avatarContainer}>
-                  <Ionicons name="person" size={22} color={COLORS.primary} />
-                </View>
-              )}
+        {/* ── Header ── */}
+        <View style={[styles.header, { paddingTop: Platform.OS === 'ios' ? 56 : 44 }]}>
+          <View>
+            <Text style={[typography.small, { color: colors.textMuted }]}>{getTimeOfDay()}</Text>
+            <Text style={[typography.h1, { color: colors.text, marginTop: 2 }]}>{firstName}</Text>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={[styles.themeBtn, { backgroundColor: colors.surfaceAlt }]} onPress={toggle} activeOpacity={0.7}>
+              <Ionicons name={mode === 'dark' ? 'sunny' : 'moon'} size={18} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.avatar, { backgroundColor: colors.brandSoft }]} onPress={() => navigation.navigate('Main', { screen: 'Profile' })} activeOpacity={0.7}>
+              <Ionicons name="person" size={20} color={colors.brand} />
             </TouchableOpacity>
           </View>
-
-          {/* Service cards 2x2 grid */}
-          <View style={styles.servicesGrid}>
-            {SERVICES.map((service) => (
-              <TouchableOpacity
-                key={service.id}
-                style={styles.serviceCard}
-                onPress={() => handleServicePress(service)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.serviceCardTop}>
-                  <Ionicons name={service.icon} size={32} color={COLORS.white} />
-                  {service.badge && (
-                    <View style={styles.promoBadge}>
-                      <Text style={styles.promoBadgeText}>{service.badge}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.serviceLabel}>{service.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </LinearGradient>
-
-        {/* Content area with semi-transparent dark background */}
-        <View style={styles.contentArea}>
-          {/* Search bar */}
-          <TouchableOpacity
-            style={styles.searchBar}
-            onPress={handleSearchPress}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="search" size={20} color={COLORS.textMuted} />
-            <Text style={styles.searchPlaceholder}>Where to?</Text>
-            <View style={styles.nowPill}>
-              <Ionicons name="time" size={14} color={COLORS.bg} />
-              <Text style={styles.nowText}>Now</Text>
-              <Ionicons name="chevron-down" size={12} color={COLORS.bg} />
-            </View>
-          </TouchableOpacity>
-
-          {/* Ride Type Selector */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.rideTypeScroll}
-          >
-            {RIDE_TYPES.map((type) => {
-              const isSelected = selectedRideType === type.id;
-              return (
-                <TouchableOpacity
-                  key={type.id}
-                  style={[styles.rideTypeChip, isSelected && styles.rideTypeChipSelected]}
-                  onPress={() => setSelectedRideType(type.id)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={type.icon}
-                    size={18}
-                    color={isSelected ? COLORS.bg : COLORS.primary}
-                  />
-                  <Text style={[styles.rideTypeLabel, isSelected && styles.rideTypeLabelSelected]}>
-                    {type.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* Recent Destinations */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Recent Destinations</Text>
-            {loading ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-              </View>
-            ) : recentRides.length > 0 ? (
-              recentRides.map((ride) => (
-                <TouchableOpacity
-                  key={ride.id}
-                  style={styles.recentItem}
-                  activeOpacity={0.7}
-                  onPress={() =>
-                    navigation.navigate('BookRide', {
-                      dropoff: ride.dropoff_address,
-                    })
-                  }
-                >
-                  <View style={styles.recentIconContainer}>
-                    <Ionicons name="location" size={18} color={COLORS.primary} />
-                  </View>
-                  <View style={styles.recentTextContainer}>
-                    <Text style={styles.recentName} numberOfLines={1}>
-                      {ride.dropoff_address}
-                    </Text>
-                    <Text style={styles.recentDate}>
-                      {ride.completed_at ? formatDate(ride.completed_at) : ''}
-                    </Text>
-                  </View>
-                  <Ionicons name="time-outline" size={16} color={COLORS.textMuted} />
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>No recent trips yet</Text>
-            )}
-          </View>
-
-          {/* Saved Places */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Saved Places</Text>
-            <View style={styles.savedPlacesRow}>
-              {SAVED_PLACES.map((place) => (
-                <TouchableOpacity
-                  key={place.id}
-                  style={styles.savedPlaceCard}
-                  activeOpacity={0.7}
-                  onPress={() => navigation.navigate('BookRide')}
-                >
-                  <View style={styles.savedPlaceIconContainer}>
-                    <Ionicons name={place.icon} size={20} color={COLORS.primary} />
-                  </View>
-                  <Text style={styles.savedPlaceLabel}>{place.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Quick Stats */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Your Stats</Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{user?.total_trips ?? 0}</Text>
-                <Text style={styles.statLabel}>Trips</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{user?.average_rating?.toFixed(1) ?? '—'}</Text>
-                <Text style={styles.statLabel}>Rating</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{formatCurrency(totalSpent)}</Text>
-                <Text style={styles.statLabel}>Spent</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={{ height: 100 }} />
         </View>
+
+        {/* ── Search ── */}
+        <PressTile onPress={() => navigation.navigate('BookRide')} style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.border, ...shadows.card }]}>
+          <Ionicons name="search" size={20} color={colors.brand} />
+          <Text style={[typography.bodyMedium, { color: colors.textMuted, flex: 1, marginLeft: spacing.base }]}>Where to?</Text>
+          <Ionicons name="options-outline" size={18} color={colors.textSecondary} />
+        </PressTile>
+
+        {/* ── Quick tiles ── */}
+        <View style={styles.tilesWrap}>
+          {QUICK_TILES.map((tile) => (
+            <PressTile key={tile.id} style={styles.tile} onPress={() => tile.route && navigation.navigate(tile.route as any)}>
+              <View style={[
+                styles.tileIcon,
+                { backgroundColor: tile.primary ? colors.brand : colors.surfaceAlt },
+                tile.primary ? shadows.brand : null,
+              ]}>
+                <Ionicons name={tile.icon} size={22} color={tile.primary ? colors.brandContrast : colors.text} />
+              </View>
+              <Text style={[typography.small, { color: colors.textSecondary, marginTop: spacing.sm }]} numberOfLines={1}>{tile.label}</Text>
+            </PressTile>
+          ))}
+        </View>
+
+        {/* ── Promo ── */}
+        <ScrollView
+          ref={promoScrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={metrics.card + metrics.gap}
+          decelerationRate="fast"
+          contentContainerStyle={styles.promoScroll}
+        >
+          {PROMOS.map((promo) => (
+            <View key={promo.id} style={[styles.promoCard, { width: metrics.card }]}>
+              <LinearGradient colors={GRADIENTS.brand as unknown as string[]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+              <Text style={[typography.kicker, { color: colors.brandContrast, opacity: 0.85 }]}>{promo.kicker}</Text>
+              <Text style={[typography.section, { color: colors.brandContrast, marginTop: 6 }]}>{promo.title}</Text>
+              <Text style={[typography.small, { color: colors.brandContrast, opacity: 0.9, marginTop: 4 }]}>{promo.subtitle}</Text>
+              {promo.code ? (
+                <View style={[styles.promoCodeChip, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                  <Text style={[typography.xs, { color: colors.brandContrast, letterSpacing: 1 }]}>{promo.code}</Text>
+                </View>
+              ) : null}
+            </View>
+          ))}
+        </ScrollView>
+        <View style={styles.promoDots}>
+          {PROMOS.map((_, i) => (
+            <View key={i} style={[styles.promoDot, i === promoIndex && { backgroundColor: colors.brand, width: 18 }]} />
+          ))}
+        </View>
+
+        {/* ── Account snapshot ── */}
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[typography.section, { color: colors.text }]}>Your account</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.stat}>
+              <Text style={[typography.priceLg, { color: colors.text }]}>{user?.total_trips ?? 0}</Text>
+              <Text style={[typography.xs, { color: colors.textMuted, marginTop: 2 }]}>TRIPS</Text>
+            </View>
+            <View style={[styles.stat, styles.statDivider, { borderColor: colors.border }]}>
+              <Text style={[typography.priceLg, { color: colors.text }]}>{user?.average_rating?.toFixed(1) ?? '5.0'}</Text>
+              <Text style={[typography.xs, { color: colors.textMuted, marginTop: 2 }]}>RATING</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={[typography.priceLg, { color: colors.brand }]}>{formatCurrency(totalSpent)}</Text>
+              <Text style={[typography.xs, { color: colors.textMuted, marginTop: 2 }]}>SPENT</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Recent destinations ── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[typography.section, { color: colors.text }]}>Recent destinations</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('RideHistory')}>
+              <Text style={[typography.small, { color: colors.brand }]}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          {loading ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator size="small" color={colors.brand} />
+            </View>
+          ) : recentRides.length > 0 ? (
+            recentRides.map((ride) => (
+              <PressTile key={ride.id} style={[styles.recentItem, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => navigation.navigate('BookRide', { dropoff: ride.dropoff_address })}>
+                <View style={[styles.recentIcon, { backgroundColor: colors.brandSoft }]}>
+                  <Ionicons name="location" size={16} color={colors.brand} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.bodyMedium, { color: colors.text }]} numberOfLines={1}>{ride.dropoff_address}</Text>
+                  <Text style={[typography.small, { color: colors.textMuted, marginTop: 2 }]}>{ride.completed_at ? formatDate(ride.completed_at) : ''}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </PressTile>
+            ))
+          ) : (
+            <Text style={[typography.small, { color: colors.textMuted }]}>No recent trips yet</Text>
+          )}
+        </View>
+
+        {/* ── Local alert ── */}
+        <View style={[styles.alert, { backgroundColor: colors.surfaceAlt, borderLeftColor: colors.warning }]}>
+          <Ionicons name="flash" size={18} color={colors.warning} />
+          <View style={{ flex: 1, marginLeft: spacing.base }}>
+            <Text style={[typography.bodyMedium, { color: colors.text }]}>Load shedding — Stage 4</Text>
+            <Text style={[typography.small, { color: colors.textMuted, marginTop: 2 }]}>Today 06:00–08:30 · 16:00–18:30</Text>
+          </View>
+        </View>
+
+        <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-
-  // Header gradient overlay
-  headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? 56 : 44,
-    paddingBottom: SPACING.lg,
-    borderBottomLeftRadius: RADIUS['2xl'],
-    borderBottomRightRadius: RADIUS['2xl'],
-  },
-  headerRow: {
+  container: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: SPACING.sm },
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.base,
+    paddingBottom: SPACING.sm,
   },
-  greetingText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(18, 18, 18, 0.7)',
-    letterSpacing: 0.3,
-  },
-  nameText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.bg,
-    marginTop: 2,
-  },
-  profileButton: {
-    padding: 2,
-  },
-  avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(18, 18, 18, 0.15)',
-    justifyContent: 'center',
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
+  themeBtn: { width: 40, height: 40, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.base },
+  avatar: { width: 44, height: 44, borderRadius: RADIUS.lg, justifyContent: 'center', alignItems: 'center' },
+
+  search: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.base,
+    paddingHorizontal: SPACING.lg,
+    marginHorizontal: SPACING.base,
+    marginTop: SPACING.base,
+    borderWidth: 1,
   },
 
-  // Service cards
-  servicesGrid: {
+  tilesWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: SPACING.lg,
-    gap: SPACING.md,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.lg,
   },
-  serviceCard: {
-    width: '47%',
-    backgroundColor: 'rgba(18, 18, 18, 0.35)',
-    borderRadius: RADIUS['2xl'],
+  tile: {
+    width: '25%',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+  },
+  tileIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: RADIUS.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  promoScroll: { paddingHorizontal: SPACING.base, paddingTop: SPACING.base },
+  promoCard: {
+    height: 132,
+    borderRadius: RADIUS.tile,
     padding: SPACING.base,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    height: 110,
-    justifyContent: 'space-between',
+    marginRight: SPACING.md,
+    overflow: 'hidden',
+    justifyContent: 'center',
   },
-  serviceCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  promoBadge: {
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  promoBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: COLORS.primary,
-    letterSpacing: 0.5,
-  },
-  serviceLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-
-  // Content area
-  contentArea: {
-    backgroundColor: 'rgba(18, 18, 18, 0.92)',
-    paddingTop: SPACING.base,
-    borderTopLeftRadius: RADIUS['2xl'],
-    borderTopRightRadius: RADIUS['2xl'],
-    marginTop: -4,
-  },
-
-  // Search bar
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
-    backgroundColor: COLORS.surfaceElevated,
-    borderRadius: RADIUS.full,
-    paddingVertical: 14,
+  promoCodeChip: {
+    alignSelf: 'flex-start',
+    paddingVertical: 5,
     paddingHorizontal: SPACING.base,
+    borderRadius: RADIUS.sm,
+    marginTop: SPACING.md,
+  },
+  promoDots: { flexDirection: 'row', justifyContent: 'center', marginTop: SPACING.md },
+  promoDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(140,140,143,0.4)', marginHorizontal: 3 },
+
+  card: {
+    marginHorizontal: SPACING.base,
+    marginTop: SPACING.base,
+    borderRadius: RADIUS.tile,
+    padding: SPACING.lg,
     borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
   },
-  searchPlaceholder: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-    color: COLORS.textMuted,
-    marginLeft: SPACING.md,
-  },
-  nowPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    gap: 5,
-  },
-  nowText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.bg,
-  },
+  statsRow: { flexDirection: 'row', marginTop: SPACING.base },
+  stat: { flex: 1, alignItems: 'center' },
+  statDivider: { borderLeftWidth: 1 },
 
-  // Ride type selector
-  rideTypeScroll: {
-    paddingHorizontal: SPACING.lg,
-    gap: SPACING.sm,
-    marginBottom: SPACING.lg,
-  },
-  rideTypeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: SPACING.base,
-    backgroundColor: COLORS.surfaceElevated,
-    borderRadius: RADIUS.full,
-    borderWidth: 1.5,
-    borderColor: COLORS.surfaceBorder,
-  },
-  rideTypeChipSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  rideTypeLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  rideTypeLabelSelected: {
-    color: COLORS.bg,
-  },
+  section: { marginTop: SPACING.xl, paddingHorizontal: SPACING.base },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
+  loadingRow: { paddingVertical: SPACING.base, alignItems: 'center' },
 
-  // Sections
-  section: {
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: SPACING.md,
-  },
-
-  // Recent destinations
   recentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceElevated,
     borderRadius: RADIUS.lg,
-    padding: 14,
-    marginBottom: SPACING.sm,
+    padding: SPACING.base,
+    marginBottom: SPACING.base,
     borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
   },
-  recentIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: RADIUS.md,
-    backgroundColor: 'rgba(255, 173, 122, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-  },
-  recentTextContainer: {
-    flex: 1,
-  },
-  recentName: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  recentDate: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-  loadingRow: {
-    paddingVertical: SPACING.lg,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: COLORS.textDim,
-    textAlign: 'center',
-    paddingVertical: SPACING.base,
-  },
+  recentIcon: { width: 36, height: 36, borderRadius: RADIUS.md, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md },
 
-  // Saved places
-  savedPlacesRow: {
+  alert: {
     flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  savedPlaceCard: {
-    flex: 1,
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceElevated,
-    borderRadius: RADIUS.lg,
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-  },
-  savedPlaceIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 173, 122, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  savedPlaceLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: COLORS.surfaceElevated,
-    borderRadius: RADIUS.lg,
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.primary,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: COLORS.textMuted,
+    marginHorizontal: SPACING.base,
+    marginTop: SPACING.xl,
+    padding: SPACING.base,
+    borderRadius: RADIUS.tile,
+    borderLeftWidth: 3,
   },
 });
+
+export default function HomeScreen(props: Props) {
+  return (
+    <ErrorBoundary>
+      <HomeScreenInner {...props} />
+    </ErrorBoundary>
+  );
+}

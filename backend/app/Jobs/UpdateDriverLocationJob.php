@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class UpdateDriverLocationJob implements ShouldQueue
 {
@@ -22,7 +23,15 @@ class UpdateDriverLocationJob implements ShouldQueue
 
     public function handle(): void
     {
-        $driver = User::find($this->driverId);
+        try {
+            $driver = User::find($this->driverId);
+        } catch (\Exception $e) {
+            Log::warning('UpdateDriverLocationJob: failed to find driver', [
+                'driver_id' => $this->driverId,
+                'error' => $e->getMessage(),
+            ]);
+            return;
+        }
 
         if ($driver === null) {
             return;

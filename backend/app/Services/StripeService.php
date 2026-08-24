@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\StripeClient;
 use Stripe\Webhook;
@@ -17,7 +18,48 @@ class StripeService
     {
         require_once dirname(__DIR__, 2).'/vendor/stripe/stripe-php/init.php';
         $secretKey = config('services.stripe.secret_key');
-        $this->stripe = $secretKey ? new StripeClient($secretKey) : null;
+
+        $this->stripe = null;
+        if ($secretKey) {
+            $this->assertSafeMode($secretKey);
+            $this->stripe = new StripeClient($secretKey);
+        }
+    }
+
+    /**
+     * Fail closed: refuse to operate if the configured key does not match the
+     * declared mode, or if live mode is enabled without an explicit opt-in.
+     * This prevents a live key from ever being used by accident during a trial.
+     */
+    protected function assertSafeMode(string $secretKey): void
+    {
+        $sandbox = (bool) config('services.stripe.sandbox', true);
+        $liveEnabled = (bool) config('services.stripe.live_enabled', false);
+        $isTestKey = str_starts_with($secretKey, 'sk_test_') || str_starts_with($secretKey, 'rk_test_');
+
+        if ($sandbox) {
+            if (! $isTestKey) {
+                throw new \RuntimeException(
+                    'Stripe is configured for sandbox but a live secret key was provided. '.
+                    'Use a test key (sk_test_/rk_test_) or set STRIPE_SANDBOX=false with STRIPE_LIVE_ENABLED=true.'
+                );
+            }
+
+            return;
+        }
+
+        // Live mode requested.
+        if (! $liveEnabled) {
+            throw new \RuntimeException(
+                'Stripe live mode requires an explicit opt-in. Set STRIPE_LIVE_ENABLED=true to charge real money.'
+            );
+        }
+
+        if ($isTestKey) {
+            throw new \RuntimeException(
+                'Stripe is configured for live mode but a test secret key was provided.'
+            );
+        }
     }
 
     protected function getStripe(): StripeClient
@@ -98,9 +140,11 @@ class StripeService
                 $sigHeader,
                 config('services.stripe.webhook_secret')
             );
-        } catch (\UnexpectedValueException) {
+        } catch (\UnexpectedValueException $e) {
+            Log::warning('StripeService: invalid webhook payload', ['error' => $e->getMessage()]);
             return ['error' => 'Invalid payload'];
-        } catch (SignatureVerificationException) {
+        } catch (SignatureVerificationException $e) {
+            Log::warning('StripeService: invalid webhook signature', ['error' => $e->getMessage()]);
             return ['error' => 'Invalid signature'];
         }
 

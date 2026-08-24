@@ -32,10 +32,19 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
+    "@react-native/babel-preset": "^0.86.0",
     "detox": "^20.27.2",
+    "eslint": "^10.9.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "ts-jest": "^29.4.11",
     "turbo": "^2.0.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.68.0"
+  },
+  "overrides": {
+    "jest": "29.7.0",
+    "jest-expo": "51.0.4"
   },
   "dependencies": {
     "@babel/runtime": "^8.0.0",

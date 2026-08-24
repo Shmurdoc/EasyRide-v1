@@ -25,18 +25,46 @@ class ProcessPayoutJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $this->payout->update(['status' => 'processing']);
+            $payout = DriverPayout::where('id', $this->payout->id)->first();
 
-            Wallet::where('user_id', $this->payout->driver_id)
-                ->decrement('balance', $this->payout->amount);
+            if (! $payout) {
+                return;
+            }
 
-            $this->payout->update([
+            if (in_array($payout->status, ['completed', 'failed'], true)) {
+                return;
+            }
+
+            if ($payout->status !== 'processing') {
+                $payout->update(['status' => 'processing']);
+            }
+
+            $wallet = Wallet::where('user_id', $payout->driver_id)->lockForUpdate()->first();
+
+            if (! $wallet) {
+                Log::error('Payout failed: driver wallet not found', [
+                    'payout_id' => $payout->id,
+                    'driver_id' => $payout->driver_id,
+                ]);
+                $payout->update(['status' => 'failed', 'notes' => 'Driver wallet not found']);
+
+                return;
+            }
+
+            if ((float) $wallet->balance < (float) $payout->amount) {
+                $payout->update(['status' => 'failed', 'notes' => 'Insufficient balance']);
+                return;
+            }
+
+            $wallet->decrement('balance', $payout->amount);
+
+            $payout->update([
                 'status' => 'completed',
                 'reference' => 'PAY-'.strtoupper(Str::random(12)),
                 'processed_at' => now(),
             ]);
 
-            Log::info('Payout completed', ['payout_id' => $this->payout->id, 'driver_id' => $this->payout->driver_id]);
+            Log::info('Payout completed', ['payout_id' => $payout->id, 'driver_id' => $payout->driver_id]);
         } catch (\Exception $e) {
             Log::error('Payout failed', [
                 'payout_id' => $this->payout->id,

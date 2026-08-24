@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect } from 'react';
 import { FlatList, TouchableOpacity, Alert, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';

@@ -74,7 +74,7 @@ class DatabaseSeeder extends Seeder
             $admin->save();
         }
         $admin->assignRole('super-admin');
-        $admin->roles()->attach(Role::findByName('super-admin', 'api'));
+        $admin->roles()->syncWithoutDetaching(Role::findByName('super-admin', 'api'));
 
         // Create driver user
         $driver = User::firstOrCreate(
@@ -94,7 +94,7 @@ class DatabaseSeeder extends Seeder
             $driver->save();
         }
         $driver->assignRole('driver');
-        $driver->roles()->attach(Role::findByName('driver', 'api'));
+        $driver->roles()->syncWithoutDetaching(Role::findByName('driver', 'api'));
 
         DriverProfile::firstOrCreate(
             ['user_id' => $driver->id],
@@ -136,7 +136,7 @@ class DatabaseSeeder extends Seeder
             $rider->save();
         }
         $rider->assignRole('rider');
-        $rider->roles()->attach(Role::findByName('rider', 'api'));
+        $rider->roles()->syncWithoutDetaching(Role::findByName('rider', 'api'));
 
         // Create wallets
         Wallet::firstOrCreate(
@@ -178,12 +178,29 @@ class DatabaseSeeder extends Seeder
             ['platform_fee_percent', '15', 'number', 'Platform fee percentage'],
             ['driver_search_radius', '5', 'number', 'Default driver search radius in km'],
             ['max_surge_multiplier', '2.5', 'number', 'Maximum surge pricing multiplier'],
+            ['rides_pool_mode', 'both', 'enum', 'Rides fleet pool: both, private_only or easyryde_only', ['both', 'private_only', 'easyryde_only']],
+            ['food_pool_mode', 'both', 'enum', 'Food fleet pool: both, private_only or easyryde_only', ['both', 'private_only', 'easyryde_only']],
+            ['fraud_fine_cancel_after_pickup', '50', 'number', 'Fine for driver cancelling a ride/order after pickup'],
+            ['fraud_fine_cancel_near_dropoff', '50', 'number', 'Fine for driver cancelling a ride/order near dropoff'],
+            ['fraud_near_dropoff_radius_km', '1.0', 'number', 'Radius (km) from dropoff treated as near-dropoff'],
+            ['fraud_collusion_window_days', '7', 'number', 'Window (days) for repeat cancel-pair collusion detection'],
+            ['fraud_collusion_pair_cancels', '3', 'number', 'Cancel-pair threshold before collusion flag'],
+            ['fraud_unpaid_fines_block_rides', 'false', 'boolean', 'Block drivers with unpaid fines from accepting work'],
+            ['parcel_weight_surcharge_per_kg', '2', 'number', 'Per-kg surcharge above 1kg for parcel deliveries'],
         ];
 
-        foreach ($settings as [$key, $value, $type, $description]) {
+        foreach ($settings as $setting) {
+            [$key, $value, $type, $description] = $setting;
+            $options = $setting[4] ?? null;
+
             SystemSetting::firstOrCreate(
                 ['key' => $key, 'tenant_id' => $tenant->id],
-                ['value' => $value, 'type' => $type, 'description' => $description]
+                [
+                    'value' => $value,
+                    'type' => $type,
+                    'description' => $description,
+                    'options' => $options ? json_encode($options) : null,
+                ]
             );
         }
     }

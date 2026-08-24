@@ -119,6 +119,16 @@ export default function Settings() {
   const [autoPayoutSchedule, setAutoPayoutSchedule] = useState('weekly');
   const [minPayoutAmount, setMinPayoutAmount] = useState('100');
 
+  const [ridesPoolMode, setRidesPoolMode] = useState('both');
+  const [foodPoolMode, setFoodPoolMode] = useState('both');
+
+  const [fineCancelAfterPickup, setFineCancelAfterPickup] = useState('50');
+  const [fineCancelNearDropoff, setFineCancelNearDropoff] = useState('50');
+  const [nearDropoffRadius, setNearDropoffRadius] = useState('1.0');
+  const [collusionWindow, setCollusionWindow] = useState('7');
+  const [collusionPairCancels, setCollusionPairCancels] = useState('3');
+  const [unpaidFinesBlockRides, setUnpaidFinesBlockRides] = useState(false);
+
   const [peakHourModal, setPeakHourModal] = useState<PeakHour | 'new' | null>(null);
   const [peakHourForm, setPeakHourForm] = useState({
     name: '',
@@ -178,6 +188,14 @@ export default function Settings() {
         { key: 'payment_method_wallet', value: String(walletEnabled), type: 'boolean', description: 'Wallet payments enabled' },
         { key: 'auto_payout_schedule', value: autoPayoutSchedule, type: 'string', description: 'Auto payout schedule' },
         { key: 'min_payout_amount', value: minPayoutAmount, type: 'number', description: 'Minimum payout amount' },
+        { key: 'rides_pool_mode', value: ridesPoolMode, type: 'enum', options: ['both', 'private_only', 'easyryde_only'], description: 'Rides fleet pool mode' },
+        { key: 'food_pool_mode', value: foodPoolMode, type: 'enum', options: ['both', 'private_only', 'easyryde_only'], description: 'Food/delivery fleet pool mode' },
+        { key: 'fraud_fine_cancel_after_pickup', value: fineCancelAfterPickup, type: 'number', description: 'Fine for cancelling after pickup' },
+        { key: 'fraud_fine_cancel_near_dropoff', value: fineCancelNearDropoff, type: 'number', description: 'Fine for cancelling near dropoff' },
+        { key: 'fraud_near_dropoff_radius_km', value: nearDropoffRadius, type: 'number', description: 'Near-dropoff radius in km' },
+        { key: 'fraud_collusion_window_days', value: collusionWindow, type: 'number', description: 'Collusion detection window in days' },
+        { key: 'fraud_collusion_pair_cancels', value: collusionPairCancels, type: 'number', description: 'Cancel-pair threshold for collusion flag' },
+        { key: 'fraud_unpaid_fines_block_rides', value: String(unpaidFinesBlockRides), type: 'boolean', description: 'Block drivers with unpaid fines' },
       ];
       await Promise.all(settings.map((s) => api.post('/admin/settings', s)));
     },
@@ -393,9 +411,53 @@ export default function Settings() {
             <InputField label="Minimum Payout Amount" value={minPayoutAmount} onChange={setMinPayoutAmount} prefix="R" step="10" />
           </div>
         </div>
-      </div>
+      {/* ── Fleet Pools & Conduct ── */}
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          <h3 className="text-lg font-semibold mb-4">Fleet Pools</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Rides Pool</label>
+              <select
+                value={ridesPoolMode}
+                onChange={(e) => setRidesPoolMode(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="both">Both (private + EasyRyde)</option>
+                <option value="private_only">Private drivers only</option>
+                <option value="easyryde_only">EasyRyde employees only</option>
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Saving to a mode with zero eligible drivers is rejected.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Food & Parcel Pool</label>
+              <select
+                value={foodPoolMode}
+                onChange={(e) => setFoodPoolMode(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="both">Both (private + EasyRyde)</option>
+                <option value="private_only">Private drivers only</option>
+                <option value="easyryde_only">EasyRyde employees only</option>
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Independent from the rides pool. Applies to food orders and parcel deliveries.</p>
+            </div>
+          </div>
 
-      {/* ── Peak Hour Modal ── */}
+          <div className="border-t pt-4 mt-4">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Conduct Fines (Anti-fraud)</h4>
+            <div className="space-y-4">
+              <InputField label="Fine — Cancel After Pickup (ZAR)" value={fineCancelAfterPickup} onChange={setFineCancelAfterPickup} prefix="R" step="5" />
+              <InputField label="Fine — Cancel Near Dropoff (ZAR)" value={fineCancelNearDropoff} onChange={setFineCancelNearDropoff} prefix="R" step="5" />
+              <InputField label="Near-Dropoff Radius (km)" value={nearDropoffRadius} onChange={setNearDropoffRadius} step="0.1" />
+              <InputField label="Collusion Window (days)" value={collusionWindow} onChange={setCollusionWindow} step="1" />
+              <InputField label="Collusion Cancel-Pair Threshold" value={collusionPairCancels} onChange={setCollusionPairCancels} step="1" />
+              <div className="border-t pt-2">
+                <Toggle label="Block drivers with unpaid fines from accepting work" checked={unpaidFinesBlockRides} onChange={setUnpaidFinesBlockRides} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       {peakHourModal !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">

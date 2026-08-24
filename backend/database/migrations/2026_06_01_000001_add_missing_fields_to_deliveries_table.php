@@ -11,12 +11,12 @@ return new class extends Migration
         Schema::table('deliveries', function (Blueprint $table) {
             $table->uuid('sender_id')->nullable()->after('tenant_id');
             $table->uuid('driver_id')->nullable()->after('sender_id');
-            $table->string('item_description', 1000)->nullable()->after('description');
+            $table->text('item_description')->nullable()->after('description');
             $table->decimal('item_value', 10, 2)->nullable()->after('item_description');
-            $table->string('pickup_address', 500)->nullable()->after('recipient_longitude');
+            $table->text('pickup_address')->nullable()->after('recipient_longitude');
             $table->decimal('pickup_lat', 10, 7)->nullable()->after('pickup_address');
             $table->decimal('pickup_lng', 10, 7)->nullable()->after('pickup_lat');
-            $table->string('dropoff_address', 500)->nullable()->after('pickup_lng');
+            $table->text('dropoff_address')->nullable()->after('pickup_lng');
             $table->decimal('dropoff_lat', 10, 7)->nullable()->after('dropoff_address');
             $table->decimal('dropoff_lng', 10, 7)->nullable()->after('dropoff_lat');
             $table->string('payment_method', 30)->nullable()->after('dropoff_lng');

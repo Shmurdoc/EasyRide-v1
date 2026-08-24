@@ -107,7 +107,7 @@ class IncidentReport extends Model
         return $this->severity === self::SEVERITY_CRITICAL;
     }
 
-    public function escalate(int $adminId): void
+    public function escalate(string $adminId): void
     {
         $this->update([
             'status' => self::STATUS_ESCALATED,
@@ -115,7 +115,7 @@ class IncidentReport extends Model
         ]);
     }
 
-    public function assign(int $adminId): void
+    public function assign(string $adminId): void
     {
         $this->update([
             'status' => self::STATUS_INVESTIGATING,

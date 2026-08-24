@@ -57,7 +57,9 @@ export default function PaymentsScreen() {
       const { data } = await client.get<PaginatedResponse<Payment>>('/admin/manage/payments', { params });
       setPayments(data.data);
       setMeta(data.meta);
-    } catch {} finally { setLoading(false); }
+    } catch (err) {
+      console.error('[Payments] Failed to load:', err);
+    } finally { setLoading(false); }
   }, [page, statusFilter, methodFilter]);
 
   useEffect(() => { loadPayments(); }, [loadPayments]);

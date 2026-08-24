@@ -19,7 +19,7 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { key: 'Dashboard', label: 'Dashboard', icon: 'grid-outline', iconFocused: 'grid', gradient: ['#6366f1', '#4f46e5'] },
+  { key: 'Dashboard', label: 'Dashboard', icon: 'grid-outline', iconFocused: 'grid', gradient: ['#0A7C4E', '#12A86B'] },
   { key: 'Rides', label: 'Rides', icon: 'car-outline', iconFocused: 'car', gradient: ['#3b82f6', '#2563eb'] },
   { key: 'Drivers', label: 'Drivers', icon: 'people-outline', iconFocused: 'people', gradient: ['#16a34a', '#15803d'] },
   { key: 'Users', label: 'Users', icon: 'person-outline', iconFocused: 'person', gradient: ['#f59e0b', '#d97706'] },
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   menuItemActive: {
-    shadowColor: '#6366f1',
+    shadowColor: '#0A7C4E',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

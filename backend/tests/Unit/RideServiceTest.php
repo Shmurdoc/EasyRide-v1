@@ -10,7 +10,9 @@ use App\Models\DriverProfile;
 use App\Models\Ride;
 use App\Models\User;
 use App\Services\CancellationService;
+use App\Services\DriverFraudGuardService;
 use App\Services\FareCalculationService;
+use App\Services\FleetModeService;
 use App\Services\NotificationService;
 use App\Services\RatingService;
 use App\Services\RideMatchingService;
@@ -59,6 +61,8 @@ class RideServiceTest extends TestCase
                 Mockery::mock(NotificationService::class),
             ),
             new StubSocketService,
+            Mockery::mock(DriverFraudGuardService::class),
+            new FleetModeService(new \App\Services\SettingService),
         );
     }
 
@@ -104,6 +108,9 @@ class RideServiceTest extends TestCase
         $matchingService->shouldReceive('calculateDistance')->andReturn(2.5);
         $matchingService->shouldReceive('calculateETA')->andReturn(300);
 
+        $fraudGuard = Mockery::mock(DriverFraudGuardService::class);
+        $fraudGuard->shouldReceive('isBlockedFromAccepting')->andReturn(false);
+
         return new RideService(
             new FareCalculationService(new RouteService, new SurgePricingService),
             new SurgePricingService,
@@ -115,6 +122,8 @@ class RideServiceTest extends TestCase
                 Mockery::mock(NotificationService::class),
             ),
             new StubSocketService,
+            $fraudGuard,
+            new FleetModeService(new \App\Services\SettingService),
         );
     }
 
@@ -269,6 +278,8 @@ class RideServiceTest extends TestCase
             new RouteService,
             new RideStateService($cancellationService, $notificationService),
             new StubSocketService,
+            Mockery::mock(DriverFraudGuardService::class),
+            new FleetModeService(new \App\Services\SettingService),
         );
 
         $result = $this->rideService->cancelRide($ride, 'Changed my mind', $rider->id);

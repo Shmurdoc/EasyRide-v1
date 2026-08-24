@@ -20,8 +20,6 @@ class DriverService
 {
     private const LOCATION_REDIS_TTL = 300;
 
-    private const LOCATION_UPDATE_DB_INTERVAL = 5;
-
     public function __construct(
         private readonly WalletService $walletService,
     ) {}
@@ -140,13 +138,14 @@ class DriverService
             );
         }
 
-        $driver->update(array_merge(
-            ['is_online' => $isOnline],
-            $locationData ? [
-                'current_latitude' => $locationData['current_latitude'] ?? $driver->current_latitude,
-                'current_longitude' => $locationData['current_longitude'] ?? $driver->current_longitude,
-            ] : [],
-        ));
+        $driver->is_online = $isOnline;
+
+        if ($locationData) {
+            $driver->current_latitude = $locationData['current_latitude'] ?? $driver->current_latitude;
+            $driver->current_longitude = $locationData['current_longitude'] ?? $driver->current_longitude;
+        }
+
+        $driver->save();
 
         Log::info('Driver online status toggled', [
             'driver_id' => $driver->id,
@@ -171,7 +170,6 @@ class DriverService
         }
 
         $redisKey = "driver:location:{$driver->id}";
-        $updateCountKey = "driver:location:count:{$driver->id}";
 
         try {
             Redis::setex($redisKey, self::LOCATION_REDIS_TTL, json_encode([
@@ -179,21 +177,15 @@ class DriverService
                 'longitude' => $lng,
                 'updated_at' => now()->toIso8601String(),
             ]));
-
-            $updateCount = (int) Redis::incr($updateCountKey);
-            Redis::expire($updateCountKey, 60);
         } catch (\Exception $e) {
-            Log::warning('Redis location update failed, falling back to DB', ['error' => $e->getMessage()]);
-            $updateCount = self::LOCATION_UPDATE_DB_INTERVAL;
+            Log::warning('Redis location update failed', ['error' => $e->getMessage()]);
         }
 
-        if ($updateCount % self::LOCATION_UPDATE_DB_INTERVAL === 0) {
-            $driver->update([
-                'current_latitude' => $lat,
-                'current_longitude' => $lng,
-                'last_location_update' => now(),
-            ]);
-        }
+        $driver->update([
+            'current_latitude' => $lat,
+            'current_longitude' => $lng,
+            'last_location_update' => now(),
+        ]);
     }
 
     public function getEarnings(User $driver, string $period = 'today'): array

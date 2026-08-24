@@ -6,7 +6,7 @@ import { NavigationContainer, NavigationContainerRef } from '@react-navigation/n
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth, useNotifications, ErrorBoundary, COLORS, ThemeProvider, AuthProvider } from '@easyryde/shared';
+import { useAuth, useNotifications, ErrorBoundary, COLORS, ThemeProvider, AuthProvider, BusinessThemeProvider } from '@easyryde/shared';
 
 import LoginScreen from './screens/LoginScreen';
 import DashboardScreen from './screens/DashboardScreen';
@@ -20,6 +20,7 @@ import FoodDeliveryScreen from './screens/FoodDeliveryScreen';
 import FoodOrderDetailScreen from './screens/FoodOrderDetailScreen';
 import DocumentsScreen from './screens/DocumentsScreen';
 import SupportScreen from './screens/SupportScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ConsentScreen from './screens/ConsentScreen';
 
 const Stack = createNativeStackNavigator();
@@ -44,7 +45,10 @@ function RootNavigator() {
           animation: 'slide_from_right',
         }}>
         {!isAuthenticated ? (
+          <>
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          </>
         ) : (
           <>
             <Stack.Screen name="Main" component={DriverTabs} />
@@ -103,10 +107,12 @@ export default function AppLayout() {
     <SafeAreaProvider>
     <AuthProvider>
     <ThemeProvider>
+    <BusinessThemeProvider slug="rides">
     <StatusBar barStyle="light-content" backgroundColor="#1c1c1e" />
     <ErrorBoundary>
     <RootNavigator />
     </ErrorBoundary>
+    </BusinessThemeProvider>
     </ThemeProvider>
     </AuthProvider>
     </SafeAreaProvider>

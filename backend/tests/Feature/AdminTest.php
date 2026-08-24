@@ -99,10 +99,10 @@ class AdminTest extends TestCase
 
     public function test_admin_can_reject_driver(): void
     {
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $admin->assignRole('admin');
 
-        $driver = User::factory()->create(['is_approved' => false]);
+        $driver = User::factory()->create(['is_approved' => false, 'tenant_id' => $this->tenant->id]);
         $driver->assignRole('driver');
 
         Sanctum::actingAs($admin);

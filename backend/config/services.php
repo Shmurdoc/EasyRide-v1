@@ -59,6 +59,11 @@ return [
         'secret_key' => env('STRIPE_SECRET_KEY'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
+        // When true (default), only test-mode keys (sk_test_/rk_test_) are accepted and
+        // real charges are impossible. Going live requires BOTH sandbox=false AND an
+        // explicit live_enabled=true opt-in, otherwise Stripe operations are refused.
+        'sandbox' => env('STRIPE_SANDBOX', true),
+        'live_enabled' => env('STRIPE_LIVE_ENABLED', false),
     ],
 
     'fcm' => [
@@ -89,6 +94,12 @@ return [
         'api_key' => env('PHBIMH_API_KEY', ''),
         'webhook_secret' => env('PHBIMH_WEBHOOK_SECRET', ''),
         'timeout' => 30,
+    ],
+
+    'sendgrid' => [
+        'api_key' => env('SENDGRID_API_KEY', ''),
+        'from_email' => env('SENDGRID_FROM_EMAIL', 'noreply@easyryde.co.za'),
+        'from_name' => env('SENDGRID_FROM_NAME', 'EasyRyde'),
     ],
 
 ];

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\Payment\EscrowService;
+use App\Services\EscrowService;
 use Illuminate\Console\Command;
 
 class ReleaseEscrowPayments extends Command
@@ -13,7 +13,7 @@ class ReleaseEscrowPayments extends Command
 
     public function handle(EscrowService $escrow): void
     {
-        $count = $escrow->releaseEligiblePayments();
+        $count = $escrow->releaseCompletedRides();
         $this->info("Dispatched {$count} escrow release jobs.");
     }
 }

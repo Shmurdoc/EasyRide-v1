@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RideCard = RideCard;
+const jsx_runtime_1 = require("react/jsx-runtime");
+const react_native_1 = require("react-native");
+const theme_1 = require("../theme");
+const constants_1 = require("../constants");
+const Card_1 = require("./Card");
+const Badge_1 = require("./Badge");
+function RideCard({ pickupAddress, dropoffAddress, status, category, distance, fare, driverName, onPress, style, }) {
+    const { colors, typography } = (0, theme_1.useTheme)();
+    return ((0, jsx_runtime_1.jsxs)(Card_1.Card, { variant: "interactive", style: style, children: [(0, jsx_runtime_1.jsxs)(react_native_1.View, { style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }, children: [(0, jsx_runtime_1.jsxs)(react_native_1.View, { style: { flex: 1 }, children: [(0, jsx_runtime_1.jsxs)(react_native_1.View, { style: { flexDirection: 'row', alignItems: 'center', marginBottom: constants_1.SPACING.sm }, children: [(0, jsx_runtime_1.jsx)(react_native_1.View, { style: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginRight: constants_1.SPACING.sm } }), (0, jsx_runtime_1.jsx)(react_native_1.Text, { style: [{ color: colors.text, flex: 1 }, typography.body], numberOfLines: 1, children: pickupAddress })] }), (0, jsx_runtime_1.jsxs)(react_native_1.View, { style: { flexDirection: 'row', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)(react_native_1.View, { style: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, marginRight: constants_1.SPACING.sm } }), (0, jsx_runtime_1.jsx)(react_native_1.Text, { style: [{ color: colors.text, flex: 1 }, typography.body], numberOfLines: 1, children: dropoffAddress })] })] }), (0, jsx_runtime_1.jsx)(Badge_1.Badge, { label: status.replace('_', ' '), variant: "info" })] }), (0, jsx_runtime_1.jsxs)(react_native_1.View, { style: { flexDirection: 'row', justifyContent: 'space-between', marginTop: constants_1.SPACING.md }, children: [category && (0, jsx_runtime_1.jsx)(react_native_1.Text, { style: [{ color: colors.textMuted }, typography.small], children: category }), distance && (0, jsx_runtime_1.jsxs)(react_native_1.Text, { style: [{ color: colors.textMuted }, typography.small], children: [distance.toFixed(1), " km"] }), fare && (0, jsx_runtime_1.jsxs)(react_native_1.Text, { style: [{ color: colors.primary, fontWeight: '700' }, typography.body], children: ["R ", fare.toFixed(2)] })] }), driverName && ((0, jsx_runtime_1.jsxs)(react_native_1.Text, { style: [{ color: colors.textMuted, marginTop: constants_1.SPACING.sm }, typography.xs], children: ["Driver: ", driverName] }))] }));
+}

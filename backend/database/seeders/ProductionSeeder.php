@@ -64,7 +64,7 @@ class ProductionSeeder extends Seeder
             ]
         );
         $admin->assignRole('super-admin');
-        $admin->roles()->attach(Role::findByName('super-admin', 'api'));
+        $admin->roles()->syncWithoutDetaching(Role::findByName('super-admin', 'api'));
 
         Wallet::firstOrCreate(
             ['user_id' => $admin->id],

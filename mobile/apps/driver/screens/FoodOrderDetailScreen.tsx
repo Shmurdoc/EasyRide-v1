@@ -3,7 +3,7 @@ import { View, ScrollView, Alert, Text, SafeAreaView, TouchableOpacity, StyleShe
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { foodDelivery } from '@easyryde/shared';
+import { foodDelivery, COLORS } from '@easyryde/shared';
 import type { FoodOrder, DriverRoute, DriverNav } from '@easyryde/shared';
 
 const TRANSITIONS: Record<string, string[]> = {
@@ -40,10 +40,10 @@ export default function FoodOrderDetailScreen({ route }: { route: DriverRoute<'F
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'delivered': return '#16a34a';
-      case 'cancelled': return '#dc2626';
-      case 'pending': return '#FFAD7A';
-      default: return '#3b82f6';
+      case 'delivered': return COLORS.success;
+      case 'cancelled': return COLORS.error;
+      case 'pending': return COLORS.brand;
+      default: return COLORS.info;
     }
   };
 
@@ -111,7 +111,7 @@ export default function FoodOrderDetailScreen({ route }: { route: DriverRoute<'F
               ]);
             }}
           >
-            <LinearGradient colors={['#16a34a', '#22c55e']} style={styles.actionBtnGradient}>
+            <LinearGradient colors={[COLORS.brand, COLORS.brandDark]} style={styles.actionBtnGradient}>
               <Text style={styles.actionBtnText}>{ACTIONS[order.status] || `Move to ${nextStatus}`}</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   deliveryNotes: { fontSize: 13, color: '#98989d', marginBottom: 12 },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#3a3a3c' },
   totalLabel: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  totalValue: { fontSize: 18, fontWeight: '700', color: '#16a34a' },
+  totalValue: { fontSize: 18, fontWeight: '700', color: COLORS.success },
   paymentMethod: { fontSize: 12, color: '#98989d', marginTop: 4 },
 
   customerName: { fontSize: 15, color: '#fff' },

@@ -37,7 +37,9 @@ export default function UsersScreen() {
       const { data } = await client.get<PaginatedResponse<User>>('/admin/manage/users', { params });
       setUsers(data.data);
       setMeta(data.meta);
-    } catch {} finally { setLoading(false); }
+    } catch (err) {
+      console.error('[Users] Failed to load:', err);
+    } finally { setLoading(false); }
   }, [page, search, statusFilter]);
 
   useEffect(() => { loadUsers(); }, [loadUsers]);

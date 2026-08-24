@@ -17,7 +17,7 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['daily', 'sentry'],
+            'channels' => ['daily'],
             'ignore_exceptions' => false,
         ],
 
@@ -82,6 +82,13 @@ return [
             'path' => storage_path('logs/audit.log'),
             'level' => 'info',
             'days' => 90,
+        ],
+
+        'wallet-audit' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/wallet-audit.log'),
+            'level' => 'info',
+            'days' => 365,
         ],
 
         'payment' => [

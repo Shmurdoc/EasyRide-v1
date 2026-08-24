@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, StyleSheet, Text, TouchableOpacity, FlatList, Alert, ActivityIndicator,
@@ -49,6 +50,8 @@ function getTimeAgo(dateStr: string): string {
 }
 
 export default function NotificationScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const navigation = useNavigation<RiderNav>();
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,7 +211,7 @@ export default function NotificationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

@@ -2,34 +2,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, FlatList, TouchableOpacity, Alert, Text, SafeAreaView, RefreshControl, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { drivers } from '@easyryde/shared';
-import type { Ride } from '@easyryde/shared';
+import { drivers, useTheme } from '@easyryde/shared';
+import type { Ride, DriverNav } from '@easyryde/shared';
 
-export default function TripHistoryScreen() {
+export default function TripHistoryScreen({ navigation }: { navigation: DriverNav }) {
   const [trips, setTrips] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { colors, radius, spacing, shadows } = useTheme();
 
   useEffect(() => { loadTrips(); }, []);
-
-  async function loadTrips() {
-    try {
-      setError(null);
-      const data = await drivers.trips({ per_page: '50' });
-      setTrips(data.data);
-    } catch {
-      setError('Failed to load trips');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadTrips();
-  }, []);
+  async function loadTrips() { try { setError(null); const data = await drivers.trips({ per_page: '50' }); setTrips(data.data); } catch { setError('Failed to load trips'); } finally { setLoading(false); setRefreshing(false); } }
+  const onRefresh = useCallback(() => { setRefreshing(true); loadTrips(); }, []);
 
   const showTripDetail = useCallback((item: Ride) => {
     const date = item.created_at ? new Date(item.created_at).toLocaleDateString() : '';
@@ -48,93 +33,70 @@ export default function TripHistoryScreen() {
     );
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return '#16a34a';
-      case 'cancelled': return '#dc2626';
-      case 'in_progress': return '#3b82f6';
-      default: return '#98989d';
-    }
-  };
+  const getStatusColor = (status: string) => { switch (status) { case 'completed': return colors.success; case 'cancelled': return colors.danger; case 'in_progress': return colors.brand; default: return colors.textMuted; } };
 
-  if (loading) return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#16a34a', '#15803d']} style={styles.headerGradient}>
-        <Text style={styles.headerTitle}>Trip History</Text>
-      </LinearGradient>
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading trips...</Text>
-      </View>
-    </SafeAreaView>
-  );
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bg },
+    headerGradient: { paddingHorizontal: spacing.base, paddingTop: 16, paddingBottom: spacing.lg, borderBottomLeftRadius: radius.sheet, borderBottomRightRadius: radius.sheet },
+    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    headerTitle: { fontSize: 26, fontWeight: '800', color: colors.brandContrast },
+    headerSubtitle: { fontSize: 14, fontWeight: '400', color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+    listContent: { padding: spacing.base, paddingBottom: 100 },
+    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.base },
+    loadingText: { fontSize: 16, fontWeight: '500', color: colors.textMuted },
+    errorText: { fontSize: 16, fontWeight: '500', color: colors.textMuted, marginBottom: 16, textAlign: 'center' },
+    retryBtn: { backgroundColor: colors.success, borderRadius: radius.md, paddingHorizontal: 24, paddingVertical: 12 },
+    retryBtnText: { fontSize: 16, fontWeight: '700', color: colors.white },
+    tripCard: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.base, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadows.card },
+    tripHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full },
+    statusDot: { width: 6, height: 6, borderRadius: 3 },
+    statusText: { fontSize: 12, fontWeight: '600' },
+    tripDate: { fontSize: 12, fontWeight: '400', color: colors.textMuted },
+    tripLocations: { gap: 8, marginBottom: spacing.md },
+    tripLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    tripDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success },
+    tripPin: { width: 16, height: 16, borderRadius: 4, backgroundColor: colors.brandSoft, justifyContent: 'center', alignItems: 'center' },
+    tripLocationText: { fontSize: 13, fontWeight: '400', color: colors.text, flex: 1 },
+    tripFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md },
+    tripRider: { fontSize: 13, fontWeight: '500', color: colors.textMuted },
+    tripFareRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    tripDistance: { fontSize: 12, fontWeight: '400', color: colors.textMuted },
+    tripFare: { fontSize: 16, fontWeight: '700', color: colors.success },
+    emptyContainer: { alignItems: 'center', marginTop: 60 },
+    emptyIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.surfaceLight, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+    emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4 },
+    emptySubtext: { fontSize: 14, fontWeight: '400', color: colors.textMuted, textAlign: 'center' },
+  });
 
-  if (error) return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#16a34a', '#15803d']} style={styles.headerGradient}>
-        <Text style={styles.headerTitle}>Trip History</Text>
-      </LinearGradient>
-      <View style={styles.loadingContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={() => { setLoading(true); loadTrips(); }}>
-          <Text style={styles.retryBtnText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
+  if (loading) return <SafeAreaView style={styles.container}><LinearGradient colors={[colors.brand, colors.brandStrong] as const} style={styles.headerGradient}><Text style={styles.headerTitle}>Trip History</Text></LinearGradient><View style={styles.centerContainer}><Text style={styles.loadingText}>Loading trips...</Text></View></SafeAreaView>;
+  if (error) return <SafeAreaView style={styles.container}><LinearGradient colors={[colors.brand, colors.brandStrong] as const} style={styles.headerGradient}><Text style={styles.headerTitle}>Trip History</Text></LinearGradient><View style={styles.centerContainer}><Text style={styles.errorText}>{error}</Text><TouchableOpacity style={styles.retryBtn} onPress={() => { setLoading(true); loadTrips(); }}><Text style={styles.retryBtnText}>Retry</Text></TouchableOpacity></View></SafeAreaView>;
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#16a34a', '#15803d']} style={styles.headerGradient}>
-        <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Trip History</Text>
-          <Ionicons name="time" size={24} color="rgba(255,255,255,0.6)" />
-        </View>
+      <LinearGradient colors={[colors.brand, colors.brandStrong] as const} style={styles.headerGradient}>
+        <View style={styles.headerRow}><Text style={styles.headerTitle}>Trip History</Text><Ionicons name="time" size={24} color="rgba(255,255,255,0.6)" /></View>
         <Text style={styles.headerSubtitle}>{trips.length} trips completed</Text>
       </LinearGradient>
-
-      <FlatList
-        data={trips}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="car-outline" size={48} color="#666" />
-            <Text style={styles.emptyText}>No trips yet</Text>
-          </View>
-        }
+      <FlatList data={trips} keyExtractor={(item) => item.id} contentContainerStyle={styles.listContent} refreshing={refreshing} onRefresh={onRefresh}
+        ListEmptyComponent={<View style={styles.emptyContainer}><View style={styles.emptyIconCircle}><Ionicons name="car-outline" size={48} color={colors.textMuted} /></View><Text style={styles.emptyTitle}>No trips yet</Text><Text style={styles.emptySubtext}>Completed rides will appear here</Text></View>}
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => showTripDetail(item)} activeOpacity={0.7}>
             <View style={styles.tripCard}>
               <View style={styles.tripHeader}>
-                <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(item.status)}20` }]}>
-                  <View style={[styles.statusDot, { backgroundColor: getStatusColor(item.status) }]} />
-                  <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status}</Text>
-                </View>
-                {item.created_at && (
-                  <Text style={styles.tripDate}>{new Date(item.created_at).toLocaleDateString()}</Text>
-                )}
+                <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(item.status)}20` }]}><View style={[styles.statusDot, { backgroundColor: getStatusColor(item.status) }]} /><Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status}</Text></View>
+                {item.created_at && <Text style={styles.tripDate}>{new Date(item.created_at).toLocaleDateString()}</Text>}
               </View>
-
               <View style={styles.tripLocations}>
-                <View style={styles.tripLocationRow}>
-                  <View style={styles.tripDot} />
-                  <Text style={styles.tripLocationText}>{item.pickup_address}</Text>
-                </View>
-                <View style={styles.tripLocationRow}>
-                  <View style={styles.tripPin}>
-                    <Ionicons name="location" size={10} color="#FFAD7A" />
-                  </View>
-                  <Text style={styles.tripLocationText}>{item.dropoff_address}</Text>
-                </View>
+                <View style={styles.tripLocationRow}><View style={styles.tripDot} /><Text style={styles.tripLocationText} numberOfLines={1}>{item.pickup_address}</Text></View>
+                <View style={styles.tripLocationRow}><View style={styles.tripPin}><Ionicons name="location" size={10} color={colors.brand} /></View><Text style={styles.tripLocationText} numberOfLines={1}>{item.dropoff_address}</Text></View>
               </View>
-
               <View style={styles.tripFooter}>
                 <Text style={styles.tripRider}>{item.rider?.name || 'Rider'}</Text>
-                {item.total_fare != null && (
-                  <Text style={styles.tripFare}>R {item.total_fare.toFixed(2)}</Text>
-                )}
+                <View style={styles.tripFareRow}>
+                  {item.distance_km != null && <Text style={styles.tripDistance}>{item.distance_km.toFixed(1)} km</Text>}
+                  {item.total_fare != null && <Text style={styles.tripFare}>R {item.total_fare.toFixed(0)}</Text>}
+                </View>
               </View>
             </View>
           </TouchableOpacity>
@@ -143,51 +105,3 @@ export default function TripHistoryScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1c1c1e' },
-  headerGradient: {
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20,
-    borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
-  },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: '#fff' },
-  headerSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
-
-  listContent: { padding: 16, paddingBottom: 100 },
-
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { fontSize: 16, color: '#98989d' },
-  errorText: { fontSize: 16, color: '#98989d', marginBottom: 16, textAlign: 'center' },
-  retryBtn: { backgroundColor: '#16a34a', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  retryBtnText: { fontSize: 16, fontWeight: '600', color: '#fff' },
-
-  tripCard: {
-    backgroundColor: '#242426', borderRadius: 16, padding: 16, marginBottom: 12,
-    borderWidth: 1, borderColor: '#3a3a3c',
-  },
-  tripHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 12, fontWeight: '600' },
-  tripDate: { fontSize: 12, color: '#98989d' },
-
-  tripLocations: { gap: 8, marginBottom: 12 },
-  tripLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  tripDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#16a34a' },
-  tripPin: {
-    width: 16, height: 16, borderRadius: 4, backgroundColor: '#2c2c2e',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  tripLocationText: { fontSize: 14, color: '#fff', flex: 1 },
-
-  tripFooter: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderTopWidth: 1, borderTopColor: '#3a3a3c', paddingTop: 12,
-  },
-  tripRider: { fontSize: 13, color: '#98989d' },
-  tripFare: { fontSize: 16, fontWeight: '700', color: '#16a34a' },
-
-  emptyContainer: { alignItems: 'center', marginTop: 60 },
-  emptyText: { fontSize: 18, fontWeight: '600', color: '#fff', marginTop: 16 },
-});

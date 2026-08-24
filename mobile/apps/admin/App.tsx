@@ -5,7 +5,8 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth, ErrorBoundary, AuthProvider } from '@easyryde/shared';
+import { useAuth, ErrorBoundary, AuthProvider, ThemeProvider, BusinessThemeProvider } from '@easyryde/shared';
+import { BUSINESS_THEMES } from '@easyryde/shared';
 import { ADMIN_COLORS } from './constants/theme';
 
 import LoginScreen from './screens/LoginScreen';
@@ -126,7 +127,11 @@ export default function AppLayout() {
   return (
     <ErrorBoundary>
     <AuthProvider>
+    <ThemeProvider>
+    <BusinessThemeProvider slug="admin">
     <RootNavigator />
+    </BusinessThemeProvider>
+    </ThemeProvider>
     </AuthProvider>
     </ErrorBoundary>
   );

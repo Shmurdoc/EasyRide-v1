@@ -1,0 +1,1437 @@
+{
+  ".detoxrc.js": {
+    "mtime": 1782639656.0,
+    "ast_hash": "b1ac798a0ae16397599aa54c7e51c9e3",
+    "semantic_hash": "b1ac798a0ae16397599aa54c7e51c9e3"
+  },
+  ".tmp/wait_for_emu.ps1": {
+    "mtime": 1781087050.0,
+    "ast_hash": "2868335d03a4ba795e4a37b9da5593ed",
+    "semantic_hash": "2868335d03a4ba795e4a37b9da5593ed"
+  },
+  "app.json": {
+    "mtime": 1783640492.0,
+    "ast_hash": "9f63b3d1f682ae539e6fd986d3c70310",
+    "semantic_hash": "9f63b3d1f682ae539e6fd986d3c70310"
+  },
+  "apps/admin/App.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "948dfa98006f5a38f76a955baef86eb6",
+    "semantic_hash": "948dfa98006f5a38f76a955baef86eb6"
+  },
+  "apps/admin/android/app/build.gradle": {
+    "mtime": 1784547415.8132746,
+    "ast_hash": "1af017ccedc7ef9631d5bdc5575bee0c",
+    "semantic_hash": "1af017ccedc7ef9631d5bdc5575bee0c"
+  },
+  "apps/admin/android/app/src/main/java/za/co/easyryde/admin/MainActivity.kt": {
+    "mtime": 1784547416.5022757,
+    "ast_hash": "390882c75e3928ccd8abaaea9e7d3982",
+    "semantic_hash": "390882c75e3928ccd8abaaea9e7d3982"
+  },
+  "apps/admin/android/app/src/main/java/za/co/easyryde/admin/MainApplication.kt": {
+    "mtime": 1784547417.3722768,
+    "ast_hash": "ab3377e4584542e96f47259835613744",
+    "semantic_hash": "ab3377e4584542e96f47259835613744"
+  },
+  "apps/admin/android/build.gradle": {
+    "mtime": 1784547315.314855,
+    "ast_hash": "d94ec4c42b4c071087655eb1267b0645",
+    "semantic_hash": "d94ec4c42b4c071087655eb1267b0645"
+  },
+  "apps/admin/android/gradlew": {
+    "mtime": 1784547315.3149107,
+    "ast_hash": "1db6d150e9a9442ca929c1fa8b2fd25e",
+    "semantic_hash": "1db6d150e9a9442ca929c1fa8b2fd25e"
+  },
+  "apps/admin/android/react-settings-plugin/build.gradle.kts": {
+    "mtime": 1784547315.3370037,
+    "ast_hash": "2b632c4ec639e238835602be329daae9",
+    "semantic_hash": "2b632c4ec639e238835602be329daae9"
+  },
+  "apps/admin/android/react-settings-plugin/src/main/kotlin/expo/plugins/ReactSettingsPlugin.kt": {
+    "mtime": 1784547315.33726,
+    "ast_hash": "8985acacd8da0db15aa7806db468749e",
+    "semantic_hash": "8985acacd8da0db15aa7806db468749e"
+  },
+  "apps/admin/android/settings.gradle": {
+    "mtime": 1784547413.906272,
+    "ast_hash": "549480dead34fac7282316fc10f9b929",
+    "semantic_hash": "549480dead34fac7282316fc10f9b929"
+  },
+  "apps/admin/api/admin.ts": {
+    "mtime": 1782921734.0,
+    "ast_hash": "6c1d80a5f1dfd1d94fe627f92737bcd7",
+    "semantic_hash": "6c1d80a5f1dfd1d94fe627f92737bcd7"
+  },
+  "apps/admin/api/types.ts": {
+    "mtime": 1782921712.0,
+    "ast_hash": "c23b6edf05b37747b0090492df130026",
+    "semantic_hash": "c23b6edf05b37747b0090492df130026"
+  },
+  "apps/admin/app.config.js": {
+    "mtime": 1784425548.1122334,
+    "ast_hash": "728ee08366748a619b053271d4ab2b42",
+    "semantic_hash": "728ee08366748a619b053271d4ab2b42"
+  },
+  "apps/admin/app.json": {
+    "mtime": 1784476363.2492986,
+    "ast_hash": "86678ae523d94f5654ffdbaeef571369",
+    "semantic_hash": "86678ae523d94f5654ffdbaeef571369"
+  },
+  "apps/admin/babel.config.js": {
+    "mtime": 1784508991.2027557,
+    "ast_hash": "b8cd641ba1fee6747061fedbee96765b",
+    "semantic_hash": "b8cd641ba1fee6747061fedbee96765b"
+  },
+  "apps/admin/components/common/Avatar.tsx": {
+    "mtime": 1784476076.5334773,
+    "ast_hash": "fd9e267801b639509bd9965d20dab8d2",
+    "semantic_hash": "fd9e267801b639509bd9965d20dab8d2"
+  },
+  "apps/admin/components/common/Badge.tsx": {
+    "mtime": 1782850618.0,
+    "ast_hash": "4da384870959f34a940f4e67f1bc55e7",
+    "semantic_hash": "4da384870959f34a940f4e67f1bc55e7"
+  },
+  "apps/admin/components/common/Card.tsx": {
+    "mtime": 1782856902.0,
+    "ast_hash": "5aeffa8a753756145628705bdd66feea",
+    "semantic_hash": "5aeffa8a753756145628705bdd66feea"
+  },
+  "apps/admin/components/common/EmptyState.tsx": {
+    "mtime": 1782857272.0,
+    "ast_hash": "a274a5a749b193c900d703ac6a30b367",
+    "semantic_hash": "a274a5a749b193c900d703ac6a30b367"
+  },
+  "apps/admin/components/common/ErrorState.tsx": {
+    "mtime": 1782857318.0,
+    "ast_hash": "7eb32aced3bc870a74e2bdf1a34b3c37",
+    "semantic_hash": "7eb32aced3bc870a74e2bdf1a34b3c37"
+  },
+  "apps/admin/components/common/FilterTabs.tsx": {
+    "mtime": 1782857246.0,
+    "ast_hash": "5f15f2e1163e82063ad622290c0ec798",
+    "semantic_hash": "5f15f2e1163e82063ad622290c0ec798"
+  },
+  "apps/admin/components/common/LoadingSpinner.tsx": {
+    "mtime": 1782857294.0,
+    "ast_hash": "a38579f198c3c2871177d637990c4a28",
+    "semantic_hash": "a38579f198c3c2871177d637990c4a28"
+  },
+  "apps/admin/components/common/ProgressBar.tsx": {
+    "mtime": 1784476074.707472,
+    "ast_hash": "45b98b55bac190c8fb60839088fb690f",
+    "semantic_hash": "45b98b55bac190c8fb60839088fb690f"
+  },
+  "apps/admin/components/common/SearchBar.tsx": {
+    "mtime": 1782857222.0,
+    "ast_hash": "a5bfd24259f8cc57b1d4026ee9f9b884",
+    "semantic_hash": "a5bfd24259f8cc57b1d4026ee9f9b884"
+  },
+  "apps/admin/components/common/StatCard.tsx": {
+    "mtime": 1784476073.640469,
+    "ast_hash": "42058b42b1f93d08a090abf6cef38b96",
+    "semantic_hash": "42058b42b1f93d08a090abf6cef38b96"
+  },
+  "apps/admin/components/dashboard/ActiveRidesCard.tsx": {
+    "mtime": 1782856956.0,
+    "ast_hash": "75e9a504144275b34b2b8830443bb10c",
+    "semantic_hash": "75e9a504144275b34b2b8830443bb10c"
+  },
+  "apps/admin/components/dashboard/ActivityFeed.tsx": {
+    "mtime": 1782856982.0,
+    "ast_hash": "58d6566ec48205407718dfd6ae0e1f20",
+    "semantic_hash": "58d6566ec48205407718dfd6ae0e1f20"
+  },
+  "apps/admin/components/dashboard/FleetStatus.tsx": {
+    "mtime": 1782856932.0,
+    "ast_hash": "75eff8acad9de1ed0b451d9d51b59d79",
+    "semantic_hash": "75eff8acad9de1ed0b451d9d51b59d79"
+  },
+  "apps/admin/components/dashboard/HourlyChart.tsx": {
+    "mtime": 1782857024.0,
+    "ast_hash": "a5859406b314f73171fe13f95fae5ef8",
+    "semantic_hash": "a5859406b314f73171fe13f95fae5ef8"
+  },
+  "apps/admin/components/dashboard/PoolRidesCard.tsx": {
+    "mtime": 1782911678.0,
+    "ast_hash": "c69151e09e5a689cb7a81dd053a072aa",
+    "semantic_hash": "c69151e09e5a689cb7a81dd053a072aa"
+  },
+  "apps/admin/components/dashboard/TopDrivers.tsx": {
+    "mtime": 1782857042.0,
+    "ast_hash": "369ab3fa074137942323d6c913b11baa",
+    "semantic_hash": "369ab3fa074137942323d6c913b11baa"
+  },
+  "apps/admin/components/drivers/DriverCard.tsx": {
+    "mtime": 1782857134.0,
+    "ast_hash": "333106880099f0bf0f8e26991ce84c47",
+    "semantic_hash": "333106880099f0bf0f8e26991ce84c47"
+  },
+  "apps/admin/components/inspector/ApiHealthCard.tsx": {
+    "mtime": 1782945192.0,
+    "ast_hash": "2ad7d6aeed97d87caf5ca1212dd3e2ab",
+    "semantic_hash": "2ad7d6aeed97d87caf5ca1212dd3e2ab"
+  },
+  "apps/admin/components/inspector/QueueHealthCard.tsx": {
+    "mtime": 1782948044.0,
+    "ast_hash": "a56f4650f9f7096596141b2dc342ba00",
+    "semantic_hash": "a56f4650f9f7096596141b2dc342ba00"
+  },
+  "apps/admin/components/inspector/RideFlowCard.tsx": {
+    "mtime": 1782930828.0,
+    "ast_hash": "d8b99eee99b41fa305abc5c2fb38c0c8",
+    "semantic_hash": "d8b99eee99b41fa305abc5c2fb38c0c8"
+  },
+  "apps/admin/components/menu/LuxuriousMenu.tsx": {
+    "mtime": 1784476079.1004846,
+    "ast_hash": "4bcf38fbecc632f7846c1e4b51d2c4f7",
+    "semantic_hash": "4bcf38fbecc632f7846c1e4b51d2c4f7"
+  },
+  "apps/admin/components/rides/RideCard.tsx": {
+    "mtime": 1782857106.0,
+    "ast_hash": "88e4e682f2096a1ceda1af9dc9dad3b4",
+    "semantic_hash": "88e4e682f2096a1ceda1af9dc9dad3b4"
+  },
+  "apps/admin/components/users/UserCard.tsx": {
+    "mtime": 1782857154.0,
+    "ast_hash": "e4ecab7a6d9220e615ea3a0692b85ebb",
+    "semantic_hash": "e4ecab7a6d9220e615ea3a0692b85ebb"
+  },
+  "apps/admin/constants/theme.ts": {
+    "mtime": 1784550448.4405358,
+    "ast_hash": "fda2e87ea1ca50b60fe9d928f0847a27",
+    "semantic_hash": "fda2e87ea1ca50b60fe9d928f0847a27"
+  },
+  "apps/admin/eas.json": {
+    "mtime": 1782605940.0,
+    "ast_hash": "715b2b9d6846beb9c86645c1d18aa7e7",
+    "semantic_hash": "715b2b9d6846beb9c86645c1d18aa7e7"
+  },
+  "apps/admin/hooks/useAdminDashboard.ts": {
+    "mtime": 1782911648.0,
+    "ast_hash": "0eab673b43f95826ae7ca505a2ef6bbe",
+    "semantic_hash": "0eab673b43f95826ae7ca505a2ef6bbe"
+  },
+  "apps/admin/hooks/useAdminDrivers.ts": {
+    "mtime": 1782856816.0,
+    "ast_hash": "b24e968817b21715de084d40a23267b6",
+    "semantic_hash": "b24e968817b21715de084d40a23267b6"
+  },
+  "apps/admin/hooks/useAdminRides.ts": {
+    "mtime": 1782856786.0,
+    "ast_hash": "488b719053861ed7db62f19744f773c9",
+    "semantic_hash": "488b719053861ed7db62f19744f773c9"
+  },
+  "apps/admin/hooks/useAdminSettings.ts": {
+    "mtime": 1782856874.0,
+    "ast_hash": "2c38a3e2d6551333c06513095fa02fdb",
+    "semantic_hash": "2c38a3e2d6551333c06513095fa02fdb"
+  },
+  "apps/admin/hooks/useAdminUsers.ts": {
+    "mtime": 1782856850.0,
+    "ast_hash": "dd38b541bfa9f749399f2519710766ca",
+    "semantic_hash": "dd38b541bfa9f749399f2519710766ca"
+  },
+  "apps/admin/hooks/useInspectorStats.ts": {
+    "mtime": 1782930816.0,
+    "ast_hash": "f0847d5dacb25ab8acbac542e4920713",
+    "semantic_hash": "f0847d5dacb25ab8acbac542e4920713"
+  },
+  "apps/admin/hooks/usePeakHours.ts": {
+    "mtime": 1782921764.0,
+    "ast_hash": "d01d087b521aa09fa32ee21e0fa7e2d1",
+    "semantic_hash": "d01d087b521aa09fa32ee21e0fa7e2d1"
+  },
+  "apps/admin/hooks/useSurgePricing.ts": {
+    "mtime": 1782921752.0,
+    "ast_hash": "6d7ac1016683924e30107f5a162b8f3c",
+    "semantic_hash": "6d7ac1016683924e30107f5a162b8f3c"
+  },
+  "apps/admin/index.js": {
+    "mtime": 1781300416.0,
+    "ast_hash": "50e8704ee5352008a9550956ebfa1cf5",
+    "semantic_hash": "50e8704ee5352008a9550956ebfa1cf5"
+  },
+  "apps/admin/metro.config.js": {
+    "mtime": 1784509419.6539085,
+    "ast_hash": "3686b263b58947bacb527324515d2791",
+    "semantic_hash": "3686b263b58947bacb527324515d2791"
+  },
+  "apps/admin/metro.test.config.js": {
+    "mtime": 1781398514.0,
+    "ast_hash": "143146be4ad34560c0fa84734f1984b0",
+    "semantic_hash": "143146be4ad34560c0fa84734f1984b0"
+  },
+  "apps/admin/package.json": {
+    "mtime": 1784548795.4712133,
+    "ast_hash": "ed2732c5b3bb08b6b2e541d322d68958",
+    "semantic_hash": "ed2732c5b3bb08b6b2e541d322d68958"
+  },
+  "apps/admin/screens/AdminDashboardScreen.tsx": {
+    "mtime": 1784429948.503729,
+    "ast_hash": "99b644e1908f657c8503932155d1c3a4",
+    "semantic_hash": "99b644e1908f657c8503932155d1c3a4"
+  },
+  "apps/admin/screens/DriverDetailScreen.tsx": {
+    "mtime": 1782952666.0,
+    "ast_hash": "df5f32c2dd9f788e8e73150b7f5304c8",
+    "semantic_hash": "df5f32c2dd9f788e8e73150b7f5304c8"
+  },
+  "apps/admin/screens/DriversScreen.tsx": {
+    "mtime": 1784429982.2558177,
+    "ast_hash": "8446f5dda291469bf9a429a2a0f8be0b",
+    "semantic_hash": "8446f5dda291469bf9a429a2a0f8be0b"
+  },
+  "apps/admin/screens/LoginScreen.tsx": {
+    "mtime": 1784550464.6775584,
+    "ast_hash": "b50c7e2973394a0014a6d5e019b26245",
+    "semantic_hash": "b50c7e2973394a0014a6d5e019b26245"
+  },
+  "apps/admin/screens/PeakHoursScreen.tsx": {
+    "mtime": 1782921882.0,
+    "ast_hash": "05afdfb8e24be33674284a03f799067e",
+    "semantic_hash": "05afdfb8e24be33674284a03f799067e"
+  },
+  "apps/admin/screens/RideDetailScreen.tsx": {
+    "mtime": 1782857870.0,
+    "ast_hash": "4fb5b8ca04951c28666be76a688cbe9e",
+    "semantic_hash": "4fb5b8ca04951c28666be76a688cbe9e"
+  },
+  "apps/admin/screens/RidesScreen.tsx": {
+    "mtime": 1784429966.9437773,
+    "ast_hash": "a8fd9e1232d4698c5b62a8d711a3c371",
+    "semantic_hash": "a8fd9e1232d4698c5b62a8d711a3c371"
+  },
+  "apps/admin/screens/SettingsScreen.tsx": {
+    "mtime": 1784430019.053914,
+    "ast_hash": "a93d26caba84658977020c71900f2f97",
+    "semantic_hash": "a93d26caba84658977020c71900f2f97"
+  },
+  "apps/admin/screens/SurgePricingScreen.tsx": {
+    "mtime": 1784430051.424999,
+    "ast_hash": "62794f248e1bffdaef7bd62a394da61b",
+    "semantic_hash": "62794f248e1bffdaef7bd62a394da61b"
+  },
+  "apps/admin/screens/SurgeZonesScreen.tsx": {
+    "mtime": 1782921848.0,
+    "ast_hash": "42492d067d589babcb9dd58faede6af2",
+    "semantic_hash": "42492d067d589babcb9dd58faede6af2"
+  },
+  "apps/admin/screens/UserDetailScreen.tsx": {
+    "mtime": 1782857870.0,
+    "ast_hash": "61f4c87f19d40ecdd329b1e6dfbec9c5",
+    "semantic_hash": "61f4c87f19d40ecdd329b1e6dfbec9c5"
+  },
+  "apps/admin/screens/UsersScreen.tsx": {
+    "mtime": 1784429998.2178595,
+    "ast_hash": "cd555ac167455231ebbaac9a4b07d94b",
+    "semantic_hash": "cd555ac167455231ebbaac9a4b07d94b"
+  },
+  "apps/admin/tsconfig.json": {
+    "mtime": 1783530014.0,
+    "ast_hash": "7e51dae7824b44bdf8fd4e8fa56cef87",
+    "semantic_hash": "7e51dae7824b44bdf8fd4e8fa56cef87"
+  },
+  "apps/driver/App.tsx": {
+    "mtime": 1784671410.2701802,
+    "ast_hash": "4cee22655513650ed779c8c02c072286",
+    "semantic_hash": "4cee22655513650ed779c8c02c072286"
+  },
+  "apps/driver/__tests__/ActiveRideScreen.test.tsx": {
+    "mtime": 1784426285.7591565,
+    "ast_hash": "3a090e1002ae2713d5ccef147c61616b",
+    "semantic_hash": "3a090e1002ae2713d5ccef147c61616b"
+  },
+  "apps/driver/__tests__/ChatScreen.test.tsx": {
+    "mtime": 1784426430.939535,
+    "ast_hash": "5abe6bc81cc1112dad9342fb5b62b2de",
+    "semantic_hash": "5abe6bc81cc1112dad9342fb5b62b2de"
+  },
+  "apps/driver/__tests__/DashboardScreen.test.tsx": {
+    "mtime": 1784426238.5740333,
+    "ast_hash": "b7be29f424573419d0b84d4183a8104f",
+    "semantic_hash": "b7be29f424573419d0b84d4183a8104f"
+  },
+  "apps/driver/__tests__/DocumentsScreen.test.tsx": {
+    "mtime": 1784426442.0895638,
+    "ast_hash": "8006d418d670c5396d43b060e7938284",
+    "semantic_hash": "8006d418d670c5396d43b060e7938284"
+  },
+  "apps/driver/__tests__/EarningsScreen.test.tsx": {
+    "mtime": 1784426308.020314,
+    "ast_hash": "668a07385b052c462e2c391fcae7a55e",
+    "semantic_hash": "668a07385b052c462e2c391fcae7a55e"
+  },
+  "apps/driver/__tests__/FoodDeliveryScreen.test.tsx": {
+    "mtime": 1784426364.8103626,
+    "ast_hash": "0b8b4f84b0d47930a341a49947a9b97c",
+    "semantic_hash": "0b8b4f84b0d47930a341a49947a9b97c"
+  },
+  "apps/driver/__tests__/LoginScreen.test.tsx": {
+    "mtime": 1784426225.9880006,
+    "ast_hash": "8dd4e46bbd48473c87a7913ce3eb59d9",
+    "semantic_hash": "8dd4e46bbd48473c87a7913ce3eb59d9"
+  },
+  "apps/driver/__tests__/ProfileScreen.test.tsx": {
+    "mtime": 1784426337.8782923,
+    "ast_hash": "635b0a1aa1c6eaadf950d55f3fa12468",
+    "semantic_hash": "635b0a1aa1c6eaadf950d55f3fa12468"
+  },
+  "apps/driver/__tests__/RideRequestsScreen.test.tsx": {
+    "mtime": 1784426263.401098,
+    "ast_hash": "05059e4c8929a99e08730dcd2ad4a8f9",
+    "semantic_hash": "05059e4c8929a99e08730dcd2ad4a8f9"
+  },
+  "apps/driver/__tests__/TripHistoryScreen.test.tsx": {
+    "mtime": 1784426321.8322504,
+    "ast_hash": "b9ae585ad131e81db562957e26640fcb",
+    "semantic_hash": "b9ae585ad131e81db562957e26640fcb"
+  },
+  "apps/driver/__tests__/setup.ts": {
+    "mtime": 1784432517.605513,
+    "ast_hash": "328e07d00d6240faaef4937e71250101",
+    "semantic_hash": "328e07d00d6240faaef4937e71250101"
+  },
+  "apps/driver/__tests__/test-utils.tsx": {
+    "mtime": 1784426505.905823,
+    "ast_hash": "ba678bd74cf644b6063b6d8dd259b189",
+    "semantic_hash": "ba678bd74cf644b6063b6d8dd259b189"
+  },
+  "apps/driver/android/app/build.gradle": {
+    "mtime": 1784546004.161291,
+    "ast_hash": "4bd03b07ef1e910be84f9cb0baea40c4",
+    "semantic_hash": "4bd03b07ef1e910be84f9cb0baea40c4"
+  },
+  "apps/driver/android/app/src/main/java/za/co/easyryde/driver/MainActivity.kt": {
+    "mtime": 1784545914.5779884,
+    "ast_hash": "d87a29ec9609fd1bddac203778cdad9f",
+    "semantic_hash": "d87a29ec9609fd1bddac203778cdad9f"
+  },
+  "apps/driver/android/app/src/main/java/za/co/easyryde/driver/MainApplication.kt": {
+    "mtime": 1784545914.5781653,
+    "ast_hash": "abc75d4bf248e53045b98a663d37762c",
+    "semantic_hash": "abc75d4bf248e53045b98a663d37762c"
+  },
+  "apps/driver/android/build.gradle": {
+    "mtime": 1784545914.6421654,
+    "ast_hash": "891773ba67cdf7a49a239831d96bfbfb",
+    "semantic_hash": "891773ba67cdf7a49a239831d96bfbfb"
+  },
+  "apps/driver/android/gradlew": {
+    "mtime": 1784545914.2010663,
+    "ast_hash": "1db6d150e9a9442ca929c1fa8b2fd25e",
+    "semantic_hash": "1db6d150e9a9442ca929c1fa8b2fd25e"
+  },
+  "apps/driver/android/react-settings-plugin/build.gradle.kts": {
+    "mtime": 1784545914.2017672,
+    "ast_hash": "2b632c4ec639e238835602be329daae9",
+    "semantic_hash": "2b632c4ec639e238835602be329daae9"
+  },
+  "apps/driver/android/react-settings-plugin/src/main/kotlin/expo/plugins/ReactSettingsPlugin.kt": {
+    "mtime": 1784545914.2022216,
+    "ast_hash": "8985acacd8da0db15aa7806db468749e",
+    "semantic_hash": "8985acacd8da0db15aa7806db468749e"
+  },
+  "apps/driver/android/settings.gradle": {
+    "mtime": 1784545914.6411653,
+    "ast_hash": "27634d4abd71c216f1ec317eba275fb0",
+    "semantic_hash": "27634d4abd71c216f1ec317eba275fb0"
+  },
+  "apps/driver/app.config.js": {
+    "mtime": 1784425545.9132276,
+    "ast_hash": "728ee08366748a619b053271d4ab2b42",
+    "semantic_hash": "728ee08366748a619b053271d4ab2b42"
+  },
+  "apps/driver/app.json": {
+    "mtime": 1784476107.806567,
+    "ast_hash": "dc90f08ef3653c26588bc98cb425294f",
+    "semantic_hash": "dc90f08ef3653c26588bc98cb425294f"
+  },
+  "apps/driver/babel.config.js": {
+    "mtime": 1784508989.7037516,
+    "ast_hash": "b8cd641ba1fee6747061fedbee96765b",
+    "semantic_hash": "b8cd641ba1fee6747061fedbee96765b"
+  },
+  "apps/driver/e2e/goOnline.e2e.ts": {
+    "mtime": 1782639742.0,
+    "ast_hash": "8d30c95392badbb4dd4b7e28729ccc25",
+    "semantic_hash": "8d30c95392badbb4dd4b7e28729ccc25"
+  },
+  "apps/driver/e2e/login.e2e.ts": {
+    "mtime": 1782639736.0,
+    "ast_hash": "f37b5f4893049318750f2cc79e351867",
+    "semantic_hash": "f37b5f4893049318750f2cc79e351867"
+  },
+  "apps/driver/e2e/smoke.e2e.ts": {
+    "mtime": 1782639734.0,
+    "ast_hash": "8e6716b1e21353c1f6bf6954a6dc9eda",
+    "semantic_hash": "8e6716b1e21353c1f6bf6954a6dc9eda"
+  },
+  "apps/driver/eas.json": {
+    "mtime": 1782605940.0,
+    "ast_hash": "715b2b9d6846beb9c86645c1d18aa7e7",
+    "semantic_hash": "715b2b9d6846beb9c86645c1d18aa7e7"
+  },
+  "apps/driver/index.js": {
+    "mtime": 1781293334.0,
+    "ast_hash": "50e8704ee5352008a9550956ebfa1cf5",
+    "semantic_hash": "50e8704ee5352008a9550956ebfa1cf5"
+  },
+  "apps/driver/jest.config.js": {
+    "mtime": 1784432491.098442,
+    "ast_hash": "1b7a6fbb43a3b3ad7b827bff14d9b5b0",
+    "semantic_hash": "1b7a6fbb43a3b3ad7b827bff14d9b5b0"
+  },
+  "apps/driver/metro.config.js": {
+    "mtime": 1784509418.427905,
+    "ast_hash": "7e5360a0d0647df79d590b028a25fb86",
+    "semantic_hash": "7e5360a0d0647df79d590b028a25fb86"
+  },
+  "apps/driver/package.json": {
+    "mtime": 1784542253.986271,
+    "ast_hash": "3e579ca50c6e12aff2a1598063e4c33d",
+    "semantic_hash": "3e579ca50c6e12aff2a1598063e4c33d"
+  },
+  "apps/driver/react-native.config.js": {
+    "mtime": 1780443666.0,
+    "ast_hash": "90fe6268009ad431184f3799b47ebea9",
+    "semantic_hash": "90fe6268009ad431184f3799b47ebea9"
+  },
+  "apps/driver/screens/ActiveRideScreen.tsx": {
+    "mtime": 1784623456.953521,
+    "ast_hash": "d9f559f5b9b02ac1815cbca3e5906c3c",
+    "semantic_hash": "d9f559f5b9b02ac1815cbca3e5906c3c"
+  },
+  "apps/driver/screens/ChatScreen.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "8744801f5e9fb2ffb7a5a2d470607d67",
+    "semantic_hash": "8744801f5e9fb2ffb7a5a2d470607d67"
+  },
+  "apps/driver/screens/ConsentScreen.tsx": {
+    "mtime": 1783256060.0,
+    "ast_hash": "77083b40d645b0732ded97e7e0ecd7aa",
+    "semantic_hash": "77083b40d645b0732ded97e7e0ecd7aa"
+  },
+  "apps/driver/screens/DashboardScreen.tsx": {
+    "mtime": 1784671362.8890631,
+    "ast_hash": "906c415f50b5eab7751604c4fd41d556",
+    "semantic_hash": "906c415f50b5eab7751604c4fd41d556"
+  },
+  "apps/driver/screens/DocumentsScreen.tsx": {
+    "mtime": 1784546431.4948916,
+    "ast_hash": "f41fbeb7d4376265141228b6d623d3c7",
+    "semantic_hash": "f41fbeb7d4376265141228b6d623d3c7"
+  },
+  "apps/driver/screens/EarningsScreen.tsx": {
+    "mtime": 1784671912.0724213,
+    "ast_hash": "1e4ba37b12efe9c243d8952211f576b0",
+    "semantic_hash": "1e4ba37b12efe9c243d8952211f576b0"
+  },
+  "apps/driver/screens/FoodDeliveryScreen.tsx": {
+    "mtime": 1784429887.9685702,
+    "ast_hash": "ab9390928a7e26f060bb5c32c3fbe452",
+    "semantic_hash": "ab9390928a7e26f060bb5c32c3fbe452"
+  },
+  "apps/driver/screens/FoodOrderDetailScreen.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "fcd915eb48914ddcef22b50dfc739da8",
+    "semantic_hash": "fcd915eb48914ddcef22b50dfc739da8"
+  },
+  "apps/driver/screens/ForgotPasswordScreen.tsx": {
+    "mtime": 1784671380.7771075,
+    "ast_hash": "7da43b28ac44c8b2055fda19768948c9",
+    "semantic_hash": "7da43b28ac44c8b2055fda19768948c9"
+  },
+  "apps/driver/screens/LoginScreen.tsx": {
+    "mtime": 1784671360.1150563,
+    "ast_hash": "bab58b808ba6b70bf9bbdc2b3f3ffbf4",
+    "semantic_hash": "bab58b808ba6b70bf9bbdc2b3f3ffbf4"
+  },
+  "apps/driver/screens/ProfileScreen.tsx": {
+    "mtime": 1784671540.383502,
+    "ast_hash": "5f3b0935f445bba99008833b59d76f72",
+    "semantic_hash": "5f3b0935f445bba99008833b59d76f72"
+  },
+  "apps/driver/screens/RideRequestsScreen.tsx": {
+    "mtime": 1784671363.9930658,
+    "ast_hash": "bebd34a48a129adc4fe51d2862b02731",
+    "semantic_hash": "bebd34a48a129adc4fe51d2862b02731"
+  },
+  "apps/driver/screens/SupportScreen.tsx": {
+    "mtime": 1784623558.4217038,
+    "ast_hash": "a7c7b5d0e72dda1d0c8f3fd62abc34bb",
+    "semantic_hash": "a7c7b5d0e72dda1d0c8f3fd62abc34bb"
+  },
+  "apps/driver/screens/TripHistoryScreen.tsx": {
+    "mtime": 1784430851.2530968,
+    "ast_hash": "f9e7caea1c52176f0e15aaab33032e81",
+    "semantic_hash": "f9e7caea1c52176f0e15aaab33032e81"
+  },
+  "apps/driver/tsconfig.json": {
+    "mtime": 1783530014.0,
+    "ast_hash": "7e51dae7824b44bdf8fd4e8fa56cef87",
+    "semantic_hash": "7e51dae7824b44bdf8fd4e8fa56cef87"
+  },
+  "apps/rider/App.tsx": {
+    "mtime": 1784550454.0195434,
+    "ast_hash": "6a032b2f7b1d16826f4ca787525570e1",
+    "semantic_hash": "6a032b2f7b1d16826f4ca787525570e1"
+  },
+  "apps/rider/__tests__/BookRideScreen.test.tsx": {
+    "mtime": 1784470825.4282935,
+    "ast_hash": "0723ec8b4dfc487c8a36d96f36b66795",
+    "semantic_hash": "0723ec8b4dfc487c8a36d96f36b66795"
+  },
+  "apps/rider/__tests__/FoodCheckoutScreen.test.tsx": {
+    "mtime": 1784466525.356701,
+    "ast_hash": "2e400f3d904ffeaf6074f54d34bcc7f0",
+    "semantic_hash": "2e400f3d904ffeaf6074f54d34bcc7f0"
+  },
+  "apps/rider/__tests__/HomeScreen.test.tsx": {
+    "mtime": 1784464435.5205808,
+    "ast_hash": "3dbd03b8a69828c633957efd5434dffc",
+    "semantic_hash": "3dbd03b8a69828c633957efd5434dffc"
+  },
+  "apps/rider/__tests__/LoginScreen.test.tsx": {
+    "mtime": 1784576411.9055645,
+    "ast_hash": "3885a8a69b1b0a3636cfae90583145f5",
+    "semantic_hash": "3885a8a69b1b0a3636cfae90583145f5"
+  },
+  "apps/rider/__tests__/PaymentScreen.test.tsx": {
+    "mtime": 1784467389.5012317,
+    "ast_hash": "65fe55e97339dfd9d6186fec68b97ab2",
+    "semantic_hash": "65fe55e97339dfd9d6186fec68b97ab2"
+  },
+  "apps/rider/__tests__/ProfileScreen.test.tsx": {
+    "mtime": 1784466468.733535,
+    "ast_hash": "f6ee6b03cdddcd2d4cf154f9759a4e7c",
+    "semantic_hash": "f6ee6b03cdddcd2d4cf154f9759a4e7c"
+  },
+  "apps/rider/__tests__/RatingScreen.test.tsx": {
+    "mtime": 1784465540.0788157,
+    "ast_hash": "211817d038771eca4ab2207d91e21e79",
+    "semantic_hash": "211817d038771eca4ab2207d91e21e79"
+  },
+  "apps/rider/__tests__/RegisterScreen.test.tsx": {
+    "mtime": 1784471407.0819962,
+    "ast_hash": "6b782995422446e075bcee5e391f9b66",
+    "semantic_hash": "6b782995422446e075bcee5e391f9b66"
+  },
+  "apps/rider/__tests__/RestaurantListScreen.test.tsx": {
+    "mtime": 1784466588.880887,
+    "ast_hash": "f730c6795c983d97843dde636339a4a3",
+    "semantic_hash": "f730c6795c983d97843dde636339a4a3"
+  },
+  "apps/rider/__tests__/RestaurantMenuScreen.test.tsx": {
+    "mtime": 1784471568.0844674,
+    "ast_hash": "4545a0f62406c50042586c25e9e0ffa5",
+    "semantic_hash": "4545a0f62406c50042586c25e9e0ffa5"
+  },
+  "apps/rider/__tests__/RideTrackingScreen.test.tsx": {
+    "mtime": 1784470370.7909625,
+    "ast_hash": "10e38c643676932150ff3970aa7bc1db",
+    "semantic_hash": "10e38c643676932150ff3970aa7bc1db"
+  },
+  "apps/rider/__tests__/WalletScreen.test.tsx": {
+    "mtime": 1784470272.3266742,
+    "ast_hash": "c3b5b73160a40c7e870dc7ae7ba0b649",
+    "semantic_hash": "c3b5b73160a40c7e870dc7ae7ba0b649"
+  },
+  "apps/rider/__tests__/mocks.ts": {
+    "mtime": 1784464277.525118,
+    "ast_hash": "57f6c56d8fac572735a9f0e36cebba36",
+    "semantic_hash": "57f6c56d8fac572735a9f0e36cebba36"
+  },
+  "apps/rider/__tests__/test-utils.tsx": {
+    "mtime": 1784464256.3950562,
+    "ast_hash": "f3a7c63679c11e8695427502ef96405b",
+    "semantic_hash": "f3a7c63679c11e8695427502ef96405b"
+  },
+  "apps/rider/android/app/build.gradle": {
+    "mtime": 1784540033.1283727,
+    "ast_hash": "a56ef2928a9a18e3e1c5b39dd696f260",
+    "semantic_hash": "a56ef2928a9a18e3e1c5b39dd696f260"
+  },
+  "apps/rider/android/app/src/main/java/za/co/easyryde/rider/MainActivity.kt": {
+    "mtime": 1784457822.5660083,
+    "ast_hash": "2df1a9b1dabcf0fc35629e0193a9248d",
+    "semantic_hash": "2df1a9b1dabcf0fc35629e0193a9248d"
+  },
+  "apps/rider/android/app/src/main/java/za/co/easyryde/rider/MainApplication.kt": {
+    "mtime": 1784457822.5660083,
+    "ast_hash": "a6f30a84c4170de757d5ed214445754e",
+    "semantic_hash": "a6f30a84c4170de757d5ed214445754e"
+  },
+  "apps/rider/android/build.gradle": {
+    "mtime": 1784458012.7535808,
+    "ast_hash": "d94ec4c42b4c071087655eb1267b0645",
+    "semantic_hash": "d94ec4c42b4c071087655eb1267b0645"
+  },
+  "apps/rider/android/gradlew": {
+    "mtime": 1784457822.0572746,
+    "ast_hash": "1db6d150e9a9442ca929c1fa8b2fd25e",
+    "semantic_hash": "1db6d150e9a9442ca929c1fa8b2fd25e"
+  },
+  "apps/rider/android/react-settings-plugin/build.gradle.kts": {
+    "mtime": 1784457822.0578887,
+    "ast_hash": "2b632c4ec639e238835602be329daae9",
+    "semantic_hash": "2b632c4ec639e238835602be329daae9"
+  },
+  "apps/rider/android/react-settings-plugin/src/main/kotlin/expo/plugins/ReactSettingsPlugin.kt": {
+    "mtime": 1784457822.0591865,
+    "ast_hash": "8985acacd8da0db15aa7806db468749e",
+    "semantic_hash": "8985acacd8da0db15aa7806db468749e"
+  },
+  "apps/rider/android/settings.gradle": {
+    "mtime": 1784458006.7635627,
+    "ast_hash": "3de40c2835da9647205578a5ac054d5d",
+    "semantic_hash": "3de40c2835da9647205578a5ac054d5d"
+  },
+  "apps/rider/app.config.js": {
+    "mtime": 1784425543.4382212,
+    "ast_hash": "728ee08366748a619b053271d4ab2b42",
+    "semantic_hash": "728ee08366748a619b053271d4ab2b42"
+  },
+  "apps/rider/app.json": {
+    "mtime": 1784476362.4672964,
+    "ast_hash": "d75dc2d8e3ae5a1e692dc590c74ebf1a",
+    "semantic_hash": "d75dc2d8e3ae5a1e692dc590c74ebf1a"
+  },
+  "apps/rider/babel.config.js": {
+    "mtime": 1784508979.5927243,
+    "ast_hash": "b8cd641ba1fee6747061fedbee96765b",
+    "semantic_hash": "b8cd641ba1fee6747061fedbee96765b"
+  },
+  "apps/rider/e2e/bookRide.e2e.ts": {
+    "mtime": 1782639712.0,
+    "ast_hash": "246aebb105379158d51b9ad961361e53",
+    "semantic_hash": "246aebb105379158d51b9ad961361e53"
+  },
+  "apps/rider/e2e/config.json": {
+    "mtime": 1780278594.0,
+    "ast_hash": "50f1533d0521f8fab3e57afb012fc1de",
+    "semantic_hash": "50f1533d0521f8fab3e57afb012fc1de"
+  },
+  "apps/rider/e2e/jest.config.js": {
+    "mtime": 1780278610.0,
+    "ast_hash": "3a504cad147012f9f917e89aa80b134a",
+    "semantic_hash": "3a504cad147012f9f917e89aa80b134a"
+  },
+  "apps/rider/e2e/login.e2e.ts": {
+    "mtime": 1782639702.0,
+    "ast_hash": "67fa1577aec5809e1a6519fbf8e61b60",
+    "semantic_hash": "67fa1577aec5809e1a6519fbf8e61b60"
+  },
+  "apps/rider/e2e/rides.test.ts": {
+    "mtime": 1780411954.0,
+    "ast_hash": "3139d960e3a145044bf958a78d4e18c0",
+    "semantic_hash": "3139d960e3a145044bf958a78d4e18c0"
+  },
+  "apps/rider/e2e/smoke.e2e.ts": {
+    "mtime": 1782639694.0,
+    "ast_hash": "b4b4adc77ab6f41a336a454958a2f840",
+    "semantic_hash": "b4b4adc77ab6f41a336a454958a2f840"
+  },
+  "apps/rider/eas.json": {
+    "mtime": 1782605940.0,
+    "ast_hash": "715b2b9d6846beb9c86645c1d18aa7e7",
+    "semantic_hash": "715b2b9d6846beb9c86645c1d18aa7e7"
+  },
+  "apps/rider/index.js": {
+    "mtime": 1781300416.0,
+    "ast_hash": "50e8704ee5352008a9550956ebfa1cf5",
+    "semantic_hash": "50e8704ee5352008a9550956ebfa1cf5"
+  },
+  "apps/rider/ios/EasyRydeRider/AppDelegate.h": {
+    "mtime": 1784432044.6118066,
+    "ast_hash": "937ea6b7f88b66173c0a8d1bf455d96d",
+    "semantic_hash": "937ea6b7f88b66173c0a8d1bf455d96d"
+  },
+  "apps/rider/ios/EasyRydeRider/AppDelegate.mm": {
+    "mtime": 1784432046.756251,
+    "ast_hash": "48c5cf570e8b53ddc79608f50168ccb6",
+    "semantic_hash": "48c5cf570e8b53ddc79608f50168ccb6"
+  },
+  "apps/rider/ios/EasyRydeRider/EasyRydeRider-Bridging-Header.h": {
+    "mtime": 1784432046.0942492,
+    "ast_hash": "ed5eec87dc8088af46e122a39ee6817b",
+    "semantic_hash": "ed5eec87dc8088af46e122a39ee6817b"
+  },
+  "apps/rider/ios/EasyRydeRider/Images.xcassets/AppIcon.appiconset/Contents.json": {
+    "mtime": 1784432045.8932488,
+    "ast_hash": "e753dae9a3ae1e8aeb8f44742ea0614b",
+    "semantic_hash": "e753dae9a3ae1e8aeb8f44742ea0614b"
+  },
+  "apps/rider/ios/EasyRydeRider/Images.xcassets/Contents.json": {
+    "mtime": 1784432044.6204772,
+    "ast_hash": "96cbaeb138eab0aceebfdf0022c7d835",
+    "semantic_hash": "96cbaeb138eab0aceebfdf0022c7d835"
+  },
+  "apps/rider/ios/EasyRydeRider/Images.xcassets/SplashScreenBackground.imageset/Contents.json": {
+    "mtime": 1784432045.9682488,
+    "ast_hash": "1eee2a466d9190086560e3416e26f654",
+    "semantic_hash": "1eee2a466d9190086560e3416e26f654"
+  },
+  "apps/rider/ios/EasyRydeRider/main.m": {
+    "mtime": 1784432044.6227422,
+    "ast_hash": "91efb913844bf052f41ff1466580f60b",
+    "semantic_hash": "91efb913844bf052f41ff1466580f60b"
+  },
+  "apps/rider/ios/EasyRydeRider/noop-file.swift": {
+    "mtime": 1784432046.083249,
+    "ast_hash": "3c417974c044a61f90e7902f480c291f",
+    "semantic_hash": "3c417974c044a61f90e7902f480c291f"
+  },
+  "apps/rider/ios/Podfile.properties.json": {
+    "mtime": 1784432047.0032516,
+    "ast_hash": "4a357809d422c79bc009c666175e72ad",
+    "semantic_hash": "4a357809d422c79bc009c666175e72ad"
+  },
+  "apps/rider/jest.config.js": {
+    "mtime": 1784463414.3425903,
+    "ast_hash": "7049d5ae54f00c511ac0f96970a45500",
+    "semantic_hash": "7049d5ae54f00c511ac0f96970a45500"
+  },
+  "apps/rider/metro-proxy.js": {
+    "mtime": 1782047968.0,
+    "ast_hash": "ec84c37e7e83e40d96ba9edddcc2243c",
+    "semantic_hash": "ec84c37e7e83e40d96ba9edddcc2243c"
+  },
+  "apps/rider/metro.config.js": {
+    "mtime": 1784509407.8518767,
+    "ast_hash": "e02c6ff862ade152df89f455f1011220",
+    "semantic_hash": "e02c6ff862ade152df89f455f1011220"
+  },
+  "apps/rider/package.json": {
+    "mtime": 1784539917.020221,
+    "ast_hash": "f081ddf81e5d9a70c733434fc44292b7",
+    "semantic_hash": "f081ddf81e5d9a70c733434fc44292b7"
+  },
+  "apps/rider/screens/BookRideScreen.tsx": {
+    "mtime": 1784671385.3201187,
+    "ast_hash": "349d3d5cbd9e53f81c79272733a8a515",
+    "semantic_hash": "349d3d5cbd9e53f81c79272733a8a515"
+  },
+  "apps/rider/screens/ChatScreen.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "299adddbc31958ac6f38b08f1e04fd83",
+    "semantic_hash": "299adddbc31958ac6f38b08f1e04fd83"
+  },
+  "apps/rider/screens/ConsentScreen.tsx": {
+    "mtime": 1783256032.0,
+    "ast_hash": "367ec3f96800b2d68d8fc8e19740f676",
+    "semantic_hash": "367ec3f96800b2d68d8fc8e19740f676"
+  },
+  "apps/rider/screens/FoodCheckoutScreen.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "0dc60034bef5f7a350537ee87d3db2e2",
+    "semantic_hash": "0dc60034bef5f7a350537ee87d3db2e2"
+  },
+  "apps/rider/screens/FoodOrderTrackingScreen.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "76fafc9cbf31a24d06864be651214369",
+    "semantic_hash": "76fafc9cbf31a24d06864be651214369"
+  },
+  "apps/rider/screens/ForgotPasswordScreen.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "e9e92760036c9773e46de032739efc6a",
+    "semantic_hash": "e9e92760036c9773e46de032739efc6a"
+  },
+  "apps/rider/screens/HomeScreen.tsx": {
+    "mtime": 1784671394.1591406,
+    "ast_hash": "524109695127dbf8e8f93a5ac2d25650",
+    "semantic_hash": "524109695127dbf8e8f93a5ac2d25650"
+  },
+  "apps/rider/screens/LoginScreen.tsx": {
+    "mtime": 1784597198.5396276,
+    "ast_hash": "a69954ad98028362e0eb1f667ec11c6f",
+    "semantic_hash": "a69954ad98028362e0eb1f667ec11c6f"
+  },
+  "apps/rider/screens/NotificationScreen.tsx": {
+    "mtime": 1784291114.0,
+    "ast_hash": "7350f9dfbe8601349a9755d5569b390c",
+    "semantic_hash": "7350f9dfbe8601349a9755d5569b390c"
+  },
+  "apps/rider/screens/PaymentScreen.tsx": {
+    "mtime": 1784597237.3279843,
+    "ast_hash": "290925e827753b34989123c18309e945",
+    "semantic_hash": "290925e827753b34989123c18309e945"
+  },
+  "apps/rider/screens/ProfileScreen.tsx": {
+    "mtime": 1784430783.72692,
+    "ast_hash": "70217b200cb698e08bef7191906b1635",
+    "semantic_hash": "70217b200cb698e08bef7191906b1635"
+  },
+  "apps/rider/screens/PromoCodeScreen.tsx": {
+    "mtime": 1784290920.0,
+    "ast_hash": "2faa5117d604c8b96df26f7dfaab1d08",
+    "semantic_hash": "2faa5117d604c8b96df26f7dfaab1d08"
+  },
+  "apps/rider/screens/RatingScreen.tsx": {
+    "mtime": 1784283714.0,
+    "ast_hash": "1ebd269f6db1e66dd468347163d73c28",
+    "semantic_hash": "1ebd269f6db1e66dd468347163d73c28"
+  },
+  "apps/rider/screens/RegisterScreen.tsx": {
+    "mtime": 1784623453.4465146,
+    "ast_hash": "b23c587de1e3108504f39fde323c6240",
+    "semantic_hash": "b23c587de1e3108504f39fde323c6240"
+  },
+  "apps/rider/screens/RestaurantListScreen.tsx": {
+    "mtime": 1784430768.153879,
+    "ast_hash": "b2b7b826ba9754dee1f0bf652af2091b",
+    "semantic_hash": "b2b7b826ba9754dee1f0bf652af2091b"
+  },
+  "apps/rider/screens/RestaurantMenuScreen.tsx": {
+    "mtime": 1784430733.1627872,
+    "ast_hash": "66a7f805090ae0ef6e42302b05a74d2f",
+    "semantic_hash": "66a7f805090ae0ef6e42302b05a74d2f"
+  },
+  "apps/rider/screens/RideDetailScreen.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "2f5a582fa17e1e470d7a6cce7f7db188",
+    "semantic_hash": "2f5a582fa17e1e470d7a6cce7f7db188"
+  },
+  "apps/rider/screens/RideHistoryScreen.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "8dd8ee122f178a5bd0f9d1dbee083544",
+    "semantic_hash": "8dd8ee122f178a5bd0f9d1dbee083544"
+  },
+  "apps/rider/screens/RideTrackingScreen.tsx": {
+    "mtime": 1784671366.1270711,
+    "ast_hash": "82bad622a99ffc63e9a2016f9d41bbec",
+    "semantic_hash": "82bad622a99ffc63e9a2016f9d41bbec"
+  },
+  "apps/rider/screens/SupportScreen.tsx": {
+    "mtime": 1784290968.0,
+    "ast_hash": "2d00e07033ac007c918e76022abf51d6",
+    "semantic_hash": "2d00e07033ac007c918e76022abf51d6"
+  },
+  "apps/rider/screens/WalletScreen.tsx": {
+    "mtime": 1784671412.576186,
+    "ast_hash": "c953f2999414c5ce350939de030db7c1",
+    "semantic_hash": "c953f2999414c5ce350939de030db7c1"
+  },
+  "apps/rider/scripts/patch-metro-windows.js": {
+    "mtime": 1782053746.0,
+    "ast_hash": "bb81c419612cd5ba23abacf9d33c34fa",
+    "semantic_hash": "bb81c419612cd5ba23abacf9d33c34fa"
+  },
+  "apps/rider/tsconfig.json": {
+    "mtime": 1781363448.0,
+    "ast_hash": "7e51dae7824b44bdf8fd4e8fa56cef87",
+    "semantic_hash": "7e51dae7824b44bdf8fd4e8fa56cef87"
+  },
+  "e2e/admin-smoke.test.ts": {
+    "mtime": 1781655462.0,
+    "ast_hash": "c034d839cdf474a38492e52c26a77f06",
+    "semantic_hash": "c034d839cdf474a38492e52c26a77f06"
+  },
+  "e2e/driver-smoke.test.ts": {
+    "mtime": 1781655458.0,
+    "ast_hash": "7290a4c4b18cb4c96fda198f8fc5d7ce",
+    "semantic_hash": "7290a4c4b18cb4c96fda198f8fc5d7ce"
+  },
+  "e2e/rider-smoke.test.ts": {
+    "mtime": 1781655456.0,
+    "ast_hash": "f8abe5aeaab6c3f110ae4fe6b4c79f65",
+    "semantic_hash": "f8abe5aeaab6c3f110ae4fe6b4c79f65"
+  },
+  "jest.config.e2e.js": {
+    "mtime": 1782639656.0,
+    "ast_hash": "1e16e44e3f1e6db3e5bc60755f37e9c7",
+    "semantic_hash": "1e16e44e3f1e6db3e5bc60755f37e9c7"
+  },
+  "package.json": {
+    "mtime": 1784500541.2879436,
+    "ast_hash": "0301c039c3fccdc18381aa37316fe480",
+    "semantic_hash": "0301c039c3fccdc18381aa37316fe480"
+  },
+  "packages/api-client/package.json": {
+    "mtime": 1782091638.0,
+    "ast_hash": "016324cfc72b694104b021ec2966358d",
+    "semantic_hash": "016324cfc72b694104b021ec2966358d"
+  },
+  "packages/api-client/src/apiClient.ts": {
+    "mtime": 1783595650.0,
+    "ast_hash": "3a193b2cf6c7c5ec3119ea08b685c1d7",
+    "semantic_hash": "3a193b2cf6c7c5ec3119ea08b685c1d7"
+  },
+  "packages/api-client/src/index.ts": {
+    "mtime": 1781654978.0,
+    "ast_hash": "c623a75d1d90541b7b66265c6e860104",
+    "semantic_hash": "c623a75d1d90541b7b66265c6e860104"
+  },
+  "packages/api-client/src/offlineQueue.ts": {
+    "mtime": 1783530014.0,
+    "ast_hash": "bfe435737d57dbaf726e6081a630c058",
+    "semantic_hash": "bfe435737d57dbaf726e6081a630c058"
+  },
+  "packages/api-client/src/storageCache.ts": {
+    "mtime": 1783530014.0,
+    "ast_hash": "15537421e7246a4c02f49d3bf12ebaf2",
+    "semantic_hash": "15537421e7246a4c02f49d3bf12ebaf2"
+  },
+  "packages/auth/src/biometrics.ts": {
+    "mtime": 1781654942.0,
+    "ast_hash": "fd2451d19cb5cefd730c983f3b7456bc",
+    "semantic_hash": "fd2451d19cb5cefd730c983f3b7456bc"
+  },
+  "packages/auth/src/hooks/useFormValidation.ts": {
+    "mtime": 1781654940.0,
+    "ast_hash": "705dac14ad5dc9aa6f241a8b084d2292",
+    "semantic_hash": "705dac14ad5dc9aa6f241a8b084d2292"
+  },
+  "packages/deeplink/src/deeplinkHandler.ts": {
+    "mtime": 1781654936.0,
+    "ast_hash": "0bd238ae9f0312a395fc7428100c4d3f",
+    "semantic_hash": "0bd238ae9f0312a395fc7428100c4d3f"
+  },
+  "packages/deeplink/src/index.ts": {
+    "mtime": 1781654936.0,
+    "ast_hash": "55e09f1e6e21c599e9dcf41ad69c0232",
+    "semantic_hash": "55e09f1e6e21c599e9dcf41ad69c0232"
+  },
+  "packages/maps/src/AnimatedDriverMarker.tsx": {
+    "mtime": 1781654934.0,
+    "ast_hash": "81ce175658ed0cc755bb22697d48d8c8",
+    "semantic_hash": "81ce175658ed0cc755bb22697d48d8c8"
+  },
+  "packages/maps/src/RoutePolyline.tsx": {
+    "mtime": 1781654930.0,
+    "ast_hash": "8f01018904421a23f3ac8bd0a9c86bc3",
+    "semantic_hash": "8f01018904421a23f3ac8bd0a9c86bc3"
+  },
+  "packages/maps/src/hooks/useDriverAnimation.ts": {
+    "mtime": 1781654930.0,
+    "ast_hash": "b38836a5c5a15184869ebdf8342539d4",
+    "semantic_hash": "b38836a5c5a15184869ebdf8342539d4"
+  },
+  "packages/maps/src/hooks/useRouteDirections.ts": {
+    "mtime": 1781654928.0,
+    "ast_hash": "ec119b5f7101ebcdb9d78a8f65f69462",
+    "semantic_hash": "ec119b5f7101ebcdb9d78a8f65f69462"
+  },
+  "packages/shared/package.json": {
+    "mtime": 1783530014.0,
+    "ast_hash": "3ea0499d4fe4470cc50022d9a28fb02b",
+    "semantic_hash": "3ea0499d4fe4470cc50022d9a28fb02b"
+  },
+  "packages/shared/src/api/client.ts": {
+    "mtime": 1783595610.0,
+    "ast_hash": "dcfe365876cc19c254e9c89f2e8d4c57",
+    "semantic_hash": "dcfe365876cc19c254e9c89f2e8d4c57"
+  },
+  "packages/shared/src/api/foodDelivery.ts": {
+    "mtime": 1783530014.0,
+    "ast_hash": "8766f4d70b889f580b73cd13346b1eca",
+    "semantic_hash": "8766f4d70b889f580b73cd13346b1eca"
+  },
+  "packages/shared/src/api/index.ts": {
+    "mtime": 1784291040.0,
+    "ast_hash": "eb4fcac76a6d943bba471a6c5a4a808d",
+    "semantic_hash": "eb4fcac76a6d943bba471a6c5a4a808d"
+  },
+  "packages/shared/src/api/offlineQueue.ts": {
+    "mtime": 1782634976.0,
+    "ast_hash": "bc535584f831a6fab76bdeb105d201ce",
+    "semantic_hash": "bc535584f831a6fab76bdeb105d201ce"
+  },
+  "packages/shared/src/components/ActivityCard.tsx": {
+    "mtime": 1781530278.0,
+    "ast_hash": "1a7f4959d9a73b3b50f8af5d989752a1",
+    "semantic_hash": "1a7f4959d9a73b3b50f8af5d989752a1"
+  },
+  "packages/shared/src/components/AnimatedCheckmark.tsx": {
+    "mtime": 1781043532.0,
+    "ast_hash": "9695666341c5c7860b26a12704537a19",
+    "semantic_hash": "9695666341c5c7860b26a12704537a19"
+  },
+  "packages/shared/src/components/AnimatedNumber.tsx": {
+    "mtime": 1781049732.0,
+    "ast_hash": "a2ac9cef5369fb803c1e97a6af5dbdaa",
+    "semantic_hash": "a2ac9cef5369fb803c1e97a6af5dbdaa"
+  },
+  "packages/shared/src/components/Avatar.tsx": {
+    "mtime": 1780924336.0,
+    "ast_hash": "1d08d89ffd3f974f2efc944543e0da83",
+    "semantic_hash": "1d08d89ffd3f974f2efc944543e0da83"
+  },
+  "packages/shared/src/components/Badge.tsx": {
+    "mtime": 1780924254.0,
+    "ast_hash": "3b150cb078af8069c5176fe53e10fc77",
+    "semantic_hash": "3b150cb078af8069c5176fe53e10fc77"
+  },
+  "packages/shared/src/components/Button.tsx": {
+    "mtime": 1784426304.5672054,
+    "ast_hash": "58be88b03a4238a78e67d06f4b1aa5b4",
+    "semantic_hash": "58be88b03a4238a78e67d06f4b1aa5b4"
+  },
+  "packages/shared/src/components/Card.tsx": {
+    "mtime": 1781041362.0,
+    "ast_hash": "4997ae7586931cddd55883a5da3f5c9c",
+    "semantic_hash": "4997ae7586931cddd55883a5da3f5c9c"
+  },
+  "packages/shared/src/components/CategoryTile.tsx": {
+    "mtime": 1781600854.0,
+    "ast_hash": "b6cf32f279e95654b24facad9c3f4752",
+    "semantic_hash": "b6cf32f279e95654b24facad9c3f4752"
+  },
+  "packages/shared/src/components/Chip.tsx": {
+    "mtime": 1780924298.0,
+    "ast_hash": "18fe22cb4a9b2c796aabfcf81d341f2b",
+    "semantic_hash": "18fe22cb4a9b2c796aabfcf81d341f2b"
+  },
+  "packages/shared/src/components/Divider.tsx": {
+    "mtime": 1780924248.0,
+    "ast_hash": "5e6399906e2b549e83aac7fcdb853a57",
+    "semantic_hash": "5e6399906e2b549e83aac7fcdb853a57"
+  },
+  "packages/shared/src/components/DriverCard.tsx": {
+    "mtime": 1780924312.0,
+    "ast_hash": "6aca7431741c91e2ee29e6f6b93b5e4d",
+    "semantic_hash": "6aca7431741c91e2ee29e6f6b93b5e4d"
+  },
+  "packages/shared/src/components/EmptyState.tsx": {
+    "mtime": 1780924280.0,
+    "ast_hash": "2b1c54682e7c50245cfb8e7ab5f52dbb",
+    "semantic_hash": "2b1c54682e7c50245cfb8e7ab5f52dbb"
+  },
+  "packages/shared/src/components/ErrorBoundary.tsx": {
+    "mtime": 1781533242.0,
+    "ast_hash": "93a15a678ec54a6f461f4dee43c8bb4e",
+    "semantic_hash": "93a15a678ec54a6f461f4dee43c8bb4e"
+  },
+  "packages/shared/src/components/ErrorState.tsx": {
+    "mtime": 1781533200.0,
+    "ast_hash": "438c776cf238aa1ecc6b627439d4ed5a",
+    "semantic_hash": "438c776cf238aa1ecc6b627439d4ed5a"
+  },
+  "packages/shared/src/components/GlassCard.tsx": {
+    "mtime": 1784426282.941149,
+    "ast_hash": "043c8aba14ca1b08207f781ebd24c300",
+    "semantic_hash": "043c8aba14ca1b08207f781ebd24c300"
+  },
+  "packages/shared/src/components/GlowButton.tsx": {
+    "mtime": 1784426276.8211331,
+    "ast_hash": "ca5f4b323ce56893f727e5bddfb86d91",
+    "semantic_hash": "ca5f4b323ce56893f727e5bddfb86d91"
+  },
+  "packages/shared/src/components/GradientText.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "60c824680e38d6741a71e456184bb237",
+    "semantic_hash": "60c824680e38d6741a71e456184bb237"
+  },
+  "packages/shared/src/components/Header.tsx": {
+    "mtime": 1780924244.0,
+    "ast_hash": "b7af805bed33c3d7af293f095fd418f1",
+    "semantic_hash": "b7af805bed33c3d7af293f095fd418f1"
+  },
+  "packages/shared/src/components/Input.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "94fd9190fbb93f411a3526ff6d128694",
+    "semantic_hash": "94fd9190fbb93f411a3526ff6d128694"
+  },
+  "packages/shared/src/components/ListItem.tsx": {
+    "mtime": 1780924234.0,
+    "ast_hash": "5ee5e2d4f59ababafdfbf2b3f626603a",
+    "semantic_hash": "5ee5e2d4f59ababafdfbf2b3f626603a"
+  },
+  "packages/shared/src/components/LoadingOverlay.tsx": {
+    "mtime": 1781041340.0,
+    "ast_hash": "63c5db0fb2555da8f46f99684da3d18e",
+    "semantic_hash": "63c5db0fb2555da8f46f99684da3d18e"
+  },
+  "packages/shared/src/components/Modal.tsx": {
+    "mtime": 1781041326.0,
+    "ast_hash": "f36fb8196372af416ae53930571f5cb4",
+    "semantic_hash": "f36fb8196372af416ae53930571f5cb4"
+  },
+  "packages/shared/src/components/OfflineBanner.tsx": {
+    "mtime": 1782635038.0,
+    "ast_hash": "4c3a2c162f03fca8d00a5acc69cb0e18",
+    "semantic_hash": "4c3a2c162f03fca8d00a5acc69cb0e18"
+  },
+  "packages/shared/src/components/PriceDisplay.tsx": {
+    "mtime": 1780924330.0,
+    "ast_hash": "debbd3030d2b30d9c850d111e81f24c8",
+    "semantic_hash": "debbd3030d2b30d9c850d111e81f24c8"
+  },
+  "packages/shared/src/components/ProgressBar.tsx": {
+    "mtime": 1780924346.0,
+    "ast_hash": "572c37f85dad6ad0c78000b9210a2103",
+    "semantic_hash": "572c37f85dad6ad0c78000b9210a2103"
+  },
+  "packages/shared/src/components/QuickActionButton.tsx": {
+    "mtime": 1781600218.0,
+    "ast_hash": "b04b1e2a5ade6ce359a98e7ea821cbe1",
+    "semantic_hash": "b04b1e2a5ade6ce359a98e7ea821cbe1"
+  },
+  "packages/shared/src/components/Rating.tsx": {
+    "mtime": 1780924342.0,
+    "ast_hash": "06ac49de9d189cec5c456c18804333d8",
+    "semantic_hash": "06ac49de9d189cec5c456c18804333d8"
+  },
+  "packages/shared/src/components/ReconnectionBanner.tsx": {
+    "mtime": 1782635036.0,
+    "ast_hash": "ffda011ad0eae2ef0b2f55888e36994d",
+    "semantic_hash": "ffda011ad0eae2ef0b2f55888e36994d"
+  },
+  "packages/shared/src/components/RideCard.tsx": {
+    "mtime": 1780924306.0,
+    "ast_hash": "56c4e8bc72d95b3bc5953260501c6b14",
+    "semantic_hash": "56c4e8bc72d95b3bc5953260501c6b14"
+  },
+  "packages/shared/src/components/RideStatusBadge.tsx": {
+    "mtime": 1780924324.0,
+    "ast_hash": "8660659008909ef6d00d4d870aac922f",
+    "semantic_hash": "8660659008909ef6d00d4d870aac922f"
+  },
+  "packages/shared/src/components/SegmentedControl.tsx": {
+    "mtime": 1780924292.0,
+    "ast_hash": "89b12f6317f99a28cfaaca2c23715fdb",
+    "semantic_hash": "89b12f6317f99a28cfaaca2c23715fdb"
+  },
+  "packages/shared/src/components/Shimmer.tsx": {
+    "mtime": 1781049616.0,
+    "ast_hash": "dfa569ba3ca990bed8183527990b4068",
+    "semantic_hash": "dfa569ba3ca990bed8183527990b4068"
+  },
+  "packages/shared/src/components/Skeleton.tsx": {
+    "mtime": 1781049618.0,
+    "ast_hash": "5813974becb11d956b770638d2be8ae3",
+    "semantic_hash": "5813974becb11d956b770638d2be8ae3"
+  },
+  "packages/shared/src/components/SplashScreen.tsx": {
+    "mtime": 1781533350.0,
+    "ast_hash": "ef0847e0f12dea0ae156f8b457b84792",
+    "semantic_hash": "ef0847e0f12dea0ae156f8b457b84792"
+  },
+  "packages/shared/src/components/StaggeredList.tsx": {
+    "mtime": 1781043522.0,
+    "ast_hash": "b9efee1e38bb6844c951b3c84e8d6333",
+    "semantic_hash": "b9efee1e38bb6844c951b3c84e8d6333"
+  },
+  "packages/shared/src/components/Toast.tsx": {
+    "mtime": 1781041024.0,
+    "ast_hash": "cc460115a814fbf327851cbdaa991fa5",
+    "semantic_hash": "cc460115a814fbf327851cbdaa991fa5"
+  },
+  "packages/shared/src/components/Typography.tsx": {
+    "mtime": 1781304826.0,
+    "ast_hash": "6196ae20eab899721ab74aebf1c9bf60",
+    "semantic_hash": "6196ae20eab899721ab74aebf1c9bf60"
+  },
+  "packages/shared/src/components/VehicleSelector.tsx": {
+    "mtime": 1780924320.0,
+    "ast_hash": "6f5766ea39ee0f2b0b8481ccb9e39652",
+    "semantic_hash": "6f5766ea39ee0f2b0b8481ccb9e39652"
+  },
+  "packages/shared/src/components/index.ts": {
+    "mtime": 1783530014.0,
+    "ast_hash": "a8515a472d76ccd53a66d7d475cd384d",
+    "semantic_hash": "a8515a472d76ccd53a66d7d475cd384d"
+  },
+  "packages/shared/src/constants/index.ts": {
+    "mtime": 1784426224.3939965,
+    "ast_hash": "29054aedc606b6f5732940606a511ffa",
+    "semantic_hash": "29054aedc606b6f5732940606a511ffa"
+  },
+  "packages/shared/src/hooks/useActiveRide.ts": {
+    "mtime": 1784597189.9035482,
+    "ast_hash": "4d2b9c0a325b06d187ce1f3542ffa518",
+    "semantic_hash": "4d2b9c0a325b06d187ce1f3542ffa518"
+  },
+  "packages/shared/src/hooks/useAuth.tsx": {
+    "mtime": 1783202970.0,
+    "ast_hash": "1bc7bfdd07a1ee4516c4e9cfc6cec4d9",
+    "semantic_hash": "1bc7bfdd07a1ee4516c4e9cfc6cec4d9"
+  },
+  "packages/shared/src/hooks/useNetworkStatus.ts": {
+    "mtime": 1782634946.0,
+    "ast_hash": "22ed8817f788b17c5f1e017c1b5c4b02",
+    "semantic_hash": "22ed8817f788b17c5f1e017c1b5c4b02"
+  },
+  "packages/shared/src/hooks/useNotifications.ts": {
+    "mtime": 1783530014.0,
+    "ast_hash": "0ab9cdaf3cf2609efce7571994cdb4e1",
+    "semantic_hash": "0ab9cdaf3cf2609efce7571994cdb4e1"
+  },
+  "packages/shared/src/hooks/useRideStore.ts": {
+    "mtime": 1783200812.0,
+    "ast_hash": "0737b49de781bd669e25661067120b08",
+    "semantic_hash": "0737b49de781bd669e25661067120b08"
+  },
+  "packages/shared/src/hooks/useSocket.ts": {
+    "mtime": 1783595612.0,
+    "ast_hash": "95b6ae3c95ffd68fb347b9d235828d05",
+    "semantic_hash": "95b6ae3c95ffd68fb347b9d235828d05"
+  },
+  "packages/shared/src/i18n/en.ts": {
+    "mtime": 1781533824.0,
+    "ast_hash": "ed30ea8d4bec15a10229cf48cbdcc3fb",
+    "semantic_hash": "ed30ea8d4bec15a10229cf48cbdcc3fb"
+  },
+  "packages/shared/src/i18n/index.ts": {
+    "mtime": 1781535254.0,
+    "ast_hash": "8970cb266c8e9a44854124dc146a5ad3",
+    "semantic_hash": "8970cb266c8e9a44854124dc146a5ad3"
+  },
+  "packages/shared/src/i18n/useTranslation.ts": {
+    "mtime": 1781532932.0,
+    "ast_hash": "cbce9b91a76c72ad549067fdd82b4568",
+    "semantic_hash": "cbce9b91a76c72ad549067fdd82b4568"
+  },
+  "packages/shared/src/index.ts": {
+    "mtime": 1784426262.604096,
+    "ast_hash": "09939cee8aa05f31a4b1f90516afc2b1",
+    "semantic_hash": "09939cee8aa05f31a4b1f90516afc2b1"
+  },
+  "packages/shared/src/theme/BusinessThemeContext.tsx": {
+    "mtime": 1784426248.170314,
+    "ast_hash": "ab72ba1416afbcc80742b24b29f5502d",
+    "semantic_hash": "ab72ba1416afbcc80742b24b29f5502d"
+  },
+  "packages/shared/src/theme/ThemeContext.tsx": {
+    "mtime": 1783530014.0,
+    "ast_hash": "caac8076e23a114dcefd0fcd01dd89d6",
+    "semantic_hash": "caac8076e23a114dcefd0fcd01dd89d6"
+  },
+  "packages/shared/src/theme/index.ts": {
+    "mtime": 1784426257.5580828,
+    "ast_hash": "235781aaf2de20484c2a8912bbe1f96d",
+    "semantic_hash": "235781aaf2de20484c2a8912bbe1f96d"
+  },
+  "packages/shared/src/types/business.ts": {
+    "mtime": 1784426238.830034,
+    "ast_hash": "fa6a87e128756f12bde29b3021061e3a",
+    "semantic_hash": "fa6a87e128756f12bde29b3021061e3a"
+  },
+  "packages/shared/src/types/index.ts": {
+    "mtime": 1783530014.0,
+    "ast_hash": "36e0eec1aea4bf9f314a9b0f7e7dc86f",
+    "semantic_hash": "36e0eec1aea4bf9f314a9b0f7e7dc86f"
+  },
+  "packages/shared/src/types/navigation.ts": {
+    "mtime": 1784671394.4991412,
+    "ast_hash": "7dea9c4800364f7d02aedde0f65146cc",
+    "semantic_hash": "7dea9c4800364f7d02aedde0f65146cc"
+  },
+  "packages/shared/src/utils/index.ts": {
+    "mtime": 1783530014.0,
+    "ast_hash": "9b5476d678276dcd1a39fa26a9c64485",
+    "semantic_hash": "9b5476d678276dcd1a39fa26a9c64485"
+  },
+  "packages/shared/src/utils/mapUtils.ts": {
+    "mtime": 1783264896.0,
+    "ast_hash": "3162d8fa4539920bdb682f9ff63750be",
+    "semantic_hash": "3162d8fa4539920bdb682f9ff63750be"
+  },
+  "packages/shared/tsconfig.json": {
+    "mtime": 1780268548.0,
+    "ast_hash": "8b938a9f908628a2ac0e0ffe3d7d0640",
+    "semantic_hash": "8b938a9f908628a2ac0e0ffe3d7d0640"
+  },
+  "packages/theme/__tests__/BusinessIdentity.test.ts": {
+    "mtime": 1784457128.2579184,
+    "ast_hash": "a22261b54212fdba9bd5264277c3f01b",
+    "semantic_hash": "a22261b54212fdba9bd5264277c3f01b"
+  },
+  "packages/theme/__tests__/BusinessThemeContext.test.tsx": {
+    "mtime": 1784457102.3968403,
+    "ast_hash": "9929f39d8ad6cd912e0c4ed52b484192",
+    "semantic_hash": "9929f39d8ad6cd912e0c4ed52b484192"
+  },
+  "packages/theme/__tests__/Colors.test.ts": {
+    "mtime": 1784457123.321885,
+    "ast_hash": "c7ce162eccaf13c2a27de0c155b657b3",
+    "semantic_hash": "c7ce162eccaf13c2a27de0c155b657b3"
+  },
+  "packages/theme/src/BusinessIdentity.ts": {
+    "mtime": 1784429553.801055,
+    "ast_hash": "7886026d76d94f04839a284bd51ca98c",
+    "semantic_hash": "7886026d76d94f04839a284bd51ca98c"
+  },
+  "packages/theme/src/BusinessThemeContext.tsx": {
+    "mtime": 1784429561.973716,
+    "ast_hash": "6a4028726eaf466d07aeaf5b9d74031b",
+    "semantic_hash": "6a4028726eaf466d07aeaf5b9d74031b"
+  },
+  "packages/theme/src/animations.ts": {
+    "mtime": 1784429517.3685997,
+    "ast_hash": "2c634e537e11267b31e8dc892e8ed8b2",
+    "semantic_hash": "2c634e537e11267b31e8dc892e8ed8b2"
+  },
+  "packages/theme/src/colors.ts": {
+    "mtime": 1784429501.9275591,
+    "ast_hash": "afb217f3f494fc9de4cda537823a6b9e",
+    "semantic_hash": "afb217f3f494fc9de4cda537823a6b9e"
+  },
+  "packages/theme/src/index.ts": {
+    "mtime": 1784429563.4163113,
+    "ast_hash": "b58bb33a3f4f455203827d03d6cc9946",
+    "semantic_hash": "b58bb33a3f4f455203827d03d6cc9946"
+  },
+  "packages/theme/src/shadows.ts": {
+    "mtime": 1784429524.8946192,
+    "ast_hash": "e34d5d9724c0bf435e4244496832eabb",
+    "semantic_hash": "e34d5d9724c0bf435e4244496832eabb"
+  },
+  "packages/theme/src/typography.ts": {
+    "mtime": 1784429510.6877356,
+    "ast_hash": "1d7d113c1749a3a0968d2fd9b01d5df1",
+    "semantic_hash": "1d7d113c1749a3a0968d2fd9b01d5df1"
+  },
+  "packages/ui-kit/package.json": {
+    "mtime": 1782090836.0,
+    "ast_hash": "11e211e0a034a8d0121cce91480415a9",
+    "semantic_hash": "11e211e0a034a8d0121cce91480415a9"
+  },
+  "packages/ui-kit/src/components/BarChart.tsx": {
+    "mtime": 1781654922.0,
+    "ast_hash": "1be56a49041487139ce56486e469e281",
+    "semantic_hash": "1be56a49041487139ce56486e469e281"
+  },
+  "packages/ui-kit/src/components/EmptyState.tsx": {
+    "mtime": 1781654920.0,
+    "ast_hash": "79315f03301090d3fa72c129e911e187",
+    "semantic_hash": "79315f03301090d3fa72c129e911e187"
+  },
+  "packages/ui-kit/src/components/ErrorState.tsx": {
+    "mtime": 1781654918.0,
+    "ast_hash": "9928d7ed2411b88890326f4728458f2e",
+    "semantic_hash": "9928d7ed2411b88890326f4728458f2e"
+  },
+  "packages/ui-kit/src/components/LoadingState.tsx": {
+    "mtime": 1781654916.0,
+    "ast_hash": "74d3d76f924e5d085f5bbadaf26396ae",
+    "semantic_hash": "74d3d76f924e5d085f5bbadaf26396ae"
+  },
+  "packages/ui-kit/src/components/OfflineBanner.tsx": {
+    "mtime": 1781654916.0,
+    "ast_hash": "020c4a357b3d14f40e75468cc32d45ae",
+    "semantic_hash": "020c4a357b3d14f40e75468cc32d45ae"
+  },
+  "packages/ui-kit/src/hooks/usePullToRefresh.ts": {
+    "mtime": 1781654916.0,
+    "ast_hash": "9995abdfb9a620c05d418bb1ad089f5f",
+    "semantic_hash": "9995abdfb9a620c05d418bb1ad089f5f"
+  },
+  "packages/ui-kit/src/index.ts": {
+    "mtime": 1782090914.0,
+    "ast_hash": "acfb770b74d935705c0b3eef363e68ae",
+    "semantic_hash": "acfb770b74d935705c0b3eef363e68ae"
+  },
+  "scripts/build-release.sh": {
+    "mtime": 1784425532.4681926,
+    "ast_hash": "31ed82cc2a13453b042fdabda4c411a4",
+    "semantic_hash": "31ed82cc2a13453b042fdabda4c411a4"
+  },
+  "tsconfig.json": {
+    "mtime": 1782716970.0,
+    "ast_hash": "fc5aeefabecedcb47aa7fd1e236c67ab",
+    "semantic_hash": "fc5aeefabecedcb47aa7fd1e236c67ab"
+  }
+}

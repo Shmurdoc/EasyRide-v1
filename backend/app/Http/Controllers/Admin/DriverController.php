@@ -30,13 +30,14 @@ class DriverController extends Controller
             ))
             ->when($request->is_online !== null, fn ($q, $v) => $q->where('is_online', filter_var($v, FILTER_VALIDATE_BOOLEAN)))
             ->when($request->search, fn ($q, $v) => $q->where(function ($qq) use ($v) {
-                $qq->where('name', 'like', "%{$v}%")
-                    ->orWhere('email', 'like', "%{$v}%")
-                    ->orWhere('phone_number', 'like', "%{$v}%");
+                $escaped = addcslashes($v, '%_');
+                $qq->where('name', 'like', "%{$escaped}%")
+                    ->orWhere('email', 'like', "%{$escaped}%")
+                    ->orWhere('phone_number', 'like', "%{$escaped}%");
             }))
             ->with(['driverProfile', 'vehicle'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($drivers);
     }
@@ -175,7 +176,9 @@ class DriverController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        $driver->update(['is_active' => false, 'is_online' => false]);
+        $driver->is_active = false;
+        $driver->is_online = false;
+        $driver->save();
 
         $profile = $driver->driverProfile;
         if ($profile) {

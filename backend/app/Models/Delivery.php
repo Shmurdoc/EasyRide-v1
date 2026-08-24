@@ -15,6 +15,18 @@ class Delivery extends Model
 
     public $incrementing = false;
 
+    public const VALID_TRANSITIONS = [
+        'pending' => ['accepted', 'cancelled', 'failed'],
+        'accepted' => ['at_pickup', 'cancelled'],
+        'at_pickup' => ['picked_up', 'cancelled'],
+        'picked_up' => ['in_transit', 'failed', 'cancelled'],
+        'in_transit' => ['at_dropoff', 'failed', 'cancelled'],
+        'at_dropoff' => ['delivered', 'failed'],
+        'delivered' => [],
+        'failed' => [],
+        'cancelled' => [],
+    ];
+
     protected $fillable = [
         'tenant_id', 'ride_id', 'sender_id', 'driver_id', 'type', 'description',
         'item_description', 'item_value',
@@ -24,8 +36,11 @@ class Delivery extends Model
         'dropoff_address', 'dropoff_lat', 'dropoff_lng',
         'pickup_notes', 'delivery_notes', 'package_size', 'package_weight_kg',
         'estimated_value', 'requires_signature', 'is_fragile', 'status',
-        'payment_method', 'payment_status', 'fare_amount', 'notes',
+        'payment_method', 'payment_status', 'fare_amount', 'distance_km', 'notes',
+        'is_available',
         'picked_up_at', 'delivered_at',
+        'accepted_at', 'cancelled_by', 'cancelled_at', 'cancellation_reason',
+        'weight_tier', 'pod_photo_url', 'pod_photo_received_at', 'status_history',
     ];
 
     protected function casts(): array
@@ -41,6 +56,8 @@ class Delivery extends Model
             'package_weight_kg' => 'decimal:2',
             'estimated_value' => 'decimal:2',
             'fare_amount' => 'decimal:2',
+            'distance_km' => 'decimal:2',
+            'is_available' => 'boolean',
             'sender_name' => 'encrypted',
             'sender_phone' => 'encrypted',
             'recipient_name' => 'encrypted',
@@ -52,7 +69,49 @@ class Delivery extends Model
             'is_fragile' => 'boolean',
             'picked_up_at' => 'datetime',
             'delivered_at' => 'datetime',
+            'accepted_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+            'pod_photo_received_at' => 'datetime',
+            'status_history' => 'array',
         ];
+    }
+
+    public function canTransitionTo(string $newStatus): bool
+    {
+        $current = $this->status;
+
+        return in_array($newStatus, self::VALID_TRANSITIONS[$current] ?? [], true);
+    }
+
+    public function transitionTo(string $newStatus, ?string $actorId = null, ?string $reason = null): bool
+    {
+        if (! $this->canTransitionTo($newStatus)) {
+            return false;
+        }
+
+        $timestamps = match ($newStatus) {
+            'accepted' => ['accepted_at' => now()],
+            'picked_up' => ['picked_up_at' => now()],
+            'delivered' => ['delivered_at' => now()],
+            'cancelled' => ['cancelled_at' => now(), 'cancelled_by' => $actorId, 'cancellation_reason' => $reason],
+            default => [],
+        };
+
+        $this->update([
+            'status' => $newStatus,
+            'status_history' => array_merge(
+                $this->status_history ?? [],
+                [[
+                    'status' => $newStatus,
+                    'at' => now()->toISOString(),
+                    'by' => $actorId,
+                    'reason' => $reason,
+                ]]
+            ),
+            ...$timestamps,
+        ]);
+
+        return true;
     }
 
     public function tenant(): BelongsTo

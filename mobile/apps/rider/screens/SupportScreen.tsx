@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState } from 'react';
 import {
   View, StyleSheet, Text, TouchableOpacity, ScrollView, Linking,
@@ -37,6 +38,8 @@ const FAQ_ITEMS = [
 ];
 
 export default function SupportScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const navigation = useNavigation<RiderNav>();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [showReportForm, setShowReportForm] = useState(false);
@@ -187,7 +190,7 @@ export default function SupportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

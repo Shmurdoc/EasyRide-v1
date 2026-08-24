@@ -9,6 +9,12 @@ class WebhookApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['webhook_ips.bypass_in_local' => true]);
+    }
+
     public function test_stripe_webhook_accepts_valid_request(): void
     {
         $payload = json_encode([

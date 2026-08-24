@@ -1,9 +1,11 @@
+const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDXcaUumZ7RJkaXpqUa2IYhSU3xxJSLvAw'
+
 export default ({ config }) => ({
   ...config,
   ios: {
     ...config.ios,
     config: {
-      googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+      googleMapsApiKey: GOOGLE_MAPS_KEY,
     },
   },
   android: {
@@ -11,7 +13,7 @@ export default ({ config }) => ({
     usesCleartextTraffic: true,
     config: {
       googleMaps: {
-        apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+        apiKey: GOOGLE_MAPS_KEY,
       },
     },
   },

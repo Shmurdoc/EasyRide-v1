@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AdminNotificationController extends Controller
 {
@@ -18,7 +19,7 @@ class AdminNotificationController extends Controller
     {
         $notifications = AdminNotification::query()
             ->latest()
-            ->paginate($request->input('per_page', 20));
+            ->paginate(min((int) $request->input('per_page', 20), 100));
 
         return response()->json([
             'data' => $notifications->items(),
@@ -73,7 +74,11 @@ class AdminNotificationController extends Controller
                         try {
                             $notificationService->notify($user, $title, $body, $options);
                             $sent++;
-                        } catch (\Throwable) {
+                        } catch (\Throwable $e) {
+                            Log::warning('AdminNotification: failed to send to user', [
+                                'user_id' => $user->id,
+                                'error' => $e->getMessage(),
+                            ]);
                             $failed++;
                         }
                     }
@@ -88,7 +93,11 @@ class AdminNotificationController extends Controller
                         try {
                             $notificationService->notify($user, $title, $body, $options);
                             $sent++;
-                        } catch (\Throwable) {
+                        } catch (\Throwable $e) {
+                            Log::warning('AdminNotification: failed to send to rider', [
+                                'user_id' => $user->id,
+                                'error' => $e->getMessage(),
+                            ]);
                             $failed++;
                         }
                     }
@@ -103,7 +112,11 @@ class AdminNotificationController extends Controller
                         try {
                             $notificationService->notify($user, $title, $body, $options);
                             $sent++;
-                        } catch (\Throwable) {
+                        } catch (\Throwable $e) {
+                            Log::warning('AdminNotification: failed to send to driver', [
+                                'user_id' => $user->id,
+                                'error' => $e->getMessage(),
+                            ]);
                             $failed++;
                         }
                     }
@@ -121,7 +134,8 @@ class AdminNotificationController extends Controller
                     }
                     break;
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::error('AdminNotification: broadcast failed', ['error' => $e->getMessage()]);
             $adminNotification->update(['status' => 'failed']);
         }
     }

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\RideStatus;
+use App\Models\DriverViolation;
 use App\Models\PoolPassenger;
 use App\Models\Ride;
+use App\Models\RideLocationLog;
 use App\Models\RideStatusHistory;
 use App\Models\User;
 use App\Services\SurgePricingService;
@@ -26,6 +28,16 @@ class RideService
 
     private const int CONCURRENT_RIDE_LOCK_TTL_SECONDS = 10;
 
+    private const float FARE_DEVIATION_THRESHOLD = 0.20;
+
+    private const float MAX_REALISTIC_SPEED_KMH = 180.0;
+
+    private const float MIN_REALISTIC_SPEED_KMH = 0.5;
+
+    private const int MIN_LOCATION_POINTS_FOR_FARE = 3;
+
+    private ?DriverViolation $lastFraudViolation = null;
+
     public function __construct(
         protected FareCalculationService $fareCalculationService,
         protected SurgePricingService $surgePricingService,
@@ -34,7 +46,14 @@ class RideService
         protected RouteService $routeService,
         protected RideStateService $rideStateService,
         protected SocketService $socketService,
+        protected DriverFraudGuardService $fraudGuardService,
+        protected FleetModeService $fleetModeService,
     ) {}
+
+    public function lastFraudViolation(): ?DriverViolation
+    {
+        return $this->lastFraudViolation;
+    }
 
     public function createRide(User $rider, array $data): Ride
     {
@@ -95,6 +114,7 @@ class RideService
                 'payment_method' => $data['payment_method'],
                 'search_radius_km' => 5.0,
                 'route_polyline' => null,
+                'estimated_fare_at_booking' => $fare['total_fare'],
                 'status_history' => [
                     ['status' => RideStatus::SEARCHING->value, 'at' => now()->toISOString()],
                 ],
@@ -138,7 +158,7 @@ class RideService
         }
     }
 
-    public function findNearbyDrivers(float $lat, float $lng, float $radiusKm = 10.0): Collection
+    public function findNearbyDrivers(float $lat, float $lng, float $radiusKm = 10.0, ?string $tenantId = null): Collection
     {
         $earthRadius = 6371.0;
         $deltaLat = $radiusKm / $earthRadius * (180 / M_PI);
@@ -161,10 +181,15 @@ class RideService
             ->orderBy('distance')
             ->get()
             ->filter(fn (User $driver) => ($driver->distance ?? PHP_FLOAT_MAX) <= $radiusKm)
+            ->filter(fn (User $driver) => $this->fleetModeService->allows(
+                $driver,
+                FleetModeService::VERTICAL_RIDES,
+                $tenantId ?? $driver->tenant_id,
+            ))
             ->values();
     }
 
-    public function findNearbyRides(float $lat, float $lng, float $radiusKm = 10.0, ?string $tenantId = null): Collection
+    public function findNearbyRides(float $lat, float $lng, float $radiusKm = 10.0, ?string $tenantId = null, ?User $driver = null): Collection
     {
         $earthRadius = 6371.0;
         $deltaLat = $radiusKm / $earthRadius * (180 / M_PI);
@@ -187,6 +212,11 @@ class RideService
             ->orderBy('distance')
             ->get()
             ->filter(fn (Ride $ride) => ($ride->distance ?? PHP_FLOAT_MAX) <= $radiusKm)
+            ->filter(fn (Ride $ride) => $driver === null || $this->fleetModeService->allows(
+                $driver,
+                FleetModeService::VERTICAL_RIDES,
+                $ride->tenant_id,
+            ))
             ->values();
     }
 
@@ -213,6 +243,18 @@ class RideService
             $driverProfile = $driver->driverProfile;
             if ($driverProfile && ! $driverProfile->is_approved) {
                 throw new RuntimeException('Your driver profile has not been approved.');
+            }
+
+            if ($this->fraudGuardService->isBlockedFromAccepting($driver)) {
+                throw new RuntimeException('You have unpaid conduct fines. Settle them to accept rides.');
+            }
+
+            if (! $this->fleetModeService->allows(
+                $driver,
+                FleetModeService::VERTICAL_RIDES,
+                $lockedRide->tenant_id,
+            )) {
+                throw new RuntimeException('This ride is not available in your fleet pool.');
             }
 
             $pickupLat = (float) $lockedRide->pickup_latitude;
@@ -315,9 +357,9 @@ class RideService
         return $ride->fresh();
     }
 
-    public function completeRide(Ride $ride, float $actualDistance, float $actualDuration): Ride
+    public function completeRide(Ride $ride): Ride
     {
-        return DB::transaction(function () use ($ride, $actualDistance, $actualDuration) {
+        return DB::transaction(function () use ($ride) {
             $lockedRide = Ride::where('id', $ride->id)
                 ->where('status', RideStatus::IN_PROGRESS->value)
                 ->lockForUpdate()
@@ -333,6 +375,25 @@ class RideService
                     (float) $lockedRide->driver->current_longitude,
                 );
             }
+
+            $fareCalculationLog = [
+                'method' => null,
+                'distance_km' => null,
+                'duration_minutes' => null,
+                'spoofed_points_detected' => 0,
+                'valid_points_used' => 0,
+                'estimated_fare_at_booking' => (float) $lockedRide->estimated_fare_at_booking,
+                'calculated_fare' => null,
+                'fare_deviation_pct' => null,
+                'adjusted_to_estimate' => false,
+                'timestamp' => now()->toISOString(),
+            ];
+
+            $calculationResult = $this->calculateServerSideFare($lockedRide, $fareCalculationLog);
+
+            $actualDistance = $calculationResult['distance_km'];
+            $actualDuration = $calculationResult['duration_minutes'];
+            $fareCalculationLog = $calculationResult['log'];
 
             $baseFare = (float) $lockedRide->base_fare;
             $perKmFare = (float) $lockedRide->per_km_fare;
@@ -355,13 +416,45 @@ class RideService
             $discountAmount = (float) ($lockedRide->discount_amount ?? 0);
             $totalFare = max(round($subtotal - $discountAmount, 2), 0.0);
 
+            $estimatedFareAtBooking = (float) $lockedRide->estimated_fare_at_booking;
+
+            if ($estimatedFareAtBooking > 0) {
+                $deviation = abs($totalFare - $estimatedFareAtBooking) / $estimatedFareAtBooking;
+
+                $fareCalculationLog['calculated_fare'] = $totalFare;
+                $fareCalculationLog['fare_deviation_pct'] = round($deviation * 100, 2);
+
+                if ($deviation > self::FARE_DEVIATION_THRESHOLD) {
+                    Log::warning('Fare deviation exceeds threshold, adjusting to estimate', [
+                        'ride_id' => $lockedRide->id,
+                        'calculated_fare' => $totalFare,
+                        'estimated_fare' => $estimatedFareAtBooking,
+                        'deviation_pct' => round($deviation * 100, 2),
+                        'driver_id' => $lockedRide->driver_id,
+                    ]);
+
+                    $maxFare = round($estimatedFareAtBooking * (1 + self::FARE_DEVIATION_THRESHOLD), 2);
+                    $minFare = round($estimatedFareAtBooking * (1 - self::FARE_DEVIATION_THRESHOLD), 2);
+                    $totalFare = max(min($totalFare, $maxFare), $minFare);
+                    $fareCalculationLog['adjusted_to_estimate'] = true;
+                    $fareCalculationLog['final_fare_after_adjustment'] = $totalFare;
+                }
+            }
+
+            if ($totalFare < $rates->minimum_fare) {
+                $totalFare = $rates->minimum_fare;
+            }
+
             $lockedRide->update([
                 'status' => RideStatus::COMPLETED->value,
                 'completed_at' => now(),
                 'distance_km' => round($actualDistance, 3),
                 'duration_minutes' => round($actualDuration, 1),
+                'server_calculated_distance_km' => round($actualDistance, 3),
+                'server_calculated_duration_minutes' => round($actualDuration, 1),
                 'total_fare' => $totalFare,
                 'dropoff_reached_at' => now(),
+                'fare_calculation_log' => $fareCalculationLog,
                 'status_history' => array_merge(
                     $lockedRide->status_history ?? [],
                     [['status' => RideStatus::COMPLETED->value, 'at' => now()->toISOString()]]
@@ -377,12 +470,17 @@ class RideService
 
             $lockedRide->driver?->update(['current_ride_id' => null]);
 
-            Log::info('Ride completed', [
+            Log::info('Ride completed (server-calculated fare)', [
                 'ride_id' => $lockedRide->id,
                 'driver_id' => $lockedRide->driver_id,
                 'actual_distance_km' => $actualDistance,
                 'actual_duration_min' => $actualDuration,
                 'total_fare' => $totalFare,
+                'calculation_method' => $fareCalculationLog['method'],
+                'spoofed_points' => $fareCalculationLog['spoofed_points_detected'],
+                'valid_points' => $fareCalculationLog['valid_points_used'],
+                'deviation_from_estimate' => $fareCalculationLog['fare_deviation_pct'] ?? 0,
+                'adjusted_to_estimate' => $fareCalculationLog['adjusted_to_estimate'],
             ]);
 
             $this->socketService::broadcastToRide($lockedRide->id, 'ride:completed', [
@@ -456,6 +554,25 @@ class RideService
 
         if ($ride->driver_id) {
             User::where('id', $ride->driver_id)->update(['current_ride_id' => null]);
+        }
+
+        $this->lastFraudViolation = null;
+
+        if ($ride->driver_id && $cancelledBy !== 'system' && $cancelledBy === (string) $ride->driver_id) {
+            $driver = User::find($ride->driver_id);
+
+            if ($driver) {
+                $this->lastFraudViolation = $this->fraudGuardService->evaluateCancellation(
+                    $ride->fresh(),
+                    $driver,
+                    $reason,
+                    $currentStatus,
+                );
+
+                if ($this->lastFraudViolation) {
+                    $this->fraudGuardService->detectCollusion($ride->rider, $driver);
+                }
+            }
         }
 
         Log::info('Ride cancelled', [
@@ -631,6 +748,11 @@ class RideService
             );
         }
 
+        if ($currentStatus === RideStatus::ACCEPTED->value
+            && ! $ride->transitionTo(RideStatus::DRIVER_EN_ROUTE->value, $ride->driver_id)) {
+            throw new RuntimeException('Failed to transition ride to driver en route.');
+        }
+
         if (! $ride->transitionTo(RideStatus::ARRIVED->value, $ride->driver_id)) {
             throw new RuntimeException('Failed to transition ride to arrived.');
         }
@@ -727,8 +849,26 @@ class RideService
         $previousLng = (float) $driver->current_longitude;
         $previousUpdate = $driver->last_location_update;
 
+        $validationFailed = false;
+
         if ($previousLat !== 0.0 && $previousLng !== 0.0 && $previousUpdate) {
-            $this->validateDriverLocation($lat, $lng, $previousLat, $previousLng, $previousUpdate);
+            try {
+                $this->validateDriverLocation($lat, $lng, $previousLat, $previousLng, $previousUpdate);
+            } catch (RuntimeException $e) {
+                $validationFailed = true;
+
+                if ($driver->current_ride_id) {
+                    $activeRide = Ride::where('id', $driver->current_ride_id)
+                        ->where('status', RideStatus::IN_PROGRESS->value)
+                        ->first();
+
+                    if ($activeRide) {
+                        $this->logRideLocation($activeRide, $driver, $lat, $lng);
+                    }
+                }
+
+                throw $e;
+            }
         }
 
         $driver->update([
@@ -738,6 +878,14 @@ class RideService
         ]);
 
         if ($driver->current_ride_id) {
+            $activeRide = Ride::where('id', $driver->current_ride_id)
+                ->where('status', RideStatus::IN_PROGRESS->value)
+                ->first();
+
+            if ($activeRide) {
+                $this->logRideLocation($activeRide, $driver, $lat, $lng);
+            }
+
             $this->socketService::broadcastToRide($driver->current_ride_id, 'ride:driver-location', [
                 'driver_id' => $driver->id,
                 'latitude' => $lat,
@@ -844,7 +992,7 @@ class RideService
         float $lng,
         ?float $previousLat = null,
         ?float $previousLng = null,
-        ?string $previousUpdate = null,
+        mixed $previousUpdate = null,
     ): void {
         if ($lat == 0.0 && $lng == 0.0) {
             throw new RuntimeException('Invalid driver location: coordinates cannot be zero.');
@@ -862,7 +1010,7 @@ class RideService
                 $lng,
             );
 
-            $timeSinceLastUpdate = now()->diffInSeconds(now()->parse($previousUpdate));
+            $timeSinceLastUpdate = abs(now()->diffInSeconds(now()->parse($previousUpdate)));
 
             if ($distance > self::MAX_LOCATION_JUMP_KM && $timeSinceLastUpdate < self::GPS_SPOOF_THRESHOLD_SECONDS) {
                 Log::warning('Possible GPS spoofing detected', [
@@ -877,6 +1025,171 @@ class RideService
                 throw new RuntimeException('Location update rejected: impossible movement detected.');
             }
         }
+    }
+
+    public function logRideLocation(
+        Ride $ride,
+        User $driver,
+        float $lat,
+        float $lng,
+        ?float $accuracy = null,
+        ?float $speed = null,
+        ?float $heading = null,
+        ?int $batteryLevel = null,
+    ): RideLocationLog {
+        $isSpoofed = false;
+        $spoofReason = null;
+
+        $recentLogs = RideLocationLog::where('ride_id', $ride->id)
+            ->where('is_spoofed', false)
+            ->orderByDesc('recorded_at')
+            ->limit(5)
+            ->get();
+
+        if ($recentLogs->isNotEmpty()) {
+            $lastValid = $recentLogs->first();
+            $distanceKm = $this->rideMatchingService->calculateDistance(
+                (float) $lastValid->latitude,
+                (float) $lastValid->longitude,
+                $lat,
+                $lng,
+            );
+            $timeSeconds = abs(now()->diffInSeconds(now()->parse($lastValid->recorded_at)));
+
+            if ($timeSeconds > 0 && $distanceKm > 0) {
+                $speedKmh = ($distanceKm / $timeSeconds) * 3600;
+
+                if ($speedKmh > self::MAX_REALISTIC_SPEED_KMH) {
+                    $isSpoofed = true;
+                    $spoofReason = "Impossible speed: {$speedKmh} km/h (max: " . self::MAX_REALISTIC_SPEED_KMH . ")";
+                } elseif ($distanceKm > self::MAX_LOCATION_JUMP_KM && $timeSeconds < self::GPS_SPOOF_THRESHOLD_SECONDS) {
+                    $isSpoofed = true;
+                    $spoofReason = "Location jump: {$distanceKm}km in {$timeSeconds}s";
+                }
+            }
+        }
+
+        if ($lat == 0.0 && $lng == 0.0) {
+            $isSpoofed = true;
+            $spoofReason = 'Zero coordinates submitted';
+        }
+
+        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+            $isSpoofed = true;
+            $spoofReason = "Invalid coordinates: {$lat}, {$lng}";
+        }
+
+        $locationLog = RideLocationLog::create([
+            'ride_id' => $ride->id,
+            'driver_id' => $driver->id,
+            'latitude' => $lat,
+            'longitude' => $lng,
+            'accuracy_meters' => $accuracy,
+            'speed_kmh' => $speed,
+            'heading' => $heading,
+            'battery_level' => $batteryLevel,
+            'is_spoofed' => $isSpoofed,
+            'spoof_reason' => $spoofReason,
+            'recorded_at' => now(),
+        ]);
+
+        if ($isSpoofed) {
+            Log::warning('GPS spoofing detected during ride', [
+                'ride_id' => $ride->id,
+                'driver_id' => $driver->id,
+                'reason' => $spoofReason,
+                'lat' => $lat,
+                'lng' => $lng,
+            ]);
+        }
+
+        return $locationLog;
+    }
+
+    private function calculateServerSideFare(Ride $ride, array &$fareCalculationLog): array
+    {
+        $locationLogs = RideLocationLog::where('ride_id', $ride->id)
+            ->orderBy('recorded_at')
+            ->get();
+
+        $validLogs = $locationLogs->where('is_spoofed', false);
+
+        $fareCalculationLog['spoofed_points_detected'] = $locationLogs->count() - $validLogs->count();
+        $fareCalculationLog['valid_points_used'] = $validLogs->count();
+
+        if ($validLogs->count() >= self::MIN_LOCATION_POINTS_FOR_FARE) {
+            $fareCalculationLog['method'] = 'gps_tracking';
+
+            $totalDistanceKm = 0.0;
+            $points = $validLogs->values();
+
+            for ($i = 1; $i < $points->count(); $i++) {
+                $totalDistanceKm += $this->rideMatchingService->calculateDistance(
+                    (float) $points[$i - 1]->latitude,
+                    (float) $points[$i - 1]->longitude,
+                    (float) $points[$i]->latitude,
+                    (float) $points[$i]->longitude,
+                );
+            }
+
+            $firstPoint = $points->first();
+            $lastPoint = $points->last();
+            $durationSeconds = now()->parse($firstPoint->recorded_at)
+                ->diffInSeconds(now()->parse($lastPoint->recorded_at));
+            $durationMinutes = max(round($durationSeconds / 60, 1), 0.5);
+
+            $totalDistanceKm = max($totalDistanceKm, 0.1);
+
+            return [
+                'distance_km' => round($totalDistanceKm, 3),
+                'duration_minutes' => $durationMinutes,
+                'log' => $fareCalculationLog,
+            ];
+        }
+
+        Log::warning('Insufficient GPS data for ride, falling back to route service', [
+            'ride_id' => $ride->id,
+            'valid_points' => $validLogs->count(),
+        ]);
+
+        $fareCalculationLog['method'] = 'route_service_fallback';
+
+        $route = $this->routeService->getRoute(
+            (float) $ride->pickup_latitude,
+            (float) $ride->pickup_longitude,
+            (float) $ride->dropoff_latitude,
+            (float) $ride->dropoff_longitude,
+        );
+
+        $rideStartedAt = $ride->started_at ?? $ride->created_at;
+        $rideCompletedAt = now();
+        $actualDurationMinutes = max(round($rideStartedAt->diffInSeconds($rideCompletedAt) / 60, 1), 0.5);
+
+        $fareCalculationLog['route_service_distance_km'] = $route['distance_km'];
+        $fareCalculationLog['route_service_duration_minutes'] = $route['duration_minutes'];
+        $fareCalculationLog['actual_duration_minutes'] = $actualDurationMinutes;
+
+        $estimatedDistanceKm = (float) $ride->distance_km;
+        $estimatedDurationMinutes = (float) $ride->duration_minutes;
+
+        if ($estimatedDistanceKm > 0) {
+            $distanceDeviation = abs($route['distance_km'] - $estimatedDistanceKm) / $estimatedDistanceKm;
+            if ($distanceDeviation > self::FARE_DEVIATION_THRESHOLD) {
+                $fareCalculationLog['distance_deviation_flagged'] = true;
+                Log::warning('Route distance deviates significantly from estimate', [
+                    'ride_id' => $ride->id,
+                    'estimated_km' => $estimatedDistanceKm,
+                    'route_km' => $route['distance_km'],
+                    'deviation' => round($distanceDeviation * 100, 2) . '%',
+                ]);
+            }
+        }
+
+        return [
+            'distance_km' => $route['distance_km'],
+            'duration_minutes' => $actualDurationMinutes,
+            'log' => $fareCalculationLog,
+        ];
     }
 
     private function estimateRemainingTime(Ride $ride): int

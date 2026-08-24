@@ -85,7 +85,8 @@ class ProcessPayoutJobTest extends TestCase
         (new ProcessPayoutJob($payout))->handle();
 
         $payout->refresh();
-        $this->assertEquals('completed', $payout->status);
+        $this->assertEquals('failed', $payout->status);
+        $this->assertNotNull($payout->notes);
     }
 
     public function test_job_has_three_tries(): void

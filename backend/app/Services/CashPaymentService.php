@@ -128,6 +128,10 @@ class CashPaymentService
 
     private function createCashReconciliationRecord(Payment $payment): void
     {
+        if (! $payment->payee_id) {
+            return;
+        }
+
         try {
             $ride = $payment->ride;
             $driverEarns = round((float) $payment->amount - (float) $payment->platform_fee, 2);

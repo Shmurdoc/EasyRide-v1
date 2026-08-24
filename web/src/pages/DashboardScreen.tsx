@@ -36,7 +36,9 @@ export default function DashboardScreen() {
         ]);
         setData(dashboardRes.data);
         setRevenueChart(revenueRes.data?.daily || []);
-      } catch {} finally {
+      } catch (err) {
+        console.error('[Dashboard] Failed to load:', err);
+      } finally {
         setLoading(false);
       }
     }

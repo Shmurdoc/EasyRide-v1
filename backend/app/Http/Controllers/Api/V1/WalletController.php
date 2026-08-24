@@ -16,6 +16,7 @@ use App\Services\StripeService;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class WalletController extends Controller
 {
@@ -43,7 +44,7 @@ class WalletController extends Controller
         $transactions = $this->walletService->getTransactions(
             $wallet,
             $request->only(['type']),
-            $request->per_page ?? 15,
+            $request->per_page ? min((int) $request->per_page, 100) : 15,
         );
 
         return response()->json($transactions);
@@ -58,14 +59,8 @@ class WalletController extends Controller
         $method = $validated['payment_method'];
 
         try {
-            $transaction = $this->walletService->credit(
-                $wallet,
-                $amount,
-                'deposit',
-                $wallet->id,
-                "Wallet deposit via {$method}",
-            );
-        } catch (\RuntimeException $e) {
+            $transaction = $this->walletService->initiateTopUp($wallet, $amount, $method);
+        } catch (\InvalidArgumentException $e) {
             return ApiResponse::apiError(422, 'Deposit Failed', $e->getMessage());
         }
 
@@ -112,6 +107,8 @@ class WalletController extends Controller
         if ($method === 'stripe') {
             $intent = $this->stripeService->createPaymentIntent($amount);
 
+            $transaction->update(['gateway_reference' => $intent['id'] ?? $transaction->id]);
+
             return response()->json([
                 'transaction' => $transaction,
                 'client_secret' => $intent['client_secret'] ?? null,
@@ -126,19 +123,19 @@ class WalletController extends Controller
     public function confirm(ConfirmWalletTopUpRequest $request): JsonResponse
     {
         $validated = $request->validated();
+        $user = $request->user();
 
-        $wallet = $this->walletService->getOrCreateWallet($request->user());
-
-        $confirmed = $this->walletService->confirmTopUpById($wallet, $validated['transaction_id']);
-
-        if (! $confirmed) {
-            return ApiResponse::apiError(422, 'Confirmation Failed', 'Transaction not found or already confirmed.');
-        }
-
-        return response()->json([
-            'message' => 'Wallet top-up confirmed.',
-            'balance' => (float) $wallet->fresh()->balance,
+        Log::warning('Wallet confirm blocked: user-initiated confirmation is not allowed', [
+            'user_id' => $user->id,
+            'transaction_id' => $validated['transaction_id'],
+            'ip' => $request->ip(),
         ]);
+
+        return ApiResponse::apiError(
+            403,
+            'Forbidden',
+            'Wallet confirmation is only available via payment gateway webhooks. Complete payment through the gateway to confirm your deposit.',
+        );
     }
 
     public function withdraw(WalletWithdrawRequest $request): JsonResponse

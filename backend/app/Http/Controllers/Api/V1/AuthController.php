@@ -33,12 +33,14 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => $request->password,
             'phone_number' => $request->phone_number,
-            'role' => 'rider',
         ]);
 
-        $user->assignRole($user->role);
+        $user->role = 'rider';
+        $user->save();
+        $user->assignRole('rider');
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $platform = $request->header('X-Platform', 'unknown');
+        $token = $user->createToken("auth-{$platform}")->plainTextToken;
 
         $user->load('tenant');
 
@@ -61,14 +63,13 @@ class AuthController extends Controller
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             if ($user) {
-                $attempts = ($user->failed_attempts ?? 0) + 1;
-                $update = ['failed_attempts' => $attempts];
+                $user->failed_attempts = ($user->failed_attempts ?? 0) + 1;
 
-                if ($attempts >= 5) {
-                    $update['locked_until'] = now()->addMinutes(15);
+                if ($user->failed_attempts >= 5) {
+                    $user->locked_until = now()->addMinutes(15);
                 }
 
-                $user->update($update);
+                $user->save();
             }
 
             throw ValidationException::withMessages([
@@ -76,12 +77,12 @@ class AuthController extends Controller
             ]);
         }
 
-        $user->update([
-            'failed_attempts' => 0,
-            'locked_until' => null,
-        ]);
+        $user->failed_attempts = 0;
+        $user->locked_until = null;
+        $user->save();
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $platform = $request->header('X-Platform', 'unknown');
+        $token = $user->createToken("auth-{$platform}")->plainTextToken;
 
         $user->load('tenant');
 
@@ -93,7 +94,26 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+        $plainTextToken = $token?->plainTextToken;
+
+        $token->delete();
+
+        // H-12 FIX: Notify socket server to invalidate token cache and disconnect
+        if ($plainTextToken) {
+            try {
+                \Illuminate\Support\Facades\Redis::publish('auth:token:invalidate', json_encode([
+                    'token' => $plainTextToken,
+                    'userId' => $request->user()->id,
+                ]));
+            } catch (\Exception $e) {
+                // Log but don't fail logout if Redis is unavailable
+                \Illuminate\Support\Facades\Log::warning('Failed to publish token invalidation', [
+                    'user_id' => $request->user()->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return response()->json(['message' => 'Logged out successfully']);
     }
@@ -102,6 +122,41 @@ class AuthController extends Controller
     {
         return ApiResponse::success(
             data: ['user' => new UserResource($request->user()->load(['tenant', 'roles', 'driverProfile', 'vehicle']))]
+        );
+    }
+
+    public function refresh(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $oldToken = $user->currentAccessToken();
+
+        if (! $oldToken) {
+            return ApiResponse::apiError(401, 'No Token', 'No active token to refresh.');
+        }
+
+        $plainTextToken = $oldToken->plainTextToken;
+        $token = $user->createToken('auth-token')->plainTextToken;
+        $oldToken->delete();
+
+        if ($plainTextToken) {
+            try {
+                \Illuminate\Support\Facades\Redis::publish('auth:token:invalidate', json_encode([
+                    'token' => $plainTextToken,
+                    'userId' => $user->id,
+                ]));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to publish token invalidation on refresh', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $user->load('tenant');
+
+        return ApiResponse::success(
+            data: ['user' => new UserResource($user), 'token' => $token],
+            message: 'Token refreshed successfully'
         );
     }
 
@@ -120,15 +175,16 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => $validated['password'],
             'phone_number' => $validated['phone_number'],
-            'role' => 'driver',
-            'is_active' => true,
-            'is_approved' => true,
         ]);
 
+        $user->role = 'driver';
+        $user->is_active = true;
+        $user->is_approved = true;
+        $user->save();
         $user->assignRole('driver');
 
         return response()->json([
-            'user' => $user,
+            'user' => new UserResource($user),
             'message' => 'Driver account created successfully.',
         ], 201);
     }

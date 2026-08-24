@@ -11,7 +11,9 @@ class UpdateStatusRequest extends ApiFormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|string|in:pending,picked_up,in_transit,delivered,failed,cancelled',
+            'status' => 'required|string|in:pending,accepted,at_pickup,picked_up,in_transit,at_dropoff,delivered,failed,cancelled',
+            'pod_photo_url' => 'required_if:status,delivered|nullable|url|max:1000',
+            'reason' => 'nullable|string|max:500',
         ];
     }
 }

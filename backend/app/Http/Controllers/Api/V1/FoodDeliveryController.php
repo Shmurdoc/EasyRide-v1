@@ -33,7 +33,7 @@ class FoodDeliveryController extends Controller
         $restaurants = $this->restaurantService->getNearbyRestaurants(
             $request->user()->tenant_id,
             $request->only(['lat', 'lng', 'radius', 'cuisine', 'search', 'featured', 'sort', 'order']),
-            $request->per_page ?? 15,
+            min((int) ($request->per_page ?? 15), 100),
         );
 
         return response()->json($restaurants);
@@ -179,6 +179,35 @@ class FoodDeliveryController extends Controller
         }
     }
 
+    public function driverCancelOrder(FoodOrderCancelRequest $request, FoodOrder $order): JsonResponse
+    {
+        try {
+            $order = $this->foodOrderService->driverCancelOrder(
+                $order,
+                $request->user(),
+                $request->validated('cancellation_reason') ?? '',
+            );
+
+            $violation = $this->foodOrderService->lastViolation();
+
+            $payload = ['order' => $order];
+
+            if ($violation) {
+                $payload['fraud_violation'] = [
+                    'id' => $violation->id,
+                    'type' => $violation->violation_type,
+                    'fine_amount' => (float) $violation->fine_amount,
+                    'status' => $violation->status,
+                    'distance_to_dropoff_km' => $violation->distance_to_dropoff_km,
+                ];
+            }
+
+            return ApiResponse::success($payload);
+        } catch (\RuntimeException $e) {
+            return ApiResponse::apiError(422, 'Cancellation Failed', $e->getMessage());
+        }
+    }
+
     public function restaurantOrders(Request $request): JsonResponse
     {
         $restaurantIds = Restaurant::where('tenant_id', $request->user()->tenant_id)
@@ -191,7 +220,7 @@ class FoodDeliveryController extends Controller
         $orders = $this->foodOrderService->getRestaurantOrders(
             $restaurantIds,
             $request->only(['status']),
-            $request->per_page ?? 15,
+            min((int) ($request->per_page ?? 15), 100),
         );
 
         return response()->json($orders);

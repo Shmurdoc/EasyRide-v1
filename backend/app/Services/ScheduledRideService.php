@@ -18,7 +18,7 @@ class ScheduledRideService
 
     public function scheduleRide(User $rider, array $data): ScheduledRide
     {
-        $estimatedFare = $this->fareService->calculateFare(
+        $estimatedFare = $this->fareService->calculate(
             $data['pickup_latitude'],
             $data['pickup_longitude'],
             $data['dropoff_latitude'],
@@ -37,7 +37,7 @@ class ScheduledRideService
             'dropoff_address' => $data['dropoff_address'],
             'scheduled_at' => $data['scheduled_at'],
             'recurrence' => $data['recurrence'] ?? null,
-            'estimated_fare' => $estimatedFare,
+            'estimated_fare' => $estimatedFare['total_fare'] ?? 0.0,
             'status' => 'pending',
         ]);
     }

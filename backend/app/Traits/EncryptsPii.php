@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Traits;
 
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 trait EncryptsPii
 {
@@ -26,6 +27,9 @@ trait EncryptsPii
         try {
             return Crypt::decryptString($value);
         } catch (\Exception $e) {
+            Log::warning('EncryptsPii: decryption failed, returning raw value', [
+                'error' => $e->getMessage(),
+            ]);
             return $value;
         }
     }

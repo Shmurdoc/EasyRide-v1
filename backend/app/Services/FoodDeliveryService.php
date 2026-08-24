@@ -25,6 +25,11 @@ class FoodDeliveryService
         'cancelled' => [],
     ];
 
+    public function __construct(
+        private readonly DriverFraudGuardService $fraudGuardService,
+        private readonly FleetModeService $fleetModeService,
+    ) {}
+
     public function isRestaurantOpen(Restaurant $restaurant): bool
     {
         if (! $restaurant->opens_at || ! $restaurant->closes_at) {
@@ -203,7 +208,7 @@ class FoodDeliveryService
             ->avg('rating');
 
         $restaurant->update([
-            'rating' => round($avgRating, 2),
+            'rating' => round((float) $avgRating, 2),
             'rating_count' => $restaurant->rating_count + 1,
         ]);
 
@@ -212,12 +217,22 @@ class FoodDeliveryService
 
     public function getAvailableOrders(User $driver, ?string $status = null)
     {
-        return FoodOrder::whereNull('driver_id')
+        if ($this->fraudGuardService->isBlockedFromAccepting($driver)) {
+            return collect();
+        }
+
+        $orders = FoodOrder::whereNull('driver_id')
             ->where('status', 'pending')
             ->when($status, fn ($q, $s) => $q->where('status', $s))
             ->with(['items', 'restaurant', 'customer'])
             ->latest()
             ->get();
+
+        return $orders->filter(fn (FoodOrder $order) => $this->fleetModeService->allows(
+            $driver,
+            FleetModeService::VERTICAL_FOOD,
+            $order->tenant_id,
+        ))->values();
     }
 
     public function getRestaurantOrders(Restaurant $restaurant, ?string $status = null)

@@ -1,8 +1,9 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { foodDelivery, wallet, COLORS, GRADIENTS, SPACING, PAYMENT_METHODS } from '@easyryde/shared';
+import { foodDelivery, wallet, places, COLORS, GRADIENTS, SPACING, PAYMENT_METHODS } from '@easyryde/shared';
 import { Typography, GlowButton, GlassCard, GradientText, Input, Badge } from '@easyryde/shared';
 import type { CartItem, RiderNav, RiderRoute } from '@easyryde/shared';
 
@@ -29,9 +30,14 @@ export default function FoodCheckoutScreen({ route, navigation }: { route: Rider
     if (paymentMethod === 'wallet' && !walletLoading && walletBalance < total) { Alert.alert('Insufficient Balance', `Your wallet balance (R${walletBalance.toFixed(2)}) is less than the total (R${total.toFixed(2)}).`); return; }
     setLoading(true);
     try {
+      const geocoded = await places.search(deliveryAddress).then((r) => r[0]).catch(() => undefined);
+      if (!geocoded) { Alert.alert('Address not found', 'We could not find coordinates for that address. Please check the spelling or add a nearby landmark.'); return; }
       const order = await foodDelivery.createOrder(restaurantId, {
         items: cart.map((item: CartItem) => ({ menu_item_id: item.menuItem.id, quantity: item.quantity, special_instructions: item.specialInstructions })),
-        delivery_address: deliveryAddress, delivery_notes: deliveryNotes || undefined,
+        delivery_address: deliveryAddress,
+        delivery_lat: geocoded.lat,
+        delivery_lng: geocoded.lng,
+        notes: deliveryNotes || undefined,
         payment_method: paymentMethod, tip_amount: tip,
       });
       navigation.navigate('FoodOrderTracking', { orderId: order.id });

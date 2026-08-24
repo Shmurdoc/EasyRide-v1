@@ -72,6 +72,12 @@ class TotpController extends Controller
         $user->totp_enabled = false;
         $user->save();
 
+        \Illuminate\Support\Facades\Log::warning('TOTP disabled for admin user', [
+            'user_id' => $user->id,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
         return ApiResponse::success(message: 'TOTP has been disabled successfully.');
     }
 }

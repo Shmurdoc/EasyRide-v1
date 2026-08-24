@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState } from 'react';
 import {
   TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform,
@@ -10,6 +11,8 @@ import { Typography, Input, Button, GradientText } from '@easyryde/shared';
 import type { RiderAuthNav } from '@easyryde/shared';
 
 export default function RegisterScreen({ navigation }: { navigation: RiderAuthNav }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -83,7 +86,7 @@ export default function RegisterScreen({ navigation }: { navigation: RiderAuthNa
             label="Full Name"
             value={name}
             onChangeText={(v: string) => { setName(v); setErrors(p => ({ ...p, name: '' })); }}
-            style={[styles.input, errors.name && styles.inputError]}
+            style={[styles.input, errors.name ? styles.inputError : null]}
           />
           {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
         </View>
@@ -96,7 +99,7 @@ export default function RegisterScreen({ navigation }: { navigation: RiderAuthNa
             onChangeText={(v: string) => { setEmail(v); setErrors(p => ({ ...p, email: '' })); }}
             keyboardType="email-address"
             autoCapitalize="none"
-            style={[styles.input, errors.email && styles.inputError]}
+            style={[styles.input, errors.email ? styles.inputError : null]}
           />
           {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
         </View>
@@ -109,7 +112,7 @@ export default function RegisterScreen({ navigation }: { navigation: RiderAuthNa
             onChangeText={(v: string) => { setPhone(v); setErrors(p => ({ ...p, phone: '' })); }}
             keyboardType="phone-pad"
             placeholder="+27..."
-            style={[styles.input, errors.phone && styles.inputError]}
+            style={[styles.input, errors.phone ? styles.inputError : null]}
           />
           {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
         </View>
@@ -121,7 +124,7 @@ export default function RegisterScreen({ navigation }: { navigation: RiderAuthNa
             value={password}
             onChangeText={(v: string) => { setPassword(v); setErrors(p => ({ ...p, password: '' })); }}
             secureTextEntry
-            style={[styles.input, errors.password && styles.inputError]}
+            style={[styles.input, errors.password ? styles.inputError : null]}
           />
           {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
         </View>
@@ -133,7 +136,7 @@ export default function RegisterScreen({ navigation }: { navigation: RiderAuthNa
             value={confirmPassword}
             onChangeText={(v: string) => { setConfirmPassword(v); setErrors(p => ({ ...p, confirmPassword: '' })); }}
             secureTextEntry
-            style={[styles.input, errors.confirmPassword && styles.inputError]}
+            style={[styles.input, errors.confirmPassword ? styles.inputError : null]}
           />
           {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
         </View>
@@ -177,10 +180,12 @@ export default function RegisterScreen({ navigation }: { navigation: RiderAuthNa
 }
 
 function Text({ style, children }: { style?: any; children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return <Typography variant="small" color={COLORS.error} style={style}>{children}</Typography>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   inner: { padding: SPACING.lg, paddingTop: 60 },
   backBtn: { marginBottom: SPACING.lg },

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useTheme } from '@easyryde/shared';
+import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Text, TextInput } from 'react-native';
 import { useAuth, COLORS, SPACING } from '@easyryde/shared';
 import type { RiderAuthNav } from '@easyryde/shared';
@@ -6,23 +7,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 type Role = 'rider' | 'driver' | 'admin';
 
-const roleAccounts: Record<Role, { email: string; password: string }> = {
-  rider: { email: 'rider@easyryde.com', password: 'password' },
-  driver: { email: 'driver@easyryde.com', password: 'password' },
-  admin: { email: 'admin@easyryde.com', password: 'password' },
-};
-
 export default function LoginScreen({ navigation }: { navigation: RiderAuthNav }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { login } = useAuth();
   const [selectedRole, setSelectedRole] = useState<Role>('rider');
-  const [email, setEmail] = useState(roleAccounts.rider.email);
-  const [password, setPassword] = useState(roleAccounts.rider.password);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(true);
 
   const handleContinue = () => {
-    setEmail(roleAccounts[selectedRole].email);
-    setPassword(roleAccounts[selectedRole].password);
+    setEmail('');
+    setPassword('');
     setShowForm(true);
   };
 
@@ -83,7 +80,7 @@ export default function LoginScreen({ navigation }: { navigation: RiderAuthNav }
             disabled={loading}
             testID="login-button"
           >
-            <LinearGradient colors={['#FFAD7A', '#e89b6a']} style={styles.gradientBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            <LinearGradient colors={['#FF6A00', '#E25500']} style={styles.gradientBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
               <Text style={styles.signInText}>{loading ? 'Signing In...' : 'Sign In'}</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -93,15 +90,6 @@ export default function LoginScreen({ navigation }: { navigation: RiderAuthNav }
               Don't have an account? <Text style={styles.registerLink}>Sign Up</Text>
             </Text>
           </TouchableOpacity>
-
-          {__DEV__ && (
-            <TouchableOpacity
-              onPress={() => { setEmail('rider@easyryde.com'); setPassword('password'); setTimeout(() => handleLogin(), 100); }}
-              style={styles.demoBtn}
-            >
-              <Text style={styles.demoText}>Quick Demo Login</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </KeyboardAvoidingView>
     );
@@ -138,7 +126,7 @@ export default function LoginScreen({ navigation }: { navigation: RiderAuthNav }
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
-          <LinearGradient colors={['#FFAD7A', '#e89b6a']} style={styles.gradientBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+          <LinearGradient colors={['#FF6A00', '#E25500']} style={styles.gradientBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
             <Text style={styles.continueText}>Continue</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -159,20 +147,20 @@ export default function LoginScreen({ navigation }: { navigation: RiderAuthNav }
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212' },
   inner: { flex: 1, justifyContent: 'center', padding: 20, maxWidth: 400, alignSelf: 'center', width: '100%' },
-  title: { fontSize: 40, fontWeight: '800', textAlign: 'center', marginBottom: 8, color: '#FFAD7A' },
+  title: { fontSize: 40, fontWeight: '800', textAlign: 'center', marginBottom: 8, color: '#FF6A00' },
   tagline: { fontSize: 16, color: '#98989d', textAlign: 'center', marginBottom: 40 },
   roleBtn: {
     flexDirection: 'row', alignItems: 'center', padding: 16, marginBottom: 10,
     backgroundColor: '#1e1e1e', borderWidth: 2, borderColor: '#333',
     borderRadius: 12, minHeight: 56,
   },
-  roleBtnSelected: { borderColor: '#FFAD7A', backgroundColor: 'rgba(255, 173, 122, 0.1)' },
+  roleBtnSelected: { borderColor: '#FF6A00', backgroundColor: 'rgba(255, 173, 122, 0.1)' },
   roleIcon: { fontSize: 24, marginRight: 12 },
   roleText: { fontSize: 17, fontWeight: '600', color: '#fff' },
-  roleTextSelected: { color: '#FFAD7A' },
+  roleTextSelected: { color: '#FF6A00' },
   continueBtn: { marginTop: 20, borderRadius: 8, overflow: 'hidden' },
   gradientBtn: { padding: 16, alignItems: 'center', borderRadius: 8 },
   continueText: { fontSize: 18, fontWeight: '700', color: '#121212' },
@@ -183,7 +171,7 @@ const styles = StyleSheet.create({
   guestText: { fontSize: 16, fontWeight: '600', color: '#fff' },
   version: { textAlign: 'center', color: '#666', fontSize: 13, marginTop: 30 },
   backBtn: { marginBottom: 20 },
-  backText: { color: '#FFAD7A', fontSize: 16, fontWeight: '600' },
+  backText: { color: '#FF6A00', fontSize: 16, fontWeight: '600' },
   formTitle: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 24 },
   label: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 8 },
   input: {
@@ -191,12 +179,10 @@ const styles = StyleSheet.create({
     borderRadius: 8, color: '#fff', fontSize: 16, marginBottom: 16, minHeight: 50,
   },
   forgotPassword: { alignSelf: 'flex-end', marginBottom: 20 },
-  forgotText: { color: '#FFAD7A', fontSize: 14 },
+  forgotText: { color: '#FF6A00', fontSize: 14 },
   signInBtn: { borderRadius: 8, overflow: 'hidden', marginBottom: 16 },
   disabledBtn: { opacity: 0.6 },
   signInText: { fontSize: 18, fontWeight: '700', color: '#121212' },
   registerText: { textAlign: 'center', color: '#98989d', fontSize: 15 },
-  registerLink: { color: '#FFAD7A', fontWeight: '600' },
-  demoBtn: { marginTop: 24, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 173, 122, 0.4)', backgroundColor: 'rgba(255, 173, 122, 0.1)' },
-  demoText: { color: '#FFAD7A', textAlign: 'center', fontSize: 14 },
+  registerLink: { color: '#FF6A00', fontWeight: '600' },
 });

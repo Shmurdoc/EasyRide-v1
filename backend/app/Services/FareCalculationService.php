@@ -122,20 +122,62 @@ class FareCalculationService
     {
         $defaults = self::CATEGORY_RATES[$category] ?? self::CATEGORY_RATES['standard'];
 
-        $baseFare = SystemSetting::where('key', "fare_{$category}_base_fare")->value('value')
-            ?? (string) $defaults['base'];
-        $perKmRate = SystemSetting::where('key', "fare_{$category}_per_km_rate")->value('value')
-            ?? (string) $defaults['per_km'];
-        $perMinuteRate = SystemSetting::where('key', "fare_{$category}_per_minute_rate")->value('value')
-            ?? (string) $defaults['per_min'];
-        $minimumFare = SystemSetting::where('key', "fare_{$category}_minimum_fare")->value('value')
-            ?? (string) $defaults['min'];
+        $fare = fn (string $readKey, string $seedKey, float $fallback) =>
+            (float) (SystemSetting::where('key', $readKey)->value('value')
+                ?? SystemSetting::where('key', $seedKey)->value('value')
+                ?? $fallback);
+
+        $baseFare = $fare("fare_{$category}_base_fare", "fare_{$category}_base", (float) $defaults['base']);
+        $perKmRate = $fare("fare_{$category}_per_km_rate", "fare_{$category}_per_km", (float) $defaults['per_km']);
+        $perMinuteRate = $fare("fare_{$category}_per_minute_rate", "fare_{$category}_per_min", (float) $defaults['per_min']);
+        $minimumFare = $fare("fare_{$category}_minimum_fare", "fare_{$category}_minimum", (float) $defaults['min']);
 
         return (object) [
-            'base_fare' => (float) $baseFare,
-            'per_km_rate' => (float) $perKmRate,
-            'per_minute_rate' => (float) $perMinuteRate,
-            'minimum_fare' => (float) $minimumFare,
+            'base_fare' => $baseFare,
+            'per_km_rate' => $perKmRate,
+            'per_minute_rate' => $perMinuteRate,
+            'minimum_fare' => $minimumFare,
+        ];
+    }
+
+    /**
+     * Parcel/local-delivery pricing: delivery fare template + weight-tier surcharge.
+     */
+    public function calculateParcelFare(
+        float $distanceKm,
+        float $weightKg,
+        ?string $tenantId = null,
+    ): array {
+        $rates = $this->getFareRates('delivery');
+        $surchargePerKg = (float) (SystemSetting::where('key', 'parcel_weight_surcharge_per_kg')->value('value') ?? 2);
+
+        $billedKm = max($distanceKm, 1.0);
+        $distanceFare = round($billedKm * $rates->per_km_rate, 2);
+        $weightSurcharge = $weightKg > 1 ? round(($weightKg - 1) * $surchargePerKg, 2) : 0.0;
+
+        $subtotal = round($rates->base_fare + $distanceFare + $weightSurcharge, 2);
+
+        if ($subtotal < $rates->minimum_fare) {
+            $subtotal = $rates->minimum_fare;
+        }
+
+        $weightTier = match (true) {
+            $weightKg <= 1 => 'light',
+            $weightKg <= 5 => 'medium',
+            $weightKg <= 15 => 'heavy',
+            default => 'bulky',
+        };
+
+        return [
+            'base_fare' => $rates->base_fare,
+            'per_km_fare' => $rates->per_km_rate,
+            'distance_km' => round($distanceKm, 2),
+            'distance_fare' => $distanceFare,
+            'weight_kg' => $weightKg,
+            'weight_surcharge' => $weightSurcharge,
+            'weight_tier' => $weightTier,
+            'minimum_fare' => $rates->minimum_fare,
+            'total_fare' => $subtotal,
         ];
     }
 

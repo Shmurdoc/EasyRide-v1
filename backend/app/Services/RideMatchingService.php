@@ -19,6 +19,16 @@ class RideMatchingService
             return ['success' => false, 'message' => 'Ride is no longer available.'];
         }
 
+        $fleetModeService = app(FleetModeService::class);
+
+        if (! $fleetModeService->allows($driver, FleetModeService::VERTICAL_RIDES, $ride->tenant_id)) {
+            return ['success' => false, 'message' => 'This ride is not available in your fleet pool.'];
+        }
+
+        if (app(DriverFraudGuardService::class)->isBlockedFromAccepting($driver)) {
+            return ['success' => false, 'message' => 'You have unpaid conduct fines. Settle them to accept rides.'];
+        }
+
         $this->assignDriver($ride, $driver);
 
         return ['success' => true, 'message' => 'Ride accepted.'];
@@ -29,7 +39,10 @@ class RideMatchingService
         float $lng,
         string $category = 'standard',
         float $radiusKm = 5.0,
+        ?string $tenantId = null,
     ): Collection {
+        $fleetModeService = app(FleetModeService::class);
+
         return User::role('driver')
             ->where('is_online', true)
             ->whereNull('current_ride_id')
@@ -42,6 +55,11 @@ class RideMatchingService
             ->orderBy('distance')
             ->get()
             ->filter(fn ($user) => ($user->distance ?? PHP_FLOAT_MAX) <= $radiusKm)
+            ->filter(fn (User $user) => $fleetModeService->allows(
+                $user,
+                FleetModeService::VERTICAL_RIDES,
+                $tenantId ?? $user->tenant_id,
+            ))
             ->values();
     }
 
@@ -108,6 +126,7 @@ class RideMatchingService
             (float) $ride->pickup_latitude,
             (float) $ride->pickup_longitude,
             $ride->category,
+            tenantId: $ride->tenant_id,
         );
 
         $driverIds = $nearbyDrivers->pluck('id')->toArray();

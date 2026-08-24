@@ -15,6 +15,7 @@ config.resolver.nodeModulesPaths = [
 
 config.resolver.blockList = [
   /@easyryde[/\\]shared[/\\]node_modules/,
+  new RegExp(path.resolve(monorepoRoot, 'packages/shared/node_modules') + '/'),
 ];
 
 config.server = {

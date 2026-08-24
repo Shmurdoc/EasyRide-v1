@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.docker
+.phpunit.result.cache
+storage/logs/*
+storage/framework/*
+!storage/logs/.gitkeep
+!storage/framework/.gitkeep
+vendor/
+tests/
+node_modules/
+bootstrap/cache/*.php
+*.log
+.DS_Store

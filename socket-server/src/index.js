@@ -41,6 +41,36 @@ io.adapter(createAdapter(pubClient, subClient));
 
 laravelRelay.init(io);
 
+// H-12 FIX: Listen for token invalidation events from Laravel logout
+(async () => {
+  try {
+    await subClient.subscribe('auth:token:invalidate');
+    console.log('[Auth] Subscribed to auth:token:invalidate channel');
+
+    subClient.on('message', (channel, message) => {
+      if (channel !== 'auth:token:invalidate') return;
+      try {
+        const { token, userId } = JSON.parse(message);
+        console.log('[Auth] Token invalidation received for user:', userId);
+        authService.invalidateToken(token);
+        // Disconnect all sockets using this token
+        for (const [uid, sock] of connectedSockets) {
+          if (sock.data.token === token) {
+            sock.emit('auth:force_disconnect', { reason: 'logged_out' });
+            sock.disconnect(true);
+            connectedSockets.delete(uid);
+            console.log('[Auth] Disconnected socket', uid, 'for user', userId);
+          }
+        }
+      } catch (err) {
+        console.error('[Auth] Token invalidation parse error:', err.message);
+      }
+    });
+  } catch (err) {
+    console.warn('[Auth] Failed to subscribe to token invalidation:', err.message);
+  }
+})();
+
 io.use(async (socket, next) => {
   const token = socket.handshake.auth?.token || socket.handshake.query?.token;
   if (!token) {

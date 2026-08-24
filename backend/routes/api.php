@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\ConfigController;
 use App\Http\Controllers\Api\V1\ConsentController;
 use App\Http\Controllers\Api\V1\DataRetentionController;
 use App\Http\Controllers\Api\V1\DeliveryController;
+use App\Http\Controllers\Api\V1\DriverViolationController;
 use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\FoodAdminController;
 use App\Http\Controllers\Api\V1\FoodDeliveryController;
@@ -56,6 +57,7 @@ Route::prefix('v1')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth-password');
         Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth-password');
+        Route::post('refresh', [AuthController::class, 'refresh'])->middleware('auth:sanctum');
         Route::get('{provider}/redirect', [SocialAuthController::class, 'redirect'])->middleware('throttle:social-auth');
         Route::get('{provider}/callback', [SocialAuthController::class, 'callback'])->middleware('throttle:social-auth');
     });
@@ -63,18 +65,18 @@ Route::prefix('v1')->group(function () {
     // Public promo validation
     Route::post('promo-codes/validate', [PromoCodeController::class, 'validateCode'])->middleware('throttle:promo-apply');
 
-    // Webhook routes (no auth)
+    // Webhook routes (no auth — protected by IP whitelist + signature verification)
     Route::prefix('webhooks')->middleware('throttle:api')->group(function () {
-        Route::post('payfast', [PaymentController::class, 'payfastWebhook']);
+        Route::post('payfast', [PaymentController::class, 'payfastWebhook'])->middleware('webhook.ip:payfast');
         Route::get('payfast/return', [PaymentController::class, 'payfastReturn']);
-        Route::post('ozow', [PaymentController::class, 'ozowWebhook']);
+        Route::post('ozow', [PaymentController::class, 'ozowWebhook'])->middleware('webhook.ip:ozow');
         Route::get('ozow/return', [PaymentController::class, 'ozowReturn']);
-        Route::post('partner/order', [PartnerWebhookController::class, 'receiveOrder']);
-        Route::post('partner/status', [PartnerWebhookController::class, 'orderStatus']);
-        Route::post('stripe', [PaymentController::class, 'stripeWebhook']);
-        Route::post('twilio', [PaymentController::class, 'twilioWebhook']);
+        Route::post('partner/order', [PartnerWebhookController::class, 'receiveOrder'])->middleware('webhook.ip:partner');
+        Route::post('partner/status', [PartnerWebhookController::class, 'orderStatus'])->middleware('webhook.ip:partner');
+        Route::post('stripe', [PaymentController::class, 'stripeWebhook'])->middleware('webhook.ip:stripe');
+        Route::post('twilio', [PaymentController::class, 'twilioWebhook'])->middleware('webhook.ip:twilio');
         // PHBIMH Integration
-        Route::post('phbimh', [PhbimhWebhookController::class, 'handleWebhook']);
+        Route::post('phbimh', [PhbimhWebhookController::class, 'handleWebhook'])->middleware('webhook.ip:phbimh');
     });
 
     // Public discovery routes
@@ -130,6 +132,12 @@ Route::prefix('v1')->group(function () {
         // Driver location update (standalone)
         Route::post('drivers/location', [DriverController::class, 'updateLocation'])->middleware(['role:driver', 'throttle:driver-location']);
 
+        // Driver conduct / fines
+        Route::middleware('role:driver')->prefix('violations')->group(function () {
+            Route::get('/', [DriverViolationController::class, 'myViolations']);
+            Route::post('{violation}/pay', [DriverViolationController::class, 'pay'])->middleware('throttle:payments');
+        });
+
         // Payments
         Route::prefix('payments')->group(function () {
             Route::get('/', [PaymentController::class, 'index']);
@@ -147,7 +155,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [WalletController::class, 'show']);
             Route::get('transactions', [WalletController::class, 'transactions']);
             Route::post('deposit', [WalletController::class, 'deposit'])->middleware('throttle:wallet-deposit');
-            Route::post('confirm', [WalletController::class, 'confirm']);
+            Route::post('confirm', [WalletController::class, 'confirm'])->middleware('throttle:wallet-confirm');
             Route::post('withdraw', [WalletController::class, 'withdraw'])->middleware('throttle:wallet-withdraw');
         });
 
@@ -172,8 +180,12 @@ Route::prefix('v1')->group(function () {
         Route::prefix('deliveries')->group(function () {
             Route::get('/', [DeliveryController::class, 'index']);
             Route::post('/', [DeliveryController::class, 'store']);
+            Route::post('quote', [DeliveryController::class, 'quote']);
+            Route::get('available', [DeliveryController::class, 'availableDeliveries'])->middleware('role:driver');
             Route::get('{delivery}', [DeliveryController::class, 'show']);
             Route::put('{delivery}/status', [DeliveryController::class, 'updateStatus']);
+            Route::post('{delivery}/accept', [DeliveryController::class, 'driverAccept'])->middleware('role:driver');
+            Route::post('{delivery}/cancel', [DeliveryController::class, 'driverCancel'])->middleware('role:driver');
             Route::post('{delivery}/assign', [DeliveryController::class, 'assignDriver'])->middleware('role:admin|super-admin');
         });
 
@@ -194,6 +206,7 @@ Route::prefix('v1')->group(function () {
             Route::get('orders', [FoodDeliveryController::class, 'driverOrders']);
             Route::get('orders/available', [FoodDeliveryController::class, 'availableOrders']);
             Route::post('orders/{order}/accept', [FoodDeliveryController::class, 'driverAcceptOrder']);
+            Route::post('orders/{order}/cancel', [FoodDeliveryController::class, 'driverCancelOrder']);
             Route::post('orders/{order}/status', [FoodDeliveryController::class, 'updateStatus']);
         });
 
@@ -256,25 +269,38 @@ Route::prefix('v1')->group(function () {
             Route::get('revenue/export', [ReportingController::class, 'revenueExport']);
         });
 
-        // Admin
-        // TOTP 2FA (role-protected but not TOTP-protected)
+        // Admin TOTP 2FA Management
+        // enable/verify: role-protected only (TOTP not yet enabled, so can't require it)
         Route::prefix('admin')->middleware('role:admin|super-admin')->group(function () {
-            Route::post('totp/enable', [TotpController::class, 'enable']);
-            Route::post('totp/verify', [TotpController::class, 'verify']);
-            Route::post('totp/disable', [TotpController::class, 'disable']);
+            Route::post('totp/enable', [TotpController::class, 'enable'])->middleware('throttle:totp-verify');
+            Route::post('totp/verify', [TotpController::class, 'verify'])->middleware('throttle:totp-verify');
+        });
+
+        // disable: role-protected AND TOTP-protected (must provide current TOTP to disable 2FA)
+        Route::prefix('admin')->middleware(['role:admin|super-admin', 'admin.totp'])->group(function () {
+            Route::post('totp/disable', [TotpController::class, 'disable'])->middleware('throttle:totp-verify');
         });
 
         Route::prefix('admin')->middleware(['role:admin|super-admin', 'admin.totp'])->group(function () {
             Route::get('dashboard', [AdminController::class, 'dashboard']);
-            Route::get('users', [AdminController::class, 'users']);
+            Route::get('users', [AdminController::class, 'users'])->name('admin.users.index');
             Route::get('rides', [AdminController::class, 'rides']);
             Route::get('drivers', [AdminController::class, 'drivers']);
             Route::post('drivers', [AuthController::class, 'createDriver']);
             Route::post('drivers/{driver}/approve', [AdminController::class, 'approveDriver']);
             Route::post('drivers/{driver}/reject', [AdminController::class, 'rejectDriver']);
+            Route::put('drivers/{driver}/fleet-type', [AdminController::class, 'updateDriverFleetType']);
             Route::get('settings', [AdminController::class, 'settings']);
             Route::post('settings', [AdminController::class, 'updateSettings']);
             Route::get('audit-logs', [AdminController::class, 'auditLogs']);
+
+            // Conduct / Fraud Console
+            Route::prefix('violations')->group(function () {
+                Route::get('/', [DriverViolationController::class, 'index']);
+                Route::get('{violation}', [DriverViolationController::class, 'show']);
+                Route::post('{violation}/waive', [DriverViolationController::class, 'waive']);
+                Route::post('{violation}/resolve-dispute', [DriverViolationController::class, 'resolveDispute']);
+            });
 
             // Live Map
             Route::get('live-map/drivers', AdminLiveMapController::class);
@@ -397,6 +423,15 @@ Route::prefix('v1')->group(function () {
                 Route::post('bulk-approve', [\App\Http\Controllers\Admin\KycController::class, 'bulkApprove']);
             });
         });
+
+        // Restaurants (top-level alias)
+        Route::get('restaurants', [FoodDeliveryController::class, 'restaurants']);
+
+        // Food Orders (top-level alias)
+        Route::get('food-orders', [FoodDeliveryController::class, 'myOrders']);
+
+        // Pool Rides (top-level listing)
+        Route::get('pool-rides', [PoolController::class, 'index']);
 
         // Pool Rides
         Route::prefix('pool')->group(function () {

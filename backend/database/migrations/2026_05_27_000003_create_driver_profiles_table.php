@@ -11,12 +11,12 @@ return new class extends Migration
         Schema::create('driver_profiles', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id')->unique();
-            $table->string('license_number', 100)->nullable();
+            $table->text('license_number')->nullable();
             $table->date('license_expiry')->nullable();
-            $table->string('id_number', 50)->nullable();
-            $table->date('date_of_birth')->nullable();
-            $table->string('emergency_contact_name')->nullable();
-            $table->string('emergency_contact_phone', 50)->nullable();
+            $table->text('id_number')->nullable();
+            $table->text('date_of_birth')->nullable();
+            $table->text('emergency_contact_name')->nullable();
+            $table->text('emergency_contact_phone')->nullable();
             $table->boolean('is_verified')->default(false);
             $table->boolean('is_approved')->default(false);
             $table->uuid('approved_by')->nullable();

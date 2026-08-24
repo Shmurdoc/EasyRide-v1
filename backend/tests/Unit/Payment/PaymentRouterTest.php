@@ -3,7 +3,7 @@
 namespace Tests\Unit\Payment;
 
 use App\Services\Payment\CashReconciliationService;
-use App\Services\Payment\EscrowService;
+use App\Services\EscrowService;
 use App\Services\Payment\OzowService;
 use App\Services\Payment\PayFastService;
 use App\Services\Payment\PaymentRouter;

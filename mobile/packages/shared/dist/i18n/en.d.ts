@@ -1,0 +1,418 @@
+declare const en: {
+    app: {
+        name: string;
+        tagline: string;
+        version: string;
+    };
+    common: {
+        loading: string;
+        error: string;
+        success: string;
+        cancel: string;
+        save: string;
+        saving: string;
+        confirm: string;
+        yes: string;
+        no: string;
+        ok: string;
+        submit: string;
+        tryAgain: string;
+        signOut: string;
+        search: string;
+        noResults: string;
+        comingSoon: string;
+        online: string;
+        offline: string;
+    };
+    auth: {
+        email: string;
+        password: string;
+        fullName: string;
+        phoneNumber: string;
+        confirmPassword: string;
+        signIn: string;
+        signingIn: string;
+        signUp: string;
+        creatingAccount: string;
+        createAccount: string;
+        noAccount: string;
+        hasAccount: string;
+        loginFailed: string;
+        registrationFailed: string;
+        invalidCredentials: string;
+        pleaseTryAgain: string;
+        fillAllFields: string;
+        enterValidEmail: string;
+        passwordsDoNotMatch: string;
+        passwordMinLength: string;
+        logout: string;
+        logoutConfirm: string;
+    };
+    rider: {
+        home: {
+            whereTo: string;
+            now: string;
+            bookRide: string;
+            findingDriver: string;
+            pickup: string;
+            dropoff: string;
+            currentLocation: string;
+            permissionDenied: string;
+            locationRequired: string;
+            selectPickupDropoff: string;
+            failedToBook: string;
+        };
+        categories: {
+            ride: string;
+            delivery: string;
+            travel: string;
+            food: string;
+        };
+        rideTracking: {
+            driver: string;
+            rideCancelled: string;
+            rideCancelledMsg: string;
+            cancelRide: string;
+            cancelConfirm: string;
+            thankYou: string;
+            ratingSubmitted: string;
+            driverArriving: string;
+            findingDriver: string;
+            driverAssigned: string;
+            driverArrived: string;
+            rideInProgress: string;
+            rideCompleted: string;
+            cancelledStatus: string;
+            from: string;
+            to: string;
+            rateYourRide: string;
+            commentOptional: string;
+            submitRating: string;
+            chatWithDriver: string;
+        };
+        rideHistory: {
+            title: string;
+            past: string;
+            noRides: string;
+        };
+        profile: {
+            greeting: string;
+            rider: string;
+            help: string;
+            wallet: string;
+            trips: string;
+            messages: string;
+            settings: string;
+            earn: string;
+            legal: string;
+            helpSupport: string;
+            helpSupportMsg: string;
+            noMessages: string;
+            legalMsg: string;
+            settingsComingSoon: string;
+        };
+        food: {
+            title: string;
+            searchRestaurants: string;
+            noRestaurants: string;
+            free: string;
+            veg: string;
+            vegan: string;
+            spice: string;
+            viewCart: string;
+            orderTracking: string;
+            orderPlaced: string;
+            confirmed: string;
+            preparing: string;
+            readyForPickup: string;
+            pickedUp: string;
+            onTheWay: string;
+            delivered: string;
+            cancelled: string;
+            cancelOrder: string;
+            cancelOrderConfirm: string;
+            checkout: string;
+            orderSummary: string;
+            deliveryAddress: string;
+            paymentMethod: string;
+            tip: string;
+            enterAddress: string;
+            deliveryNotes: string;
+            noTip: string;
+            subtotal: string;
+            delivery: string;
+            service: string;
+            total: string;
+            placeOrder: string;
+            placingOrder: string;
+            missingAddress: string;
+            pleaseEnterAddress: string;
+            failedToPlaceOrder: string;
+        };
+        wallet: {
+            balance: string;
+            transactions: string;
+            noTransactions: string;
+            deposit: string;
+            withdraw: string;
+            depositAmount: string;
+            withdrawAmount: string;
+            confirmDeposit: string;
+            confirmWithdraw: string;
+            enterValidAmount: string;
+            depositSuccess: string;
+            withdrawalSuccess: string;
+        };
+        payment: {
+            title: string;
+            cash: string;
+            wallet: string;
+            payfast: string;
+            ozow: string;
+            confirmPayment: string;
+            processing: string;
+            paymentSuccessful: string;
+            paymentSuccessMsg: string;
+            paymentFailed: string;
+            pleaseTryAgain: string;
+        };
+        chat: {
+            typeMessage: string;
+            send: string;
+        };
+        bookRide: {
+            searchDestination: string;
+            noMatchingPlaces: string;
+        };
+    };
+    driver: {
+        login: {
+            title: string;
+            subtitle: string;
+        };
+        dashboard: {
+            hello: string;
+            connected: string;
+            disconnected: string;
+            today: string;
+            total: string;
+            trips: string;
+            enableLocation: string;
+            goOnline: string;
+            goOffline: string;
+            foodOrdersAvailable: string;
+            lookingForRides: string;
+            newRideRequest: string;
+            rideRequestMsg: string;
+            decline: string;
+            accept: string;
+            permissionDenied: string;
+            locationRequired: string;
+            trackingActive: string;
+        };
+        rideRequests: {
+            title: string;
+            noPending: string;
+            pickupLocation: string;
+            destination: string;
+            decline: string;
+            accept: string;
+            newRequest: string;
+            requestBody: string;
+        };
+        activeRide: {
+            pickup: string;
+            dropoff: string;
+            markArrived: string;
+            chat: string;
+            startRide: string;
+            completeRide: string;
+            rideCompleted: string;
+            greatJob: string;
+            rideStarted: string;
+            rideStartedMsg: string;
+            rideCancelled: string;
+            riderCancelled: string;
+        };
+        earnings: {
+            title: string;
+            today: string;
+            allTime: string;
+            pending: string;
+            trips: string;
+            recentTransactions: string;
+            noTransactions: string;
+        };
+        tripHistory: {
+            title: string;
+            noTrips: string;
+        };
+        profile: {
+            driver: string;
+            vehicleInfo: string;
+            documents: string;
+            notifications: string;
+            helpSupport: string;
+            documentsMsg: string;
+            notificationsMsg: string;
+            helpSupportMsg: string;
+            logoutConfirm: string;
+            make: string;
+            model: string;
+            year: string;
+            licensePlate: string;
+            color: string;
+            category: string;
+            cancel: string;
+            save: string;
+            vehicleRegistered: string;
+        };
+        foodDelivery: {
+            title: string;
+            available: string;
+            active: string;
+            delivered: string;
+            noOrders: string;
+            moreItems: string;
+            acceptOrder: string;
+            accepting: string;
+        };
+        foodOrder: {
+            orderItems: string;
+            deliveryDetails: string;
+            customer: string;
+            total: string;
+            note: string;
+            unknown: string;
+            na: string;
+            startPreparing: string;
+            markReady: string;
+            markPickedUp: string;
+            startDelivery: string;
+            markDelivered: string;
+            updateStatus: string;
+            statusConfirm: string;
+            failed: string;
+        };
+        chat: {
+            typeMessage: string;
+            send: string;
+        };
+    };
+    admin: {
+        login: {
+            title: string;
+            subtitle: string;
+        };
+        dashboard: {
+            title: string;
+            users: string;
+            drivers: string;
+            active: string;
+            total: string;
+            totalRevenue: string;
+            ridesToday: string;
+            completed: string;
+            todayRevenue: string;
+        };
+        users: {
+            title: string;
+            search: string;
+            noUsers: string;
+        };
+        drivers: {
+            title: string;
+            noDrivers: string;
+            approve: string;
+            reject: string;
+            approved: string;
+            driverApproved: string;
+            rejected: string;
+            driverRejected: string;
+        };
+        rides: {
+            title: string;
+            all: string;
+            searching: string;
+            accepted: string;
+            inProgress: string;
+            completed: string;
+            cancelled: string;
+            noRides: string;
+        };
+        food: {
+            title: string;
+            restaurants: string;
+            orders: string;
+            noRestaurants: string;
+            noOrders: string;
+            addRestaurant: string;
+            active: string;
+            inactive: string;
+            fee: string;
+            minOrder: string;
+            name: string;
+            address: string;
+            deliveryFee: string;
+            minimumOrder: string;
+            create: string;
+            nameAddressRequired: string;
+            addTitle: string;
+        };
+        settings: {
+            title: string;
+            noSettings: string;
+            type: string;
+            save: string;
+            saving: string;
+            failedToSave: string;
+        };
+    };
+    errors: {
+        somethingWentWrong: string;
+        unexpectedError: string;
+        failedToLoad: string;
+    };
+    vehicle: {
+        economy: string;
+        standard: string;
+        premium: string;
+        xl: string;
+        perKm: string;
+        perMin: string;
+        baseFare: string;
+    };
+    status: {
+        findingDriver: string;
+        driverAssigned: string;
+        driverArrived: string;
+        rideInProgress: string;
+        rideCompleted: string;
+        rideCancelled: string;
+        scheduled: string;
+        active: string;
+        inactive: string;
+        searching: string;
+        accepted: string;
+        cancelled: string;
+    };
+    payment: {
+        cash: string;
+        wallet: string;
+        payfast: string;
+        ozow: string;
+    };
+    date: {
+        today: string;
+        yesterday: string;
+    };
+    rating: {
+        excellent: string;
+        good: string;
+        average: string;
+        poor: string;
+        terrible: string;
+    };
+};
+export type TranslationKeys = typeof en;
+export default en;

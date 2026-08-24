@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect } from 'react';
 import { FlatList, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
 import { View } from 'react-native';
@@ -7,6 +8,8 @@ import { Typography, GlassCard, GradientText, Shimmer } from '@easyryde/shared';
 import type { Restaurant, RiderNav } from '@easyryde/shared';
 
 export default function RestaurantListScreen({ navigation }: { navigation: RiderNav }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -80,7 +83,7 @@ export default function RestaurantListScreen({ navigation }: { navigation: Rider
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   searchInput: {
     margin: SPACING.base, backgroundColor: COLORS.glass, borderRadius: RADIUS.md,
     padding: 12, fontSize: 16, borderWidth: 1, borderColor: COLORS.glassBorder, color: COLORS.text,

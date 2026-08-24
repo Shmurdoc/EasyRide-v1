@@ -33,6 +33,8 @@ class Ride extends Model
         'waiting_started_at', 'no_show_at', 'cancellation_requested_at',
         'cancellation_request_reason', 'estimated_arrival_seconds',
         'pickup_reached_at', 'dropoff_reached_at',
+        'estimated_fare_at_booking', 'fare_calculation_log',
+        'server_calculated_distance_km', 'server_calculated_duration_minutes',
     ];
 
     private const VALID_TRANSITIONS = [
@@ -122,6 +124,11 @@ class Ride extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(RideStatusHistory::class);
+    }
+
+    public function locationLogs(): HasMany
+    {
+        return $this->hasMany(RideLocationLog::class);
     }
 
     public function transitionTo(string $newStatus, ?string $actorId = null, ?string $reason = null): bool

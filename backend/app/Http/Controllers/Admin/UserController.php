@@ -21,13 +21,14 @@ class UserController extends Controller
             ->when($request->role, fn ($q, $v) => $q->where('role', $v))
             ->when($request->is_active !== null, fn ($q, $v) => $q->where('is_active', filter_var($v, FILTER_VALIDATE_BOOLEAN)))
             ->when($request->search, fn ($q, $v) => $q->where(function ($qq) use ($v) {
-                $qq->where('name', 'like', "%{$v}%")
-                    ->orWhere('email', 'like', "%{$v}%")
-                    ->orWhere('phone_number', 'like', "%{$v}%");
+                $escaped = addcslashes($v, '%_');
+                $qq->where('name', 'like', "%{$escaped}%")
+                    ->orWhere('email', 'like', "%{$escaped}%")
+                    ->orWhere('phone_number', 'like', "%{$escaped}%");
             }))
             ->with(['driverProfile', 'vehicle'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($users);
     }
@@ -102,7 +103,8 @@ class UserController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        $user->update(['is_active' => false]);
+        $user->is_active = false;
+        $user->save();
 
         AdminAuditLog::create([
             'tenant_id' => $request->user()->tenant_id,
@@ -127,7 +129,8 @@ class UserController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        $user->update(['is_active' => true]);
+        $user->is_active = true;
+        $user->save();
 
         AdminAuditLog::create([
             'tenant_id' => $request->user()->tenant_id,

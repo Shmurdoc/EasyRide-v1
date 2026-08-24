@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput as RNTextInput, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, TextInput as RNTextInput, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { useTheme } from '../theme';
 import { SPACING, RADIUS, COLORS } from '../constants';
 
@@ -13,7 +13,7 @@ interface InputProps {
   multiline?: boolean;
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 

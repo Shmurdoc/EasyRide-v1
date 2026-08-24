@@ -19,6 +19,7 @@ class DriverProfile extends Model
         'date_of_birth', 'emergency_contact_name', 'emergency_contact_phone',
         'is_verified', 'is_approved', 'approved_by', 'approved_at',
         'total_trips', 'total_earnings', 'rating_sum', 'rating_count',
+        'fleet_type',
     ];
 
     protected function casts(): array

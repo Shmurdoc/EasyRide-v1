@@ -14,6 +14,7 @@ interface Driver {
     is_verified: boolean;
     license_number: string;
     average_rating: number;
+    fleet_type?: string;
   } | null;
 }
 
@@ -62,6 +63,13 @@ export default function Drivers() {
       setReasonModal(null);
       setReason('');
     },
+  });
+
+  const fleetTypeMutation = useMutation({
+    mutationFn: async ({ id, fleetType }: { id: number; fleetType: string }) => {
+      await api.put(`/admin/drivers/${id}/fleet-type`, { fleet_type: fleetType });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-drivers'] }),
   });
 
   const suspendMutation = useMutation({
@@ -134,6 +142,7 @@ export default function Drivers() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Online</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Rating</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Fleet</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
               </tr>
             </thead>
@@ -159,6 +168,16 @@ export default function Drivers() {
                     </td>
                     <td className="px-4 py-3 text-gray-600">
                       {driver.driver_profile?.average_rating?.toFixed(1) ?? '-'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={driver.driver_profile?.fleet_type ?? 'private'}
+                        onChange={(e) => fleetTypeMutation.mutate({ id: driver.id, fleetType: e.target.value })}
+                        className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="private">Private</option>
+                        <option value="easyryde">EasyRyde</option>
+                      </select>
                     </td>
                     <td className="px-4 py-3 text-right space-x-2">
                       {!driver.driver_profile?.is_approved && (
@@ -191,7 +210,7 @@ export default function Drivers() {
               })}
               {data?.data.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
                     No drivers found.
                   </td>
                 </tr>

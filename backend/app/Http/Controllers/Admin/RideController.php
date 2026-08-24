@@ -33,7 +33,7 @@ class RideController extends Controller
             })
             ->with(['rider', 'driver', 'payment', 'rating'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($rides);
     }

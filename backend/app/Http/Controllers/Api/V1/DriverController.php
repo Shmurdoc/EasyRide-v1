@@ -27,7 +27,7 @@ class DriverController extends Controller
         $drivers = $this->driverService->listDrivers(
             $request->user()->tenant_id,
             $request->only(['is_online', 'is_approved', 'search']),
-            $request->per_page ?? 15,
+            min((int) ($request->per_page ?? 15), 100),
         );
 
         return ApiResponse::paginated($drivers);
@@ -115,7 +115,7 @@ class DriverController extends Controller
         $trips = $this->driverService->getTrips(
             $request->user(),
             $request->only(['status']),
-            $request->per_page ?? 15,
+            min((int) ($request->per_page ?? 15), 100),
         );
 
         return ApiResponse::paginated($trips);
@@ -142,6 +142,7 @@ class DriverController extends Controller
             (float) $longitude,
             (float) ($request->radius ?? 10),
             $request->user()->tenant_id,
+            $request->user(),
         );
 
         return ApiResponse::success($rides);

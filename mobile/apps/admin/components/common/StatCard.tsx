@@ -12,7 +12,7 @@ interface StatCardProps {
 
 export function StatCard({ label, value, trend, icon }: StatCardProps) {
   return (
-    <LinearGradient colors={['#6366f1', '#4f46e5']} style={styles.card}>
+    <LinearGradient colors={['#0A7C4E', '#12A86B']} style={styles.card}>
       <Text style={styles.label}>{label.toUpperCase()}</Text>
       <Text style={styles.value}>{typeof value === 'number' && label.toLowerCase().includes('revenue') ? `R${(value ?? 0).toLocaleString()}` : (value ?? 0)}</Text>
       {trend && (

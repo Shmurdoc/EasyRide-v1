@@ -1,58 +1,124 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# EasyRyde Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 11 REST API for the EasyRyde ride-hailing platform. Powers rider, driver, and admin mobile apps plus the web admin dashboard.
 
-## About Laravel
+## Key Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Ride management** — Book, accept, track, complete, cancel rides with GPS-based fare calculation
+- **Driver matching** — Proximity-based driver discovery with Redis GeoSet
+- **Multi-payment** — Wallet, card (Stripe), PayFast, Ozow, cash
+- **Food delivery** — Restaurant orders with driver assignment and real-time tracking
+- **Deliveries** — Package delivery with driver matching
+- **Pool rides** — Ride-sharing with passenger matching
+- **Chat** — In-ride messaging between riders and drivers
+- **Notifications** — Push (Firebase), SMS (Twilio), in-app
+- **KYC / Compliance** — Document verification, incidents, driver violations
+- **Admin dashboard** — User/driver/ride management, live map, reporting, payouts
+- **Security** — TOTP 2FA, Sanctum tokens, webhook IP validation, rate limiting, audit logging
+- **POPIA compliance** — Data export, anonymization, erasure endpoints
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Docker Setup
 
 ```bash
-composer require laravel/boost --dev
+# Start the full stack (nginx, backend, postgres, redis)
+docker compose up -d
 
-php artisan boost:install
+# Run artisan commands
+docker compose exec backend php artisan <command>
+
+# Access the container
+docker compose exec backend bash
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The backend runs behind Nginx on port `3082` (host) -> `8080` (container).
 
-## Contributing
+## Testing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+# Full test suite (inside Docker)
+docker compose exec backend php vendor/bin/phpunit --configuration phpunit.xml
 
-## Code of Conduct
+# Specific test
+docker compose exec backend php vendor/bin/phpunit --configuration phpunit.xml --filter <TestName>
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Seed test data
+docker compose exec backend php artisan db:seed --class=FoodDeliverySeeder
+```
 
-## Security Vulnerabilities
+**Test DB:** PostgreSQL at `127.0.0.1:5433` (host) / `database:5432` (container), database `easyryde_test`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**Current status:** 796 tests, 1828 assertions, 0 failures.
 
-## License
+## Key Middleware
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Middleware | Purpose |
+|-----------|---------|
+| `auth:sanctum` | Token-based authentication |
+| `role:driver`, `role:admin\|super-admin` | Role-based access control via Spatie |
+| `throttle:*` | Per-route rate limiting (auth, ride-create, payments, etc.) |
+| `webhook.ip:*` | Webhook IP whitelist validation (PayFast, Ozow, Stripe, etc.) |
+| `admin.totp` | Requires TOTP 2FA code for sensitive admin operations |
+| `DriverMiddleware` | Checks `hasRole('driver')` — used in driver-specific routes |
+
+## API Documentation
+
+Route definitions: `backend/routes/api.php`
+
+### Key Endpoints
+
+**Auth**
+- `POST /api/v1/auth/register` — Register new user
+- `POST /api/v1/auth/login` — Login (returns Sanctum token)
+- `POST /api/v1/auth/refresh` — Refresh token
+- `POST /api/v1/auth/logout` — Logout (invalidates token)
+
+**Rides**
+- `POST /api/v1/rides` — Book a ride
+- `GET /api/v1/rides/current` — Get active ride
+- `POST /api/v1/rides/{id}/driver-accept` — Driver accepts ride
+- `POST /api/v1/rides/{id}/start` — Start ride
+- `POST /api/v1/rides/{id}/complete` — Complete ride
+- `GET /api/v1/rides/fare-estimate` — Get fare estimate
+
+**Driver**
+- `POST /api/v1/drivers/toggle-online` — Go online/offline
+- `PUT /api/v1/drivers/profile` — Update driver profile
+- `GET /api/v1/drivers/earnings` — View earnings
+
+**Payments**
+- `POST /api/v1/wallet/deposit` — Top up wallet
+- `POST /api/v1/payments/rides/{id}/pay` — Process ride payment
+- `POST /api/v1/payments/stripe/create-intent` — Create Stripe payment intent
+
+**Food**
+- `GET /api/v1/food/restaurants` — List restaurants
+- `POST /api/v1/food/restaurants/{id}/order` — Place food order
+- `GET /api/v1/food/orders` — List my orders
+
+**Admin**
+- `GET /api/v1/admin/dashboard` — Dashboard stats
+- `GET /api/v1/admin/manage/users` — User management
+- `GET /api/v1/admin/manage/drivers` — Driver management
+- `GET /api/v1/admin/live-map/drivers` — Live driver locations
+- `GET /api/v1/admin/reports/revenue` — Revenue reports
+
+**Webhooks** (no auth — IP whitelist + signature)
+- `POST /api/v1/webhooks/payfast` — PayFast ITN
+- `POST /api/v1/webhooks/ozow` — Ozow webhook
+- `POST /api/v1/webhooks/stripe` — Stripe webhook
+- `POST /api/v1/webhooks/partner/order` — Partner order webhook
+
+## Project Structure
+
+```
+backend/
+  app/
+    Http/Controllers/    — API controllers (Api/V1, Admin)
+    Models/              — Eloquent models
+    Services/            — Business logic (Fare, Payment, Ride, etc.)
+    Jobs/                — Queued jobs
+  config/                — Laravel configuration
+  database/migrations/   — Database schema
+  routes/api.php         — All API route definitions
+  tests/                 — PHPUnit tests
+```

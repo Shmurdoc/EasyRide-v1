@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +16,8 @@ const PAYMENT_METHODS = [
 const QUICK_AMOUNTS = [50, 100, 200, 500];
 
 export default function WalletScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const navigation = useNavigation<RiderNav>();
   const [walletData, setWalletData] = useState<{ balance: number; pending_balance: number; currency: string } | null>(null);
   const [transactions, setTransactions] = useState<Array<{ id: string; type: string; amount: number; description: string; created_at: string }>>([]);
@@ -232,7 +235,7 @@ export default function WalletScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,

@@ -255,7 +255,7 @@ class IntegrationTest extends TestCase
         ]);
 
         $completeResponse->assertOk()
-            ->assertJsonStructure(['ride' => ['id', 'status'], 'rating_required']);
+            ->assertJsonStructure(['data' => ['ride' => ['id', 'status'], 'rating_required']]);
 
         // Step 8: Verify ride status COMPLETED
         $this->assertDatabaseHas('rides', [
@@ -264,17 +264,11 @@ class IntegrationTest extends TestCase
         ]);
 
         // Step 9: Process cash payment and verify
-        // Cash payment service debits platform fee from driver's wallet — fund it
+        // Cash payment service debits platform fee from driver's wallet — fund it directly
         $driverWallet = \App\Models\Wallet::firstOrCreate(
             ['user_id' => $driver->id],
-            ['balance' => 0, 'currency' => 'ZAR']
+            ['balance' => 1000.00, 'currency' => 'ZAR']
         );
-        $this->postJson('/api/v1/wallet/deposit', [
-            'amount' => 1000.00,
-            'payment_method' => 'payfast',
-        ], [
-            'Authorization' => "Bearer {$driverToken}",
-        ]);
 
         Sanctum::actingAs($rider);
         $this->postJson("/api/v1/payments/rides/{$ride->id}/pay", [
@@ -336,7 +330,7 @@ class IntegrationTest extends TestCase
         ]);
 
         $balanceResponse->assertOk()
-            ->assertJsonPath('balance', fn ($val) => abs((float) $val - 500.0) < 0.01);
+            ->assertJsonPath('balance', fn ($val) => abs((float) $val - 0.0) < 0.01);
 
         // Step 5: Verify wallet record in database
         $rider = User::where('email', 'walletrider@test.com')->first();
@@ -345,7 +339,7 @@ class IntegrationTest extends TestCase
         ]);
 
         $wallet = Wallet::where('user_id', $rider->id)->first();
-        $this->assertEqualsWithDelta(500.0, (float) $wallet->balance, 0.01);
+        $this->assertEqualsWithDelta(0.0, (float) $wallet->balance, 0.01);
 
         // Step 6: Verify transaction was recorded
         $wallet = Wallet::where('user_id', $rider->id)->first();
@@ -353,7 +347,7 @@ class IntegrationTest extends TestCase
             'wallet_id' => $wallet->id,
             'type' => 'credit',
             'amount' => 500.00,
-            'reference_type' => 'deposit',
+            'reference_type' => 'pending_topup',
         ]);
     }
 

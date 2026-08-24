@@ -2,6 +2,8 @@
 
 namespace App\Services\Payment;
 
+use App\Services\EscrowService;
+
 class PaymentRouter
 {
     public function __construct(

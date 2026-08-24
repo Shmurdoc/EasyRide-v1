@@ -37,6 +37,16 @@ class KycService
         $this->validateDocumentType($documentType);
         $this->validateDocumentNumber($documentType, $documentNumber);
 
+        if ($documentFront) {
+            $this->validateUploadedFile($documentFront);
+        }
+        if ($documentBack) {
+            $this->validateUploadedFile($documentBack);
+        }
+        if ($selfie) {
+            $this->validateUploadedFile($selfie);
+        }
+
         $existing = KycVerification::where('user_id', $user->id)
             ->where('document_type', $documentType)
             ->where('status', '!=', KycVerification::STATUS_REJECTED)
@@ -158,6 +168,24 @@ class KycService
             'is_kyc_verified' => $isVerified,
             'kyc_verified_at' => $isVerified ? now() : null,
         ]);
+    }
+
+    private function validateUploadedFile(UploadedFile $file): void
+    {
+        $allowedMimes = ['image/jpeg', 'image/png', 'application/pdf'];
+        $maxSize = 10 * 1024 * 1024; // 10MB
+
+        if (! in_array($file->getMimeType(), $allowedMimes)) {
+            throw new \InvalidArgumentException(
+                'Invalid file type. Allowed types: jpeg, png, pdf. Received: '.$file->getMimeType()
+            );
+        }
+
+        if ($file->getSize() > $maxSize) {
+            throw new \InvalidArgumentException(
+                'File size exceeds maximum limit of 10MB.'
+            );
+        }
     }
 
     private function validateDocumentType(string $type): void

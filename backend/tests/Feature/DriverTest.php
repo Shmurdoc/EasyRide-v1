@@ -50,10 +50,10 @@ class DriverTest extends TestCase
 
     public function test_admin_can_reject_driver(): void
     {
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $admin->assignRole('admin');
 
-        $driver = User::factory()->create();
+        $driver = User::factory()->create(['tenant_id' => $this->tenant->id]);
         $driver->assignRole('driver');
 
         Sanctum::actingAs($admin);

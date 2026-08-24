@@ -15,6 +15,21 @@ use Illuminate\Support\Facades\DB;
 
 class PoolController extends Controller
 {
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $poolRides = PoolRide::with(['passengers.user', 'driver', 'ride'])
+            ->whereHas('passengers', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->orWhere('driver_id', $user->id)
+            ->orderByDesc('created_at')
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
+
+        return response()->json($poolRides);
+    }
+
     public function join(JoinPoolRequest $request): JsonResponse
     {
         $validated = $request->validated();

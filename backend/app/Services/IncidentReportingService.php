@@ -20,8 +20,8 @@ class IncidentReportingService
         string $severity,
         string $title,
         string $description,
-        ?int $rideId = null,
-        ?int $deliveryId = null,
+        ?string $rideId = null,
+        ?string $deliveryId = null,
         ?array $evidence = null,
     ): IncidentReport {
         $this->validateIncidentType($incidentType);
@@ -89,12 +89,12 @@ class IncidentReportingService
             ->get();
     }
 
-    public function assignIncident(IncidentReport $incident, int $adminId): void
+    public function assignIncident(IncidentReport $incident, string $adminId): void
     {
         $incident->assign($adminId);
     }
 
-    public function escalateIncident(IncidentReport $incident, int $adminId): void
+    public function escalateIncident(IncidentReport $incident, string $adminId): void
     {
         $incident->escalate($adminId);
     }

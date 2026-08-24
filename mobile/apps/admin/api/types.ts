@@ -7,31 +7,31 @@ export interface PaginatedResponse<T> {
 }
 
 export interface AdminDashboardData {
-  total_users: number;
-  total_drivers: number;
-  total_rides: number;
-  active_rides: number;
-  total_revenue: number;
-  rides_today: number;
-  completed_today: number;
-  revenue_today: number;
-  active_pool_rides: number;
-  total_pool_passengers: number;
-  totalUsers?: number;
-  totalDrivers?: number;
-  totalRides?: number;
-  activeRides?: number;
-  totalRevenue?: number;
-  ridesToday?: number;
-  completedToday?: number;
-  revenueToday?: number;
-  activePoolRides?: number;
-  totalPoolPassengers?: number;
-  fleetStatus?: { online: number; offline: number; onRide: number; total: number };
-  activeRidesList?: { id: string; passenger: string; pickup: string; dropoff: string; fare: number; progress: number }[];
-  hourly?: { hour: string; rides: number }[];
-  topDrivers?: { id: string; name: string; trips: number; status: 'online' | 'busy' | 'offline' }[];
-  recentActivity?: { type: string; message: string; time: string }[];
+  total_users?: number;
+  total_drivers?: number;
+  total_rides?: number;
+  active_rides?: number;
+  total_revenue?: number;
+  rides_today?: number;
+  completed_today?: number;
+  revenue_today?: number;
+  active_pool_rides?: number;
+  total_pool_passengers?: number;
+  totalUsers: number;
+  totalDrivers: number;
+  totalRides: number;
+  activeRides: number;
+  totalRevenue: number;
+  ridesToday: number;
+  completedToday: number;
+  revenueToday: number;
+  activePoolRides: number;
+  totalPoolPassengers: number;
+  fleetStatus: { online: number; offline: number; onRide: number; total: number };
+  activeRidesList: { id: string; passenger: string; pickup: string; dropoff: string; fare: number; progress: number }[];
+  hourly: { hour: string; rides: number }[];
+  topDrivers: { id: string; name: string; trips: number; status: 'online' | 'busy' | 'offline' }[];
+  recentActivity: { type: string; message: string; time: string }[];
 }
 
 export interface AdminDriver {

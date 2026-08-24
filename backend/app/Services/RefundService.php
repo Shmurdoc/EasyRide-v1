@@ -31,9 +31,23 @@ class RefundService
             return ['success' => false, 'error' => 'Payment already refunded.'];
         }
 
+        if (! in_array($payment->status, [Payment::STATUS_COMPLETED, Payment::STATUS_PAID, Payment::STATUS_ESCROW_HELD], true)) {
+            return ['success' => false, 'error' => 'Payment has not been collected and cannot be refunded.'];
+        }
+
         $refundAmount = $this->calculateRefundAmount($ride, $reason);
 
         return DB::transaction(function () use ($payment, $ride, $refundAmount, $reason, $adminId) {
+            $payment = Payment::where('id', $payment->id)->lockForUpdate()->first();
+
+            if (! $payment || $payment->status === Payment::STATUS_REFUNDED) {
+                return ['success' => false, 'error' => 'Payment already refunded.'];
+            }
+
+            if (! in_array($payment->status, [Payment::STATUS_COMPLETED, Payment::STATUS_PAID, Payment::STATUS_ESCROW_HELD], true)) {
+                return ['success' => false, 'error' => 'Payment has not been collected and cannot be refunded.'];
+            }
+
             $payment->update([
                 'status' => Payment::STATUS_REFUNDED,
                 'refunded_at' => now(),
@@ -42,16 +56,10 @@ class RefundService
                 'refunded_by' => $adminId,
             ]);
 
-            if ($refundAmount > 0) {
-                $wallet = $this->walletService->getOrCreateWallet($ride->rider);
+            $this->reverseDriverEscrow($ride, $payment);
 
-                $this->walletService->credit(
-                    $wallet,
-                    $refundAmount,
-                    'refund',
-                    $ride->id,
-                    "Refund for ride {$ride->id}: {$reason}",
-                );
+            if ($refundAmount > 0) {
+                $this->refundToWalletOrGateway($payment, $refundAmount, $reason);
             }
 
             return [
@@ -61,6 +69,40 @@ class RefundService
                 'reason' => $reason,
             ];
         });
+    }
+
+    private function reverseDriverEscrow(Ride $ride, Payment $payment): void
+    {
+        if (! $ride->driver) {
+            return;
+        }
+
+        $driverWallet = $this->walletService->getOrCreateWallet($ride->driver);
+        $payout = (float) ($payment->driver_payout ?? 0);
+
+        if ($driverWallet->fresh()->pending_balance > 0 && $payout > 0) {
+            $driverWallet->decrement('pending_balance', min($payout, (float) $driverWallet->fresh()->pending_balance));
+        }
+    }
+
+    private function refundToWalletOrGateway(Payment $payment, float $refundAmount, string $reason): void
+    {
+        $gateway = $payment->gateway;
+
+        if (in_array($gateway, ['stripe', 'payfast', 'ozow'], true)) {
+            $this->paymentService->refundPayment($payment, $reason);
+            return;
+        }
+
+        $wallet = $this->walletService->getOrCreateWallet($payment->payer);
+
+        $this->walletService->credit(
+            $wallet,
+            $refundAmount,
+            'refund',
+            $payment->ride_id,
+            "Refund for ride {$payment->ride_id}: {$reason}",
+        );
     }
 
     public function calculateRefundAmount(Ride $ride, string $reason): float
@@ -114,6 +156,10 @@ class RefundService
             $payment = $ride->payment;
             if (! $payment) {
                 return ['success' => false, 'error' => 'No payment.'];
+            }
+
+            if (! in_array($payment->status, [Payment::STATUS_COMPLETED, Payment::STATUS_PAID, Payment::STATUS_ESCROW_HELD], true)) {
+                return ['success' => false, 'error' => 'No collected payment to refund.'];
             }
 
             $this->paymentService->creditDriver($ride);

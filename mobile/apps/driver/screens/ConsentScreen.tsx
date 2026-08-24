@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { consent as consentApi } from '@easyryde/shared';
+import { consent as consentApi, COLORS } from '@easyryde/shared';
 import type { ConsentType, ConsentRecord } from '@easyryde/shared';
 
 interface Props {
@@ -142,7 +142,7 @@ export default function ConsentScreen({ navigation, onConsentComplete }: Props) 
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#16a34a" />
+        <ActivityIndicator size="large" color={COLORS.brand} />
       </View>
     );
   }
@@ -150,7 +150,7 @@ export default function ConsentScreen({ navigation, onConsentComplete }: Props) 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="shield-checkmark" size={48} color="#16a34a" />
+        <Ionicons name="shield-checkmark" size={48} color={COLORS.brand} />
         <Text style={styles.headerTitle}>Privacy & Consent</Text>
         <Text style={styles.headerSubtitle}>
           Manage your data preferences. Required consents are needed to use the app.
@@ -170,8 +170,8 @@ export default function ConsentScreen({ navigation, onConsentComplete }: Props) 
             <Switch
               value={consents[item.type] ?? false}
               onValueChange={(val) => handleToggle(item.type, val)}
-              trackColor={{ false: '#3a3a3c', true: '#16a34a80' }}
-              thumbColor={consents[item.type] ? '#16a34a' : '#f4f3f4'}
+              trackColor={{ false: COLORS.border, true: COLORS.brand }}
+              thumbColor={consents[item.type] ? COLORS.brand : '#FFFFFF'}
               disabled={item.required}
             />
           </View>
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   saveButton: {
-    backgroundColor: '#16a34a',
+    backgroundColor: COLORS.brand,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

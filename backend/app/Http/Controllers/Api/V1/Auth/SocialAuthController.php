@@ -45,11 +45,12 @@ class SocialAuthController extends Controller
                 'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? $provider.'_user',
                 'email' => $socialUser->getEmail(),
                 'password' => Hash::make(Str::password(32)),
-                'role' => 'rider',
                 'tenant_id' => config('app.default_tenant_id'),
                 'email_verified_at' => now(),
             ]);
 
+            $user->role = 'rider';
+            $user->save();
             $user->assignRole('rider');
         }
 

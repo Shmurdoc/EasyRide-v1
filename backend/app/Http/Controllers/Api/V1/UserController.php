@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\User\UserUpdateRequest;
 use App\Http\Responses\ApiResponse;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,11 +16,19 @@ class UserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $validRoles = ['rider', 'driver', 'admin', 'support', 'restaurant'];
+        $role = $request->role;
+        if ($role && !in_array($role, $validRoles, true)) {
+            $role = null;
+        }
+
+        $perPage = min((int) ($request->per_page ?? 15), 100);
+
         $users = User::query()
             ->where('tenant_id', $request->user()->tenant_id)
-            ->when($request->role, fn ($q, $role) => $q->where('role', $role))
+            ->when($role, fn ($q, $v) => $q->where('role', $v))
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate($perPage);
 
         return response()->json($users);
     }
@@ -30,7 +39,9 @@ class UserController extends Controller
             return ApiResponse::forbidden('Unauthorized.');
         }
 
-        return response()->json($user->load(['tenant', 'driverProfile', 'vehicle']));
+        $user->load(['tenant', 'driverProfile', 'vehicle']);
+
+        return response()->json(new UserResource($user));
     }
 
     public function update(UserUpdateRequest $request, User $user): JsonResponse
@@ -49,7 +60,7 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return response()->json($user);
+        return response()->json(new UserResource($user->fresh()));
     }
 
     public function destroy(Request $request, User $user): JsonResponse

@@ -19,7 +19,7 @@ class NotificationController extends Controller
         $notifications = InAppNotification::where('user_id', $request->user()->id)
             ->when($request->unread_only === 'true', fn ($q) => $q->unread())
             ->latest()
-            ->paginate($request->per_page ?? 20);
+            ->paginate(min((int) ($request->per_page ?? 20), 100));
 
         $unreadCount = InAppNotification::where('user_id', $request->user()->id)
             ->unread()

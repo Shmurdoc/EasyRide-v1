@@ -47,7 +47,7 @@ class RideController extends Controller
             ->when($request->user()->role === 'driver', fn ($q) => $q->where('driver_id', $request->user()->id))
             ->with(['rider', 'driver', 'payment'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return RideResource::collection($rides);
     }
@@ -97,7 +97,21 @@ class RideController extends Controller
                 (string) $request->user()->id,
             );
 
-            return ApiResponse::success(new RideResource($cancelledRide));
+            $violation = $this->rideService->lastFraudViolation();
+
+            $payload = ['ride' => new RideResource($cancelledRide)];
+
+            if ($violation) {
+                $payload['fraud_violation'] = [
+                    'id' => $violation->id,
+                    'type' => $violation->violation_type,
+                    'fine_amount' => (float) $violation->fine_amount,
+                    'status' => $violation->status,
+                    'distance_to_dropoff_km' => $violation->distance_to_dropoff_km,
+                ];
+            }
+
+            return ApiResponse::success($payload);
         } catch (\RuntimeException $e) {
             return ApiResponse::apiError(422, 'Cancellation Failed', $e->getMessage());
         }
@@ -141,7 +155,7 @@ class RideController extends Controller
             $promo = $this->promoCodeService->validateCode(
                 $validated['code'],
                 $request->user()->tenant_id,
-                null,
+                (float) $ride->total_fare,
                 $request->user()->id,
             );
 
@@ -214,11 +228,7 @@ class RideController extends Controller
         }
 
         try {
-            $completedRide = $this->rideService->completeRide(
-                $ride,
-                (float) $request->input('distance_km', $ride->distance_km),
-                (float) $request->input('duration_minutes', $ride->duration_minutes),
-            );
+            $completedRide = $this->rideService->completeRide($ride);
 
             return ApiResponse::success([
                 'ride' => new RideResource($completedRide->load('payment')),
@@ -266,6 +276,10 @@ class RideController extends Controller
     public function markNoShow(Request $request, string $rideId): JsonResponse
     {
         $ride = Ride::findOrFail($rideId);
+
+        if ($ride->driver_id !== $request->user()->id) {
+            return ApiResponse::forbidden('Only the driver can mark a no-show.');
+        }
 
         try {
             $noShowRide = $this->rideService->markNoShow($ride, (string) $request->user()->id);
@@ -364,6 +378,7 @@ class RideController extends Controller
             (float) $latitude,
             (float) $longitude,
             $radius,
+            $request->user()?->tenant_id,
         );
 
         return ApiResponse::success([

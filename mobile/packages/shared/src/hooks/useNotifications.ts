@@ -111,14 +111,16 @@ async function registerForPushNotificationsAsync(maxRetries = 3): Promise<string
       try {
         await api.post('/notifications/register-token', { token: tokenData.data });
         return tokenData.data;
-      } catch {
+      } catch (err) {
+        if (__DEV__) console.warn(`[useNotifications] Token registration attempt ${i + 1}/${maxRetries} failed:`, err);
         if (i < maxRetries - 1) {
           await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, i)));
         }
       }
     }
     return tokenData.data;
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.warn('[useNotifications] Push notification registration failed:', err);
     return null;
   }
 }

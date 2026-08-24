@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Events\FoodOrderStatusUpdated;
+use App\Models\DriverViolation;
 use App\Models\FoodOrder;
 use App\Models\FoodOrderItem;
 use App\Models\MenuItem;
@@ -27,10 +28,19 @@ class FoodOrderService
         'cancelled' => [],
     ];
 
+    private ?DriverViolation $lastViolation = null;
+
     public function __construct(
         private readonly PaymentService $paymentService,
         private readonly WalletService $walletService,
+        private readonly DriverFraudGuardService $fraudGuardService,
+        private readonly FleetModeService $fleetModeService,
     ) {}
+
+    public function lastViolation(): ?DriverViolation
+    {
+        return $this->lastViolation;
+    }
 
     public function createOrder(Restaurant $restaurant, User $customer, array $items, array $deliveryData): FoodOrder
     {
@@ -215,9 +225,9 @@ class FoodOrderService
         return $order->fresh()->load(['items', 'restaurant', 'customer', 'driver']);
     }
 
-    public function cancelOrder(FoodOrder $order, string $cancelledBy, string $reason = ''): FoodOrder
+    public function cancelOrder(FoodOrder $order, string $cancelledBy, string $reason = '', array $allowedStatuses = ['pending', 'confirmed']): FoodOrder
     {
-        if (! in_array($order->status, ['pending', 'confirmed'])) {
+        if (! in_array($order->status, $allowedStatuses, true)) {
             throw new \RuntimeException('Order cannot be cancelled at this stage.');
         }
 
@@ -247,6 +257,42 @@ class FoodOrderService
 
             return $order->fresh()->load(['items', 'restaurant', 'customer', 'driver']);
         });
+    }
+
+    /**
+     * Driver-initiated cancel — engine parity with ride R-P1/R-P2 sanctions.
+     * Pre-pickup cancels are allowed (no fine); post-pickup or near-dropoff
+     * cancels trigger the conduct engine.
+     */
+    public function driverCancelOrder(FoodOrder $order, User $driver, string $reason = ''): FoodOrder
+    {
+        if (! in_array($order->status, ['confirmed', 'preparing', 'ready', 'picked_up', 'in_transit'], true)) {
+            throw new \RuntimeException('Order cannot be cancelled by driver at this stage.');
+        }
+
+        if ($order->driver_id !== $driver->id) {
+            throw new \RuntimeException('Only the assigned driver can cancel this order.');
+        }
+
+        $this->lastViolation = null;
+
+        $priorStatus = $order->status;
+
+        $cancelled = $this->cancelOrder(
+            $order,
+            (string) $driver->id,
+            $reason,
+            ['confirmed', 'preparing', 'ready', 'picked_up', 'in_transit'],
+        );
+
+        $this->lastViolation = $this->fraudGuardService->evaluateFoodCancellation(
+            $order->fresh(),
+            $driver,
+            $reason,
+            $priorStatus,
+        );
+
+        return $cancelled;
     }
 
     public function rateOrder(FoodOrder $order, int $rating, ?string $comment = null): FoodOrder
@@ -288,6 +334,10 @@ class FoodOrderService
 
     public function getAvailableOrders(User $driver, ?string $status = null): \Illuminate\Database\Eloquent\Collection
     {
+        if ($this->fraudGuardService->isBlockedFromAccepting($driver)) {
+            return new \Illuminate\Database\Eloquent\Collection;
+        }
+
         $latitude = $driver->current_latitude;
         $longitude = $driver->current_longitude;
 
@@ -301,9 +351,15 @@ class FoodOrderService
             );
         }
 
-        return $query->with(['items', 'restaurant', 'customer'])
+        $orders = $query->with(['items', 'restaurant', 'customer'])
             ->latest()
             ->get();
+
+        return $orders->filter(fn (FoodOrder $order) => $this->fleetModeService->allows(
+            $driver,
+            FleetModeService::VERTICAL_FOOD,
+            $order->tenant_id,
+        ))->values();
     }
 
     public function getRestaurantOrders($restaurantIds, array $filters = [], int $perPage = 15)

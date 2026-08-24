@@ -13,6 +13,7 @@ use App\Models\Ride;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class DataRetentionService
 {
@@ -71,12 +72,13 @@ class DataRetentionService
                 'name' => 'Deleted User',
                 'email' => 'deleted_'.$user->id.'@anonymized.local',
                 'phone_number' => null,
-                'password' => null,
+                'password' => \Hash::make(Str::random(32)),
                 'current_latitude' => 0,
                 'current_longitude' => 0,
                 'is_active' => false,
-                'deleted_at' => now(),
             ]);
+
+            $user->delete();
 
             $user->tokens()->delete();
             $user->roles()->detach();
@@ -147,7 +149,8 @@ class DataRetentionService
         $count = 0;
         foreach ($inactiveUsers as $user) {
             $this->anonymizeUser($user);
-            $user->update(['anonymized_at' => now()]);
+            $user->anonymized_at = now();
+            $user->save();
             $count++;
         }
 

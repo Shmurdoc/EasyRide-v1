@@ -315,7 +315,8 @@ export function useSocket({ token, enabled = true, onTokenRefresh }: UseSocketOp
         return () => {
           try { s.off(event, wrapped); } catch {}
         };
-      } catch {
+      } catch (err) {
+        if (__DEV__) console.warn('[useSocket] Failed to subscribe to event:', event, err);
         return () => {};
       }
     }

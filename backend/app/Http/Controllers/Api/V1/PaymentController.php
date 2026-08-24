@@ -44,7 +44,7 @@ class PaymentController extends Controller
 
     private function isWebhookIpAllowed(string $gateway): bool
     {
-        if (config('webhook_ips.bypass_in_local', true)) {
+        if (config('webhook_ips.bypass_in_local', false)) {
             return true;
         }
 
@@ -79,7 +79,7 @@ class PaymentController extends Controller
         $payments = $this->paymentService->getUserPayments(
             $request->user(),
             $request->only(['status', 'method']),
-            $request->per_page ?? 15,
+            min((int) ($request->per_page ?? 15), 100),
         );
 
         return PaymentResource::collection($payments);
@@ -130,9 +130,13 @@ class PaymentController extends Controller
         $method = $validated['payment_method'];
 
         if ($method === 'wallet') {
-            $payment = $this->escrowService->holdPayment($ride, 'wallet');
+            try {
+                $payment = $this->escrowService->holdPayment($ride, 'wallet');
 
-            return ApiResponse::success(['payment' => $payment], 'Payment processed via wallet.', 201);
+                return ApiResponse::success(['payment' => $payment], 'Payment processed via wallet.', 201);
+            } catch (\RuntimeException $e) {
+                return ApiResponse::apiError(422, 'Payment Failed', $e->getMessage());
+            }
         }
 
         if ($method === 'cash') {
@@ -142,9 +146,59 @@ class PaymentController extends Controller
         }
 
         try {
-            $result = $this->paymentService->processPayment($ride, $method);
+            $payment = $this->paymentService->processPayment($ride, $method);
+            $payer = $request->user();
 
-            return ApiResponse::success(new PaymentResource($result->load(['ride', 'payer'])), 'Payment processed.', 201);
+            if ($method === 'payfast') {
+                $url = $this->payFastService->generatePaymentUrl([
+                    'payment_id' => $payment->id,
+                    'amount' => (float) $ride->total_fare,
+                    'item_name' => 'EasyRyde Ride Payment',
+                    'item_description' => "Payment for ride {$ride->id}",
+                    'name_first' => $payer->name ?? '',
+                    'email' => $payer->email ?? '',
+                ]);
+
+                return ApiResponse::success([
+                    'payment' => new PaymentResource($payment->load(['ride', 'payer'])),
+                    'redirect_url' => $url,
+                ], 'Redirect to PayFast to complete payment.', 201);
+            }
+
+            if ($method === 'ozow') {
+                $result = $this->ozowService->createPayment([
+                    'amount' => (float) $ride->total_fare,
+                    'transaction_reference' => $payment->id,
+                    'bank_reference' => 'EASYRYDE-RIDE',
+                    'customer' => [
+                        'name' => $payer->name ?? '',
+                        'email' => $payer->email ?? '',
+                        'phone' => $payer->phone_number ?? '',
+                    ],
+                ]);
+
+                if (! ($result['success'] ?? false)) {
+                    return ApiResponse::apiError(502, 'Payment Failed', $result['error'] ?? 'Ozow payment failed.');
+                }
+
+                return ApiResponse::success([
+                    'payment' => new PaymentResource($payment->load(['ride', 'payer'])),
+                    'redirect_url' => $result['url'] ?? null,
+                ], 'Redirect to Ozow to complete payment.', 201);
+            }
+
+            if ($method === 'stripe') {
+                $intent = $this->stripeService->createPaymentIntent((float) $ride->total_fare);
+                $payment->update(['gateway_reference' => $intent['id'] ?? null]);
+
+                return ApiResponse::success([
+                    'payment' => new PaymentResource($payment->load(['ride', 'payer'])),
+                    'client_secret' => $intent['client_secret'] ?? null,
+                    'payment_intent_id' => $intent['id'] ?? null,
+                ], 'Confirm payment with Stripe to complete payment.', 201);
+            }
+
+            return ApiResponse::success(new PaymentResource($payment->load(['ride', 'payer'])), 'Payment processed.', 201);
         } catch (\RuntimeException $e) {
             return ApiResponse::apiError(422, 'Payment Failed', $e->getMessage());
         }
@@ -168,11 +222,7 @@ class PaymentController extends Controller
             $payment = Payment::find($paymentId);
 
             if ($payment && $payment->status === Payment::STATUS_PENDING) {
-                $this->escrowService->holdPayment(
-                    $payment->ride,
-                    'payfast',
-                    ['gateway' => 'payfast', 'reference' => $request->input('pf_payment_id')],
-                );
+                $this->escrowService->completeGatewayPayment($payment, (string) $request->input('pf_payment_id'));
             } else {
                 $this->walletService->confirmTopUpByGatewayReference((string) $paymentId);
             }
@@ -218,13 +268,22 @@ class PaymentController extends Controller
             $payment = Payment::find($transactionReference);
 
             if ($payment) {
-                if (strtolower((string) $status) === 'complete') {
-                    $this->escrowService->holdPayment(
-                        $payment->ride,
-                        'ozow',
-                        ['gateway' => 'ozow', 'reference' => $request->input('PaymentReference')],
-                    );
-                } else {
+                $webhookAmount = (float) ($request->input('Amount') ?? 0);
+                if ($webhookAmount > 0 && abs($webhookAmount - (float) $payment->amount) > 0.01) {
+                    Log::critical('Ozow webhook amount mismatch', [
+                        'payment_id' => $payment->id,
+                        'expected' => (float) $payment->amount,
+                        'received' => $webhookAmount,
+                    ]);
+
+                    $webhookEvent->update(['status' => 'failed', 'error_message' => 'Amount mismatch', 'processed_at' => now()]);
+
+                    return response()->json(['status' => 'invalid'], 400);
+                }
+
+                if ($payment->status === Payment::STATUS_PENDING && strtolower((string) $status) === 'complete') {
+                    $this->escrowService->completeGatewayPayment($payment, (string) $request->input('PaymentReference'));
+                } elseif ($payment->status === Payment::STATUS_PENDING) {
                     $payment->update(['status' => Payment::STATUS_FAILED]);
                 }
             } else {
@@ -277,11 +336,20 @@ class PaymentController extends Controller
             $payment = Payment::where('gateway_reference', $intentId)->first();
 
             if ($payment && $payment->status === Payment::STATUS_PENDING) {
-                $this->escrowService->holdPayment(
-                    $payment->ride,
-                    'stripe',
-                    ['gateway' => 'stripe', 'reference' => $intentId],
-                );
+                $intentAmount = (float) ($result['data']->amount_received ?? $result['data']->amount ?? 0);
+                if ($intentAmount > 0 && abs($intentAmount / 100 - (float) $payment->amount) > 0.01) {
+                    Log::critical('Stripe webhook amount mismatch', [
+                        'payment_id' => $payment->id,
+                        'expected' => (float) $payment->amount,
+                        'received' => $intentAmount / 100,
+                    ]);
+
+                    $webhookEvent->update(['status' => 'failed', 'error_message' => 'Amount mismatch', 'processed_at' => now()]);
+
+                    return response()->json(['error' => 'amount_mismatch'], 400);
+                }
+
+                $this->escrowService->completeGatewayPayment($payment, $intentId);
             } else {
                 $this->walletService->confirmTopUpByGatewayReference($intentId);
             }
@@ -292,7 +360,7 @@ class PaymentController extends Controller
 
             $payment = Payment::where('gateway_reference', $intentId)->first();
 
-            if ($payment) {
+            if ($payment && $payment->status === Payment::STATUS_PENDING) {
                 $payment->update(['status' => Payment::STATUS_FAILED]);
             }
         }

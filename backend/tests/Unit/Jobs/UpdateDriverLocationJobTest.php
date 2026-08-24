@@ -87,7 +87,7 @@ class UpdateDriverLocationJobTest extends TestCase
     {
         Event::fake();
 
-        $job = new UpdateDriverLocationJob('non-existent-id', -23.9468, 29.4726);
+        $job = new UpdateDriverLocationJob(\Illuminate\Support\Str::uuid()->toString(), -23.9468, 29.4726);
         $job->handle();
 
         Event::assertNotDispatched(DriverLocationUpdated::class);

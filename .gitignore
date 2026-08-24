@@ -31,6 +31,10 @@
 **/node_modules/
 **/.expo/
 **/.env
+**/.env.*
+!**/.env.example
+!**/.env.secure.example
+!**/.env.*.example
 
 # Local debug scratch files (use docker cp + run, not git)
 backend/check_admin.php
@@ -54,7 +58,6 @@ tmp_*.json
 login.json
 *.png
 *.xml
-docs/
 setup/
 docker-compose.prod.blue.yml
 docker-compose.prod.green.yml
@@ -83,3 +86,14 @@ backend/phpstan.phar
 backend/storage/phpstan/
 backend/storage/*-service-account.json
 backend/storage/*credentials*
+
+# Frontend build artifacts
+admin/dist/
+admin/tsconfig.tsbuildinfo
+web/tsconfig.tsbuildinfo
+mobile/apps/*/android/
+mobile/apps/*/ios/
+mobile/apps/*/.expo/
+mobile/**/.tsbuildinfo
+mobile/**/tsconfig.tsbuildinfo
+*.tsbuildinfo

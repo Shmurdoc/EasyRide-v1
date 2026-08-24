@@ -40,7 +40,7 @@ export function useActiveRide({
 
   const fetchActiveRide = useCallback(async () => {
     try {
-      const ride = await api.get<Ride>('/rides/active');
+      const ride = await api.get<Ride>('/rides/current');
       rideRef.current = ride;
       store.setRide(ride);
 
@@ -50,7 +50,8 @@ export function useActiveRide({
           joinRoom(`driver:${ride.driver_id}`);
         }
       }
-    } catch {
+    } catch (err) {
+      if (__DEV__) console.warn('[useActiveRide] Failed to fetch active ride:', err);
       if (rideRef.current) {
         store.setRide(null);
         rideRef.current = null;

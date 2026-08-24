@@ -11,7 +11,7 @@ interface AvatarProps {
 
 export function Avatar({ name, size = 48, imageUrl, borderColor }: AvatarProps) {
   const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2);
-  const bgColors = ['#6366f1', '#16a34a', '#FFAD7A', '#3b82f6', '#dc2626', '#f59e0b'];
+  const bgColors = ['#6366f1', '#818cf8', '#4f46e5', '#f59e0b', '#3b82f6', '#16a34a'];
   const bgColor = bgColors[name.length % bgColors.length];
 
   if (imageUrl) {
@@ -22,7 +22,7 @@ export function Avatar({ name, size = 48, imageUrl, borderColor }: AvatarProps) 
           width: size,
           height: size,
           borderRadius: size / 2,
-          borderColor: borderColor || '#16162a',
+          borderColor: borderColor || '#1a1a1e',
         }]}
       />
     );

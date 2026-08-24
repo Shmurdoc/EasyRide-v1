@@ -11,11 +11,11 @@ return new class extends Migration
         Schema::create('vehicles', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
-            $table->string('make', 100);
-            $table->string('model', 100);
+            $table->text('make');
+            $table->text('model');
             $table->integer('year');
             $table->string('color', 50)->nullable();
-            $table->string('license_plate', 50);
+            $table->text('license_plate');
             $table->string('category', 50)->default('standard');
             $table->boolean('is_active')->default(true);
             $table->timestamps();

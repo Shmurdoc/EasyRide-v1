@@ -4,7 +4,7 @@ namespace Tests\Unit\Jobs;
 
 use App\Jobs\ReleaseEscrowJob;
 use App\Models\Payment;
-use App\Services\Payment\EscrowService;
+use App\Services\EscrowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Tests\TestCase;

@@ -28,7 +28,7 @@ class FareCalculationServiceTest extends TestCase
     public function test_fare_calculation_with_osrm_route(): void
     {
         Http::fake([
-            'router.project-osrm.org/*' => Http::response([
+            'https://router.project-osrm.org/*' => Http::response([
                 'code' => 'Ok',
                 'routes' => [
                     [
@@ -55,7 +55,7 @@ class FareCalculationServiceTest extends TestCase
     public function test_fallback_to_haversine_when_osrm_unreachable(): void
     {
         Http::fake([
-            'router.project-osrm.org/*' => Http::response(null, 500),
+            'https://router.project-osrm.org/*' => Http::response(null, 500),
         ]);
 
         $result = $this->service->calculate(
@@ -74,7 +74,7 @@ class FareCalculationServiceTest extends TestCase
     public function test_fare_estimate_public_endpoint(): void
     {
         Http::fake([
-            'router.project-osrm.org/*' => Http::response([
+            'https://router.project-osrm.org/*' => Http::response([
                 'code' => 'Ok',
                 'routes' => [
                     [
@@ -96,10 +96,12 @@ class FareCalculationServiceTest extends TestCase
 
         $response->assertOk()
             ->assertJsonStructure([
-                'distance_km',
-                'duration_minutes',
-                'breakdown' => [
-                    'base_fare', 'distance_fare', 'time_fare', 'surge', 'subtotal', 'total_fare',
+                'data' => [
+                    'distance_km',
+                    'duration_minutes',
+                    'breakdown' => [
+                        'base_fare', 'distance_fare', 'time_fare', 'surge', 'subtotal', 'total_fare',
+                    ],
                 ],
             ]);
     }

@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             RateLimiter::for('auth-login', function (Request $request) {
-                return Limit::perMinute(5)->by($request->ip().'|'.($request->userAgent() ?? ''));
+                return Limit::perMinute(5)->by($request->ip());
             });
 
             RateLimiter::for('auth-register', function (Request $request) {
@@ -91,6 +91,10 @@ return Application::configure(basePath: dirname(__DIR__))
             RateLimiter::for('social-auth', function (Request $request) {
                 return Limit::perMinute(5)->by($request->ip());
             });
+
+            RateLimiter::for('totp-verify', function (Request $request) {
+                return Limit::perMinute(5)->by($request->user()?->id ?? $request->ip());
+            });
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -114,6 +118,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'security.headers' => SecurityHeadersMiddleware::class,
             'rate.limit' => ApiRateLimiterMiddleware::class,
             'sanitize' => InputSanitizationMiddleware::class,
+            'webhook.ip' => \App\Http\Middleware\VerifyWebhookSignature::class,
         ]);
 
         $middleware->trustProxies(at: '*');

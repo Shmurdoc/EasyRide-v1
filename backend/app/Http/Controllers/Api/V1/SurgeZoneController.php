@@ -20,7 +20,7 @@ class SurgeZoneController extends Controller
             ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
             ->when($request->is_active !== null, fn ($q, $v) => $q->where('is_active', filter_var($v, FILTER_VALIDATE_BOOLEAN)))
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($surgeZones);
     }

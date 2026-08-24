@@ -3,6 +3,7 @@ import { Animated, View, StyleSheet, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING } from '../constants';
 import { useTranslation } from '../i18n/useTranslation';
+import { useBusinessTheme } from '../theme';
 
 interface SplashScreenProps {
   onFinish?: () => void;
@@ -11,6 +12,8 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onFinish, duration = 2000 }: SplashScreenProps) {
   const { t } = useTranslation();
+  const { activeTheme } = useBusinessTheme();
+  const { colors: biz } = activeTheme;
   const logoScale = useRef(new Animated.Value(0)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const subtitleOpacity = useRef(new Animated.Value(0)).current;
@@ -58,9 +61,9 @@ export function SplashScreen({ onFinish, duration = 2000 }: SplashScreenProps) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bg} />
+      <StatusBar barStyle="light-content" backgroundColor={biz.bg} />
       <LinearGradient
-        colors={['#0a0a0a', '#1a1a1a', '#0a0a0a']}
+        colors={[biz.primaryDark, biz.bg, biz.primaryDark]}
         style={StyleSheet.absoluteFill}
       />
       <Animated.View
@@ -72,19 +75,19 @@ export function SplashScreen({ onFinish, duration = 2000 }: SplashScreenProps) {
           },
         ]}
       >
-        <View style={styles.logoIcon}>
+        <View style={[styles.logoIcon, { shadowColor: biz.primary }]}>
           <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryLight]}
+            colors={biz.gradient}
             style={StyleSheet.absoluteFill}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           />
-          <Animated.Text style={styles.logoText}>E</Animated.Text>
+          <Animated.Text style={styles.logoText}>{activeTheme.logo.mark.charAt(0)}</Animated.Text>
         </View>
       </Animated.View>
-      <Animated.Text style={[styles.title, { opacity: logoOpacity }]}>{t('app.name')}</Animated.Text>
+      <Animated.Text style={[styles.title, { opacity: logoOpacity }]}>{activeTheme.logo.full}</Animated.Text>
       <Animated.Text style={[styles.subtitle, { opacity: subtitleOpacity }]}>
-        {t('app.tagline')}
+        {activeTheme.branding.tagline}
       </Animated.Text>
       <View style={styles.dotsContainer}>
         {dots.map((dot, i) => (
@@ -94,7 +97,7 @@ export function SplashScreen({ onFinish, duration = 2000 }: SplashScreenProps) {
               styles.dot,
               {
                 opacity: dot,
-                backgroundColor: COLORS.primary,
+                backgroundColor: biz.primary,
               },
             ]}
           />

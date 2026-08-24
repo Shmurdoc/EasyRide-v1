@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 class HealthCheckController extends Controller
@@ -59,7 +60,9 @@ class HealthCheckController extends Controller
                     fclose($fp);
                     return ['status' => true, 'message' => 'Redis reachable (TCP)'];
                 }
-            } catch (\Exception $e2) {}
+            } catch (\Exception $e2) {
+                Log::warning('HealthCheck: Redis TCP fallback also failed', ['error' => $e2->getMessage()]);
+            }
             return ['status' => false, 'message' => 'Redis unreachable: ' . $e->getMessage()];
         }
     }
@@ -123,6 +126,7 @@ class HealthCheckController extends Controller
 
             return $total;
         } catch (\Exception $e) {
+            Log::warning('HealthCheck: failed to get API call count', ['error' => $e->getMessage()]);
             return 0;
         }
     }

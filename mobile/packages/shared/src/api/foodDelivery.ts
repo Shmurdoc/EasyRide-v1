@@ -17,9 +17,9 @@ export const foodDelivery = {
   createOrder: (restaurantId: string, data: {
     items: { menu_item_id: string; quantity: number; special_instructions?: string }[];
     delivery_address: string;
-    delivery_latitude?: number;
-    delivery_longitude?: number;
-    delivery_notes?: string;
+    delivery_lat?: number;
+    delivery_lng?: number;
+    notes?: string;
     payment_method: string;
     tip_amount?: number;
   }) => api.post<FoodOrder>(`/food/restaurants/${restaurantId}/order`, data),

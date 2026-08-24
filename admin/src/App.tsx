@@ -13,6 +13,7 @@ import PromoCodes from './pages/PromoCodes';
 import Reports from './pages/Reports';
 import WalletPayouts from './pages/WalletPayouts';
 import Notifications from './pages/Notifications';
+import FraudViolations from './pages/FraudViolations';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('admin_token');
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="promo-codes" element={<PromoCodes />} />
         <Route path="wallet-payouts" element={<WalletPayouts />} />
         <Route path="notifications" element={<Notifications />} />
+        <Route path="fraud" element={<FraudViolations />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

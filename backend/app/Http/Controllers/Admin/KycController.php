@@ -21,7 +21,7 @@ class KycController extends Controller
             ->when($request->to_date, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))
             ->latest();
 
-        $verifications = $query->paginate($request->per_page ?? 15);
+        $verifications = $query->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($verifications);
     }

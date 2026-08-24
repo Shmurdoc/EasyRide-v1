@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { API_TIMEOUT } from '../constants';
 import { enqueueOfflineRequest, flushOfflineQueue, hasPendingMutations } from './offlineQueue';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3082/api';
 const API_VERSION = 'v1';
 const TOKEN_KEY = 'auth_token';
 const MAX_RETRIES = 2;

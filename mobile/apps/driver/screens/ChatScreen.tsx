@@ -37,7 +37,7 @@ export default function ChatScreen({ route }: { route: DriverRoute<'Chat'> }) {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-      <LinearGradient colors={['#16a34a', '#15803d']} style={styles.header}>
+      <LinearGradient colors={[COLORS.brand, COLORS.brandDark]} style={styles.header}>
         <Text style={styles.headerTitle}>Chat</Text>
       </LinearGradient>
 
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
   bubble: { maxWidth: '75%', borderRadius: 16, padding: 12, marginBottom: 8 },
-  bubbleMe: { alignSelf: 'flex-end', backgroundColor: '#16a34a' },
+  bubbleMe: { alignSelf: 'flex-end', backgroundColor: COLORS.brand },
   bubbleThem: { alignSelf: 'flex-start', backgroundColor: '#242426', borderWidth: 1, borderColor: '#3a3a3c' },
   bubbleText: { fontSize: 15, color: '#fff' },
   bubbleTextMe: { color: '#fff' },
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     fontSize: 15, maxHeight: 100, color: '#fff',
   },
   sendButton: {
-    backgroundColor: '#16a34a', borderRadius: 20,
+    backgroundColor: COLORS.brand, borderRadius: 20,
     width: 40, height: 40, justifyContent: 'center', alignItems: 'center',
     marginLeft: 8,
   },

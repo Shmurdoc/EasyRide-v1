@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, StyleSheet, KeyboardAvoidingView, Platform, Alert, TouchableOpacity, StatusBar,
@@ -8,6 +9,8 @@ import { Typography, Input, Button, GradientText } from '@easyryde/shared';
 import type { RiderAuthNav } from '@easyryde/shared';
 
 export default function ForgotPasswordScreen({ navigation }: { navigation: RiderAuthNav }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -138,7 +141,7 @@ export default function ForgotPasswordScreen({ navigation }: { navigation: Rider
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   inner: { flex: 1, justifyContent: 'center', padding: SPACING.lg },
   backBtn: { position: 'absolute', top: SPACING.xl, left: SPACING.base, zIndex: 1 },

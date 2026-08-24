@@ -1,14 +1,14 @@
 import React, { useRef } from 'react';
-import { Animated, View, StyleSheet, ViewStyle } from 'react-native';
+import { Animated, View, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SPACING, RADIUS, COLORS } from '../constants';
+import { SPACING, RADIUS, COLORS, SHADOWS } from '../constants';
 
 interface GlassCardProps {
   children: React.ReactNode;
   padding?: number;
   glow?: boolean;
   glowColor?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function GlassCard({
@@ -21,7 +21,7 @@ export function GlassCard({
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+    Animated.spring(scaleAnim, { toValue: 0.97, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
   };
 
   const handlePressOut = () => {
@@ -31,6 +31,7 @@ export function GlassCard({
   return (
     <Animated.View style={[
       { transform: [{ scale: scaleAnim }] },
+      SHADOWS.subtle,
       glow ? {
         shadowColor: glowColor,
         shadowOffset: { width: 0, height: 0 },
@@ -46,18 +47,12 @@ export function GlassCard({
         style={[{
           padding,
           borderRadius: RADIUS.xl,
-          backgroundColor: COLORS.glass,
+          backgroundColor: COLORS.surface,
           borderWidth: 1,
-          borderColor: COLORS.glassBorder,
+          borderColor: COLORS.surfaceBorder,
           overflow: 'hidden',
         }, style]}
       >
-        <LinearGradient
-          colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: RADIUS.xl }]}
-        />
         <View style={{ position: 'relative' }}>
           {children}
         </View>

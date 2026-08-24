@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { View } from 'react-native';
@@ -8,7 +9,7 @@ import type { FoodOrder, RiderNav, RiderRoute } from '@easyryde/shared';
 
 const STEPS = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_transit', 'delivered'];
 const LABELS: Record<string, string> = { pending: 'Order Placed', confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready for Pickup', picked_up: 'Picked Up', in_transit: 'On the Way', delivered: 'Delivered', cancelled: 'Cancelled' };
-const COLORS_MAP: Record<string, string> = { pending: COLORS.warning, confirmed: COLORS.info, preparing: '#8B5CF6', ready: COLORS.success, picked_up: '#6366F1', in_transit: COLORS.primary, delivered: COLORS.success, cancelled: COLORS.error };
+const COLORS_MAP: Record<string, string> = { pending: COLORS.warning, confirmed: COLORS.info, preparing: COLORS.info, ready: COLORS.success, picked_up: COLORS.info, in_transit: COLORS.primary, delivered: COLORS.success, cancelled: COLORS.error };
 
 export default function FoodOrderTrackingScreen({ route, navigation }: { route: RiderRoute<'FoodOrderTracking'>; navigation: RiderNav }) {
   const { orderId } = route.params;

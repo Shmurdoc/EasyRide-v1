@@ -175,9 +175,14 @@ class PartnerApiService
                 'name' => $customerData['name'] ?? 'Partner Customer',
                 'phone_number' => $customerData['phone'] ?? '',
                 'password' => bcrypt(Str::random(32)),
-                'role' => 'rider',
             ]
         );
+
+        if ($user->wasRecentlyCreated) {
+            $user->role = 'rider';
+            $user->save();
+            $user->assignRole('rider');
+        }
 
         return $user->id;
     }

@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
@@ -47,6 +48,8 @@ type Props = {
 };
 
 export default function RatingScreen({ navigation, route }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { rideId, driverName, driverAvatar } = route.params;
 
   const [rating, setRating] = useState(0);
@@ -331,7 +334,7 @@ export default function RatingScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
   },

@@ -16,6 +16,8 @@ enum WalletTransactionType: string
     case PLATFORM_FEE = 'platform_fee';
     case PROMO_CREDIT = 'promo_credit';
     case PENDING_PAYOUT = 'pending_payout';
+    case DRIVER_FINE = 'driver_fine';
+    case PARCEL_DELIVERY_EARNINGS = 'parcel_delivery_earnings';
 
     public function label(): string
     {

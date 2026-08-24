@@ -21,7 +21,7 @@ class PeakHourController extends Controller
             ->when($request->day_of_week, fn ($q, $v) => $q->where('day_of_week', $v))
             ->when($request->is_active !== null, fn ($q, $v) => $q->where('is_active', filter_var($v, FILTER_VALIDATE_BOOLEAN)))
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($peakHours);
     }

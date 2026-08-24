@@ -14,11 +14,11 @@ return new class extends Migration
             $table->uuid('ride_id')->nullable();
             $table->string('type', 30)->default('parcel');
             $table->text('description')->nullable();
-            $table->string('sender_name')->nullable();
-            $table->string('sender_phone', 50)->nullable();
-            $table->string('recipient_name')->nullable();
-            $table->string('recipient_phone', 50)->nullable();
-            $table->string('recipient_address')->nullable();
+            $table->text('sender_name')->nullable();
+            $table->text('sender_phone')->nullable();
+            $table->text('recipient_name')->nullable();
+            $table->text('recipient_phone')->nullable();
+            $table->text('recipient_address')->nullable();
             $table->decimal('recipient_latitude', 10, 7)->nullable();
             $table->decimal('recipient_longitude', 10, 7)->nullable();
             $table->text('pickup_notes')->nullable();

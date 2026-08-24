@@ -25,8 +25,8 @@ class User extends Authenticatable
 
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password', 'phone_number',
-        'role', 'is_active', 'is_online', 'is_approved', 'is_kyc_verified',
-        'email_verified_at', 'kyc_verified_at', 'anonymized_at',
+        'is_active', 'is_online', 'is_approved',
+        'email_verified_at',
         'current_latitude', 'current_longitude',
         'last_location_update', 'current_ride_id',
     ];

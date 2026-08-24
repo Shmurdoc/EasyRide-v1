@@ -167,7 +167,8 @@ class WalletTest extends TestCase
             'type' => 'credit',
             'amount' => 100.00,
             'balance_before' => 0.0,
-            'balance_after' => 100.0,
+            'balance_after' => 0.0,
+            'reference_type' => 'pending_topup',
         ]);
     }
 

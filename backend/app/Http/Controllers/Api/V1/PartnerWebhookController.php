@@ -21,6 +21,12 @@ class PartnerWebhookController extends Controller
 
     public function receiveOrder(ReceivePartnerOrderRequest $request): JsonResponse
     {
+        if (! $this->partnerService->verifyWebhookSignature($request->all())) {
+            Log::warning('Partner order webhook: Invalid signature');
+
+            return response()->json(['message' => 'Invalid signature.'], 403);
+        }
+
         $validated = $request->validated();
         $delivery = $this->partnerService->receiveOrder($validated);
 

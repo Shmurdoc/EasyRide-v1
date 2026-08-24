@@ -11,6 +11,7 @@ export type RiderAuthStackParamList = {
 // Rider Tab Navigation
 export type RiderMainTabParamList = {
   Home: { dropoff?: { id: string; name: string; lat: number; lng: number } } | undefined;
+  Food: undefined;
   Activity: undefined;
   Profile: undefined;
 };
@@ -21,7 +22,7 @@ export type RiderStackParamList = {
   Consent: undefined;
   BookRide: { pickup?: { lat: number; lng: number; address: string }; dropoff?: string };
   RideTracking: { rideId: string };
-  Payment: { rideId: string };
+  Payment: { rideId: string; amount?: number };
   RideHistory: undefined;
   RideDetail: { rideId: string };
   Chat: { rideId: string; receiverId: string };
@@ -39,6 +40,7 @@ export type RiderStackParamList = {
 // Driver App Navigation
 export type DriverStackParamList = {
   Login: undefined;
+  ForgotPassword: undefined;
   Main: undefined;
   Consent: undefined;
   RideRequests: undefined;
@@ -49,6 +51,8 @@ export type DriverStackParamList = {
   Profile: undefined;
   FoodDelivery: undefined;
   FoodOrderDetail: { orderId: string };
+  Documents: undefined;
+  Support: undefined;
 };
 
 // Admin App Navigation

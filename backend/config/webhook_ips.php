@@ -23,9 +23,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Bypass in local/dev environments
+    | Bypass IP validation (development only)
     |--------------------------------------------------------------------------
+    |
+    | WARNING: Only enable this in local development. NEVER in production.
+    | Default is false (blocking) — webhook IP validation is always enforced
+    | unless explicitly disabled via APP_WEBHOOK_BYPASS=true.
+    |
     */
 
-    'bypass_in_local' => env('APP_ENV') !== 'production',
+    'bypass_in_local' => env('APP_WEBHOOK_BYPASS', false),
 ];

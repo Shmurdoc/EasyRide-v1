@@ -1,23 +1,38 @@
 const geoService = require('../services/geo');
+const { isDriver, logSecurityEvent, validateRideId, validateCoordinates } = require('../middleware/authorize');
 
 module.exports = function registerDriverHandlers(socket, io) {
   const { userId } = socket.data;
 
   socket.on('driver:location-update', async (data) => {
     try {
-      const { rideId, latitude, longitude } = data;
-
-      if (typeof latitude !== 'number' || typeof longitude !== 'number') {
-        return socket.emit('error', { message: 'Invalid coordinates' });
+      if (!data || typeof data !== 'object') {
+        return socket.emit('error', { message: 'Invalid payload' });
       }
 
-      if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-        return socket.emit('error', { message: 'Coordinates out of range' });
+      const { rideId, latitude, longitude } = data;
+
+      if (!validateCoordinates(latitude, longitude)) {
+        return socket.emit('error', { message: 'Invalid coordinates' });
       }
 
       await geoService.updateDriverLocation(userId, latitude, longitude);
 
       if (rideId) {
+        if (!validateRideId(rideId)) {
+          return socket.emit('error', { message: 'Invalid ride ID format' });
+        }
+
+        const rideIsDriver = await isDriver(userId, rideId);
+        if (!rideIsDriver) {
+          logSecurityEvent('DRIVER_LOCATION_NOT_DRIVER_OF_RIDE', socket, {
+            rideId,
+          });
+          return socket.emit('error', {
+            message: 'You are not the driver of this ride',
+          });
+        }
+
         io.to(`ride:${rideId}`).emit('driver:location', {
           driverId: userId,
           latitude,
@@ -33,12 +48,26 @@ module.exports = function registerDriverHandlers(socket, io) {
 
   socket.on('driver:toggle-online', async (data) => {
     try {
+      if (!data || typeof data !== 'object') {
+        return socket.emit('error', { message: 'Invalid payload' });
+      }
+
       const { isOnline } = data;
+
+      if (typeof isOnline !== 'boolean') {
+        return socket.emit('error', {
+          message: 'isOnline must be a boolean',
+        });
+      }
 
       if (isOnline) {
         const loc = await geoService.getDriverLocation(userId);
         if (loc) {
-          await geoService.updateDriverLocation(userId, loc.latitude, loc.longitude);
+          await geoService.updateDriverLocation(
+            userId,
+            loc.latitude,
+            loc.longitude
+          );
         }
         socket.data.isOnline = true;
       } else {
@@ -48,8 +77,13 @@ module.exports = function registerDriverHandlers(socket, io) {
 
       socket.emit('driver:online-status', { isOnline: !!isOnline });
     } catch (err) {
-      console.error(`[Driver:${userId}] toggle-online error:`, err.message);
-      socket.emit('error', { message: 'Failed to toggle online status' });
+      console.error(
+        `[Driver:${userId}] toggle-online error:`,
+        err.message
+      );
+      socket.emit('error', {
+        message: 'Failed to toggle online status',
+      });
     }
   });
 
@@ -82,8 +116,13 @@ module.exports = function registerDriverHandlers(socket, io) {
 
       socket.emit('driver:nearby-requests:result', { rides });
     } catch (err) {
-      console.error(`[Driver:${userId}] nearby-requests error:`, err.message);
-      socket.emit('error', { message: 'Failed to fetch nearby requests' });
+      console.error(
+        `[Driver:${userId}] nearby-requests error:`,
+        err.message
+      );
+      socket.emit('error', {
+        message: 'Failed to fetch nearby requests',
+      });
     }
   });
 
@@ -93,7 +132,10 @@ module.exports = function registerDriverHandlers(socket, io) {
         await geoService.removeDriverLocation(userId);
       }
     } catch (err) {
-      console.error(`[Driver:${userId}] disconnect cleanup error:`, err.message);
+      console.error(
+        `[Driver:${userId}] disconnect cleanup error:`,
+        err.message
+      );
     }
   });
 };

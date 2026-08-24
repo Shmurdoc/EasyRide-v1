@@ -17,6 +17,8 @@ export const auth = {
 
   me: () => api.get<{ user: User }>('/auth/me').then(r => r.user),
 
+  refresh: () => api.post<{ user: User; token: string }>('/auth/refresh').then(r => r.token),
+
   forgotPassword: (email: string) =>
     api.post('/auth/forgot-password', { email }),
 
@@ -57,7 +59,7 @@ export const rides = {
   }),
 
   cancel: (id: string, reason?: string) =>
-    api.post<Ride>(`/rides/${id}/cancel`, { cancellation_reason: reason }),
+    api.post<Ride>(`/rides/${id}/cancel`, { cancellation_reason: reason ?? 'Rider cancelled' }),
 
   rate: (id: string, score: number, comment?: string) =>
     api.post<Rating>(`/rides/${id}/rate`, { score, comment }),
@@ -129,7 +131,7 @@ export const notifications = {
     api.post('/notifications/register-token', { token }),
 
   list: () =>
-    api.get<PaginatedResponse<Notification>>('/notifications/'),
+    api.get<PaginatedResponse<Notification>>('/notifications'),
 
   markAsRead: (id: string) =>
     api.post(`/notifications/${id}/read`),
@@ -149,7 +151,7 @@ export const notifications = {
 
 export const consent = {
   list: () =>
-    api.get<{ data: import('../types').ConsentRecord[] }>('/consent/'),
+    api.get<{ data: import('../types').ConsentRecord[] }>('/consent'),
 
   grant: (consentType: import('../types').ConsentType, version: string) =>
     api.post<{ data: import('../types').ConsentRecord }>('/consent/grant', {
@@ -181,7 +183,7 @@ export const payments = {
       redirect_url?: string;
       client_secret?: string;
       payment_intent_id?: string;
-    }>(`/payments/rides/${rideId}/pay`, { method }),
+    }>(`/payments/rides/${rideId}/pay`, { payment_method: method }),
 };
 
 export const wallet = {
@@ -240,7 +242,7 @@ export const places = {
 
 export const sos = {
   trigger: (data: { ride_id: string; latitude: number; longitude: number; message?: string }) =>
-    api.post<SOSAlert>('/sos/', data),
+    api.post<SOSAlert>('/sos', data),
 
   cancel: (id: string) =>
     api.post<SOSAlert>(`/sos/${id}/cancel`),
@@ -307,7 +309,7 @@ export const kyc = {
     if (data.document_back) {
       formData.append('document_back', data.document_back);
     }
-    return api.post<{ message: string; verification: KycVerification }>('/kyc/', formData as any);
+    return api.post<{ message: string; verification: KycVerification }>('/kyc', formData as any);
   },
 
   myVerifications: () =>

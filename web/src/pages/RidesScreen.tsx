@@ -45,7 +45,9 @@ export default function RidesScreen() {
       const { data } = await client.get<PaginatedResponse<Ride>>('/admin/manage/rides', { params });
       setRides(data.data);
       setMeta(data.meta);
-    } catch {} finally { setLoading(false); }
+    } catch (err) {
+      console.error('[Rides] Failed to load:', err);
+    } finally { setLoading(false); }
   }, [page, statusFilter, search]);
 
   useEffect(() => { loadRides(); }, [loadRides]);

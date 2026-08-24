@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { StatusBar, ActivityIndicator, View, StyleSheet, LogBox } from 'react-native';
 LogBox.ignoreLogs(['Require cycle']);
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
@@ -6,7 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeProvider, theme, ErrorBoundary, useAuth, useNotifications, AuthProvider } from '@easyryde/shared';
+import { ThemeProvider, theme, ErrorBoundary, useAuth, useNotifications, AuthProvider, COLORS, BusinessThemeProvider } from '@easyryde/shared';
 import type { RiderAuthStackParamList, RiderStackParamList, RiderMainTabParamList } from '@easyryde/shared';
 
 import LoginScreen from './screens/LoginScreen';
@@ -29,6 +29,7 @@ import RestaurantMenuScreen from './screens/RestaurantMenuScreen';
 import FoodCheckoutScreen from './screens/FoodCheckoutScreen';
 import FoodOrderTrackingScreen from './screens/FoodOrderTrackingScreen';
 import ConsentScreen from './screens/ConsentScreen';
+import RatingScreen from './screens/RatingScreen';
 
 const AuthStack = createNativeStackNavigator<RiderAuthStackParamList>();
 const MainStack = createNativeStackNavigator<RiderStackParamList>();
@@ -39,7 +40,7 @@ function AuthNavigator() {
     <AuthStack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#121212' },
+        contentStyle: { backgroundColor: '#050E1A' },
       }}
     >
       <AuthStack.Screen name="Login" component={LoginScreen} />
@@ -55,15 +56,15 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1c1c1e',
-          borderTopColor: '#333333',
+          backgroundColor: 'rgba(255,255,255,0.92)',
+          borderTopColor: COLORS.surfaceBorder,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 72,
+          paddingTop: 10,
+          paddingBottom: 10,
         },
-        tabBarActiveTintColor: '#FFAD7A',
-        tabBarInactiveTintColor: '#98989d',
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: '#9AA8A0',
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
@@ -74,6 +75,16 @@ function MainTabs() {
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Food"
+        component={RestaurantListScreen}
+        options={{
+          tabBarLabel: 'Food',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="restaurant" size={size} color={color} />
           ),
         }}
       />
@@ -106,7 +117,7 @@ function MainNavigator() {
     <MainStack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#1c1c1e' },
+        contentStyle: { backgroundColor: COLORS.bg },
       }}
     >
       <MainStack.Screen name="Main" component={MainTabs} />
@@ -118,6 +129,7 @@ function MainNavigator() {
       <MainStack.Screen name="RideDetail" component={RideDetailScreen} />
       <MainStack.Screen name="Chat" component={ChatScreen} />
       <MainStack.Screen name="Wallet" component={WalletScreen} />
+      <MainStack.Screen name="Rating" component={RatingScreen} />
       <MainStack.Screen name="PromoCode" component={PromoCodeScreen} />
       <MainStack.Screen name="Support" component={SupportScreen} />
       <MainStack.Screen name="Notification" component={NotificationScreen} />
@@ -138,7 +150,7 @@ function AppContent() {
   if (isLoading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#FFAD7A" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -146,14 +158,14 @@ function AppContent() {
   return (
     <NavigationContainer ref={navigationRef}
       theme={{
-        dark: true,
+        dark: false,
         colors: {
-          primary: '#FFAD7A',
-          background: '#1c1c1e',
-          card: '#242426',
-          text: '#ffffff',
-          border: '#333333',
-          notification: '#FFAD7A',
+          primary: COLORS.primary,
+          background: COLORS.bg,
+          card: COLORS.surface,
+          text: COLORS.text,
+          border: COLORS.surfaceBorder,
+          notification: COLORS.primary,
         },
       }}
     >
@@ -168,8 +180,10 @@ export default function App() {
       <SafeAreaProvider>
         <AuthProvider>
           <ThemeProvider>
-            <StatusBar barStyle="light-content" backgroundColor="#121212" />
-            <AppContent />
+            <BusinessThemeProvider slug="rides">
+              <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
+              <AppContent />
+            </BusinessThemeProvider>
           </ThemeProvider>
         </AuthProvider>
       </SafeAreaProvider>
@@ -182,6 +196,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: COLORS.bg,
   },
 });

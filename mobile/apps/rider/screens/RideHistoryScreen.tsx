@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FlatList, TouchableOpacity, StyleSheet, View, Text, Animated, StatusBar,
@@ -50,6 +51,8 @@ function getCategoryBadge(cat: string) {
 }
 
 export default function RideHistoryScreen({ navigation }: { navigation: RiderNav }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [rideHistory, setRideHistory] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,6 +82,8 @@ export default function RideHistoryScreen({ navigation }: { navigation: RiderNav
   const grouped = groupRidesByDate(rideHistory);
 
   function RideItem({ item, index }: { item: Ride; index: number }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
     const anim = useRef(new Animated.Value(0)).current;
     useEffect(() => {
       Animated.spring(anim, {
@@ -146,6 +151,8 @@ export default function RideHistoryScreen({ navigation }: { navigation: RiderNav
   }
 
   function ShimmerLoader() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
     return (
       <View style={styles.container}>
         <View style={styles.headerRow}>
@@ -198,6 +205,7 @@ export default function RideHistoryScreen({ navigation }: { navigation: RiderNav
       <FlatList
         data={[]}
         keyExtractor={() => 'dummy'}
+        renderItem={() => null}
         ListHeaderComponent={
           <>
             {grouped.map((group) => (
@@ -232,7 +240,7 @@ export default function RideHistoryScreen({ navigation }: { navigation: RiderNav
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   headerRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

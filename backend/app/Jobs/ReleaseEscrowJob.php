@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Payment;
-use App\Services\Payment\EscrowService;
+use App\Services\EscrowService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

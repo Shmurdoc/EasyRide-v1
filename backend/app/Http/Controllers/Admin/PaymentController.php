@@ -34,7 +34,7 @@ class PaymentController extends Controller
             })
             ->with(['ride', 'payer', 'payee'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($payments);
     }

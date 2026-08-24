@@ -27,7 +27,7 @@ class FoodAdminController extends Controller
             ->when($request->is_active, fn ($q, $v) => $q->where('is_active', filter_var($v, FILTER_VALIDATE_BOOLEAN)))
             ->withCount('menuItems')
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($restaurants);
     }
@@ -120,7 +120,7 @@ class FoodAdminController extends Controller
             ->when($request->status, fn ($q, $v) => $q->where('status', $v))
             ->with(['restaurant', 'customer', 'driver', 'items'])
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($orders);
     }

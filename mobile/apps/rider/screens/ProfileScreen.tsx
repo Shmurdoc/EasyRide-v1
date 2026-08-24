@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState } from 'react';
 import {
   TouchableOpacity, StyleSheet, Alert, View, Text, ScrollView, Modal, StatusBar,
@@ -27,6 +28,8 @@ const SUPPORT_INFO = {
 };
 
 export default function ProfileScreen({ navigation }: { navigation: RiderNav }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { user, logout } = useAuth();
   const [showHelpModal, setShowHelpModal] = useState(false);
 
@@ -195,7 +198,7 @@ export default function ProfileScreen({ navigation }: { navigation: RiderNav }) 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   content: { paddingBottom: 48 },
 

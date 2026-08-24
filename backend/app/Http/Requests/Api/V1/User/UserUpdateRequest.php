@@ -16,7 +16,7 @@ class UserUpdateRequest extends ApiFormRequest
 
     public function rules(): array
     {
-        $userId = $this->route('user');
+        $userId = $this->route('user')?->id ?? $this->route('user');
 
         return [
             'name' => 'nullable|string|max:255',

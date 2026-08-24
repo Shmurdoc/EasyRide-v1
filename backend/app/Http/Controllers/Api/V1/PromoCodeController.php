@@ -27,7 +27,7 @@ class PromoCodeController extends Controller
             ->when($request->is_active, fn ($q, $v) => $q->where('is_active', filter_var($v, FILTER_VALIDATE_BOOLEAN)))
             ->when($request->search, fn ($q, $v) => $q->where('code', 'like', "%{$v}%"))
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($promoCodes);
     }

@@ -11,6 +11,7 @@ const navItems = [
   { to: '/reports', label: 'Reports', icon: '📈' },
   { to: '/promo-codes', label: 'Promo Codes', icon: '🏷️' },
   { to: '/wallet-payouts', label: 'Wallet & Payouts', icon: '💰' },
+  { to: '/fraud', label: 'Conduct & Fraud', icon: '🛡️' },
   { to: '/notifications', label: 'Notifications', icon: '🔔' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];

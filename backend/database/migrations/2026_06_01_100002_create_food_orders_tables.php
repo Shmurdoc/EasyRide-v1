@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('service_fee', 8, 2)->default(0.00);
             $table->decimal('tip_amount', 8, 2)->default(0.00);
             $table->decimal('total_amount', 10, 2);
-            $table->string('delivery_address', 500);
+            $table->text('delivery_address');
             $table->decimal('delivery_latitude', 10, 7);
             $table->decimal('delivery_longitude', 10, 7);
             $table->text('delivery_notes')->nullable();

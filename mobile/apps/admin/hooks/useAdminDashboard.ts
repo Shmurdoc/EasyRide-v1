@@ -48,7 +48,8 @@ export function useAdminDashboard() {
       setRefreshing(true);
       const result = await getAdminDashboard();
       setData(mapResponse(result));
-    } catch {
+    } catch (err) {
+      if (__DEV__) console.warn('[AdminDashboard] Refresh failed:', err);
     } finally {
       setRefreshing(false);
     }

@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme';
 import { RADIUS, SPACING, COLORS, GRADIENTS, SHADOWS } from '../constants';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps {
@@ -42,7 +42,7 @@ export function Button({
   }, [glow, variant, disabled]);
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.97, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+    Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
   };
 
   const handlePressOut = () => {
@@ -72,12 +72,12 @@ export function Button({
   const renderContent = () => (
     <>
       {loading ? (
-        <ActivityIndicator size="small" color={variant === 'primary' ? COLORS.bg : colors.primary} />
+        <ActivityIndicator size="small" color={variant === 'primary' || variant === 'accent' || variant === 'danger' ? colors.brandContrast : colors.text} />
       ) : (
         <>
           {icon && <>{icon}</>}
           <Text style={[
-            { color: variant === 'primary' ? COLORS.bg : colors.text },
+            { color: variant === 'primary' || variant === 'accent' || variant === 'danger' ? colors.brandContrast : colors.text },
             textSizes[size],
             icon ? { marginLeft: 8 } : {},
             textStyle,
@@ -88,6 +88,25 @@ export function Button({
       )}
     </>
   );
+
+  if (variant === 'accent') {
+    return (
+      <Animated.View style={[{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.5 : 1 }]}>
+        <TouchableOpacity
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          disabled={disabled || loading}
+          activeOpacity={1}
+          style={[sizeStyles[size], { backgroundColor: colors.brand }, style]}
+        >
+          <Animated.View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            {renderContent()}
+          </Animated.View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
 
   if (variant === 'primary') {
     return (
@@ -104,7 +123,7 @@ export function Button({
             colors={GRADIENTS.primary as unknown as string[]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: sizeStyles[size].borderRadius }]}
+            style={[StyleSheet.absoluteFill, { borderRadius: sizeStyles[size].borderRadius as number }]}
           />
           <Animated.View style={[StyleSheet.absoluteFill, {
             backgroundColor: COLORS.primaryGlow,
@@ -144,10 +163,11 @@ export function Button({
 
   const variantStyles: Record<ButtonVariant, ViewStyle> = {
     primary: { backgroundColor: colors.primary },
+    accent: { backgroundColor: colors.brand },
     secondary: {
       backgroundColor: COLORS.surface,
-      borderWidth: 1,
-      borderColor: COLORS.borderLight,
+      borderWidth: 1.5,
+      borderColor: COLORS.border,
     },
     ghost: { backgroundColor: 'transparent' },
     danger: { backgroundColor: COLORS.error },

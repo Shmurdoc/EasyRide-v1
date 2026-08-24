@@ -16,11 +16,11 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 WORKDIR /var/www
 
 COPY composer.json composer.lock ./
-RUN composer install --no-scripts --no-autoloader --prefer-dist
+RUN composer install --no-scripts --prefer-dist
 
 COPY . .
 
-RUN rm -f bootstrap/cache/*.php vendor/nunomaduro/collision \
+RUN rm -rf bootstrap/cache/*.php vendor/nunomaduro/collision \
     && composer dump-autoload --optimize \
     && php artisan config:cache || true \
     && php artisan route:cache || true \

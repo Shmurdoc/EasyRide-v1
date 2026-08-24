@@ -53,7 +53,7 @@ class WalletController extends Controller
             ->when($request->min_balance, fn ($q, $v) => $q->where('balance', '>=', $v))
             ->when($request->max_balance, fn ($q, $v) => $q->where('balance', '<=', $v))
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         $wallets->getCollection()->transform(function ($wallet) {
             $totalEarned = WalletTransaction::where('wallet_id', $wallet->id)
@@ -91,7 +91,7 @@ class WalletController extends Controller
         $transactions = WalletTransaction::where('wallet_id', $wallet->id)
             ->when($request->type, fn ($q, $v) => $q->where('type', $v))
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($transactions);
     }
@@ -104,7 +104,7 @@ class WalletController extends Controller
             ->where('status', 'pending')
             ->with('driver:id,name,email')
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($payouts);
     }
@@ -236,7 +236,7 @@ class WalletController extends Controller
             ->when($request->to_date, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))
             ->with('wallet.user:id,name,email')
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         return response()->json($transactions);
     }
@@ -254,7 +254,7 @@ class WalletController extends Controller
             ->whereDate('created_at', '<=', $to)
             ->with('payer:id,name')
             ->latest()
-            ->paginate($request->per_page ?? 15);
+            ->paginate(min((int) ($request->per_page ?? 15), 100));
 
         $summary = \App\Models\Payment::whereHas('payer', fn ($q) => $q->where('tenant_id', $tenantId))
             ->where('method', 'cash')

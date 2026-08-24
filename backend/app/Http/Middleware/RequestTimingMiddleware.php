@@ -32,7 +32,7 @@ class RequestTimingMiddleware
                 ]);
             }
         } catch (\Exception $e) {
-            // Logging failure must never affect the response
+            Log::debug('RequestTiming: performance logging failed', ['error' => $e->getMessage()]);
         }
 
         try {
@@ -55,7 +55,7 @@ class RequestTimingMiddleware
             Redis::incr("{$prefix}:endpoint:{$endpoint}:{$hour}");
             Redis::expire("{$prefix}:endpoint:{$endpoint}:{$hour}", 86400);
         } catch (\Exception $e) {
-            // Redis unavailable — gracefully degrade
+            Log::debug('RequestTiming: Redis metrics update failed', ['error' => $e->getMessage()]);
         }
 
         return $response;

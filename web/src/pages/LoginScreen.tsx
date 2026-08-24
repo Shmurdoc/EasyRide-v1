@@ -28,16 +28,6 @@ export default function LoginScreen() {
     }
   };
 
-  const fillDemo = (kind: 'admin' | 'driver' | 'rider') => {
-    const creds = {
-      admin: 'admin@easyryde.com',
-      driver: 'driver@easyryde.com',
-      rider: 'rider@easyryde.com',
-    };
-    setEmail(creds[kind]);
-    setPassword('password');
-  };
-
   return (
     <div className="min-h-screen relative overflow-hidden bg-ink-950 text-white">
       <div className="absolute inset-0 bg-mesh-dark opacity-90" aria-hidden />
@@ -148,22 +138,6 @@ export default function LoginScreen() {
                   )}
                 </button>
               </form>
-
-              <div className="mt-7 pt-6 border-t border-white/5">
-                <div className="text-xs text-ink-400 mb-2.5">Quick demo accounts</div>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['admin', 'driver', 'rider'] as const).map((kind) => (
-                    <button
-                      key={kind}
-                      type="button"
-                      onClick={() => fillDemo(kind)}
-                      className="px-2 py-1.5 text-xs rounded-md bg-white/5 hover:bg-white/10 border border-white/10 text-ink-200 capitalize transition-colors"
-                    >
-                      {kind}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <p className="text-center text-xs text-ink-500 mt-6">

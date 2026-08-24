@@ -68,10 +68,12 @@ class WalletService
             "Wallet top-up via {$method} (pending gateway confirmation)",
         );
 
-        Log::info('Wallet top-up initiated', [
+        Log::channel('wallet-audit')->info('WALLET_TOPUP_INITIATED_VIA_USER', [
             'user_id' => $user->id,
+            'wallet_id' => $wallet->id,
             'amount' => $amount,
             'method' => $method,
+            'ip' => request()->ip(),
         ]);
 
         return $wallet->fresh();
@@ -91,7 +93,7 @@ class WalletService
             throw new RuntimeException('Transaction not found or already confirmed.');
         }
 
-        Log::info('Wallet top-up confirmed', [
+        Log::channel('wallet-audit')->info('WALLET_TOPUP_CONFIRMED_BY_USER', [
             'user_id' => $user->id,
             'gateway_ref' => $gatewayRef,
         ]);
@@ -128,7 +130,7 @@ class WalletService
                 $description,
             );
 
-            Log::info('Wallet deducted', [
+            Log::channel('wallet-audit')->info('WALLET_DEDUCTED', [
                 'user_id' => $user->id,
                 'amount' => $amount,
                 'description' => $description,
@@ -227,11 +229,16 @@ class WalletService
 
     /**
      * Initiate a wallet top-up, creating a pending transaction.
+     * Stores the transaction ID as gateway_reference for webhook matching.
      */
     public function initiateTopUp(Wallet $wallet, float $amount, string $method): WalletTransaction
     {
         if ($amount <= 0) {
             throw new \InvalidArgumentException('Top-up amount must be greater than zero.');
+        }
+
+        if ($amount > 100000) {
+            throw new \InvalidArgumentException('Top-up amount exceeds maximum limit of R100,000.');
         }
 
         $transaction = $this->pendingTopUp(
@@ -242,10 +249,15 @@ class WalletService
             "Wallet deposit via {$method} (pending gateway confirmation)",
         );
 
-        Log::info('Wallet top-up initiated', [
+        $transaction->update(['gateway_reference' => $transaction->id]);
+
+        Log::channel('wallet-audit')->info('WALLET_TOPUP_INITIATED', [
             'wallet_id' => $wallet->id,
+            'transaction_id' => $transaction->id,
             'amount' => $amount,
             'method' => $method,
+            'gateway_reference' => $transaction->id,
+            'ip' => request()->ip(),
         ]);
 
         return $transaction;
@@ -258,6 +270,10 @@ class WalletService
     {
         if ($amount <= 0) {
             throw new \InvalidArgumentException('Withdrawal amount must be greater than zero.');
+        }
+
+        if ($amount > 100000) {
+            throw new \InvalidArgumentException('Withdrawal amount exceeds maximum limit of R100,000.');
         }
 
         if ((float) $wallet->fresh()->balance < $amount) {
@@ -308,7 +324,7 @@ class WalletService
 
             $freshWallet->increment('balance', $amount);
 
-            return $freshWallet->transactions()->create([
+            $transaction = $freshWallet->transactions()->create([
                 'type' => 'credit',
                 'amount' => $amount,
                 'balance_before' => $balanceBefore,
@@ -317,6 +333,17 @@ class WalletService
                 'reference_id' => $referenceId,
                 'description' => $description,
             ]);
+
+            Log::channel('wallet-audit')->info('WALLET_CREDIT', [
+                'wallet_id' => $wallet->id,
+                'transaction_id' => $transaction->id,
+                'amount' => $amount,
+                'reference_type' => $referenceType,
+                'balance_before' => $balanceBefore,
+                'balance_after' => (float) $freshWallet->fresh()->balance,
+            ]);
+
+            return $transaction;
         });
     }
 
@@ -338,7 +365,7 @@ class WalletService
 
             $freshWallet->decrement('balance', $amount);
 
-            return $freshWallet->transactions()->create([
+            $transaction = $freshWallet->transactions()->create([
                 'type' => 'debit',
                 'amount' => $amount,
                 'balance_before' => $balanceBefore,
@@ -347,6 +374,17 @@ class WalletService
                 'reference_id' => $referenceId,
                 'description' => $description,
             ]);
+
+            Log::channel('wallet-audit')->info('WALLET_DEBIT', [
+                'wallet_id' => $wallet->id,
+                'transaction_id' => $transaction->id,
+                'amount' => $amount,
+                'reference_type' => $referenceType,
+                'balance_before' => $balanceBefore,
+                'balance_after' => (float) $freshWallet->fresh()->balance,
+            ]);
+
+            return $transaction;
         });
     }
 
@@ -368,7 +406,7 @@ class WalletService
 
             $freshWallet->increment('pending_balance', $amount);
 
-            return $freshWallet->transactions()->create([
+            $transaction = $freshWallet->transactions()->create([
                 'type' => 'credit',
                 'amount' => $amount,
                 'balance_before' => (float) $freshWallet->balance,
@@ -378,6 +416,15 @@ class WalletService
                 'description' => $description,
                 'gateway_reference' => $gatewayReference,
             ]);
+
+            Log::channel('wallet-audit')->info('WALLET_PENDING_TOPUP', [
+                'wallet_id' => $wallet->id,
+                'transaction_id' => $transaction->id,
+                'amount' => $amount,
+                'pending_balance_increment' => $amount,
+            ]);
+
+            return $transaction;
         });
     }
 
@@ -390,10 +437,18 @@ class WalletService
                 ->first();
 
             if (! $transaction) {
+                Log::channel('wallet-audit')->warning('WALLET_CONFIRM_FAILED', [
+                    'wallet_id' => $wallet->id,
+                    'transaction_id' => $transactionId,
+                    'reason' => 'Transaction not found or already confirmed',
+                ]);
+
                 return false;
             }
 
             $freshWallet = Wallet::where('id', $wallet->id)->lockForUpdate()->first();
+
+            $balanceBefore = (float) $freshWallet->balance;
 
             $freshWallet->increment('balance', (float) $transaction->amount);
             $freshWallet->decrement('pending_balance', (float) $transaction->amount);
@@ -401,6 +456,14 @@ class WalletService
             $transaction->update([
                 'reference_type' => 'topup_confirmed',
                 'description' => str_replace('pending gateway confirmation', 'gateway confirmed', $transaction->description),
+            ]);
+
+            Log::channel('wallet-audit')->info('WALLET_TOPUP_CONFIRMED', [
+                'wallet_id' => $wallet->id,
+                'transaction_id' => $transactionId,
+                'amount' => (float) $transaction->amount,
+                'balance_before' => $balanceBefore,
+                'balance_after' => (float) $freshWallet->fresh()->balance,
             ]);
 
             return true;
@@ -414,10 +477,22 @@ class WalletService
             ->first();
 
         if (! $transaction) {
+            Log::channel('wallet-audit')->warning('WALLET_GATEWAY_CONFIRM_FAILED', [
+                'gateway_reference' => $gatewayReference,
+                'reason' => 'No pending transaction found for gateway reference',
+            ]);
+
             return false;
         }
 
         $wallet = $transaction->wallet;
+
+        Log::channel('wallet-audit')->info('WALLET_GATEWAY_CONFIRM_RECEIVED', [
+            'wallet_id' => $wallet->id,
+            'transaction_id' => $transaction->id,
+            'gateway_reference' => $gatewayReference,
+            'amount' => (float) $transaction->amount,
+        ]);
 
         return $this->confirmTopUpById($wallet, $transaction->id);
     }
@@ -432,6 +507,7 @@ class WalletService
         $recordedBalance = (float) $wallet->balance;
 
         $calculatedBalance = WalletTransaction::where('wallet_id', $wallet->id)
+            ->where('reference_type', '!=', 'pending_topup')
             ->selectRaw("COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END), 0) as calculated_balance")
             ->value('calculated_balance');
 

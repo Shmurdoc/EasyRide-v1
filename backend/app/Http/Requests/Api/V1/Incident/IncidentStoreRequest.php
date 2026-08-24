@@ -11,7 +11,7 @@ class IncidentStoreRequest extends ApiFormRequest
     public function rules(): array
     {
         return [
-            'incident_type' => 'required|string|in:accident,harassment,mechanical,other',
+            'incident_type' => 'required|string|in:accident,safety_concern,harassment,mechanical,other',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'ride_id' => 'nullable|string|exists:rides,id',

@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Services\Payment\EscrowService;
+use App\Services\EscrowService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -24,7 +24,7 @@ class ReleaseEscrowBatchJob implements ShouldQueue
     public function handle(EscrowService $escrow): void
     {
         try {
-            $count = $escrow->releaseEligiblePayments();
+            $count = $escrow->releaseCompletedRides();
             Log::info('ReleaseEscrowBatchJob completed', ['dispatched_count' => $count]);
         } catch (\Exception $e) {
             Log::error('ReleaseEscrowBatchJob failed', ['error' => $e->getMessage()]);

@@ -1,12 +1,13 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, TouchableOpacity, StyleSheet, Alert, Linking,
+  View, TextInput, TouchableOpacity, StyleSheet, Alert, Linking,
   ScrollView, Animated, StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  payments, rides, promoCodes, PAYMENT_METHODS, COLORS, GRADIENTS, SPACING, RADIUS, SHADOWS,
+  payments, rides, promoCodes, wallet, PAYMENT_METHODS, COLORS, GRADIENTS, SPACING, RADIUS, SHADOWS,
 } from '@easyryde/shared';
 import {
   Typography, GlowButton, GlassCard, GradientText,
@@ -22,12 +23,14 @@ const PAYMENT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function PaymentScreen({ route, navigation }: { route: RiderRoute<'Payment'>; navigation: RiderNav }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { rideId } = route.params;
   const [selectedMethod, setSelectedMethod] = useState('cash');
   const [loading, setLoading] = useState(false);
   const [ride, setRide] = useState<Ride | null>(null);
   const [success, setSuccess] = useState(false);
-  const [walletBalance] = useState(250.00);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState<number | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
@@ -40,6 +43,12 @@ export default function PaymentScreen({ route, navigation }: { route: RiderRoute
       try {
         const data = await rides.get(rideId);
         setRide(data);
+      } catch {}
+    })();
+    (async () => {
+      try {
+        const data = await wallet.get();
+        setWalletBalance(data?.balance ?? 0);
       } catch {}
     })();
   }, [rideId]);
@@ -204,7 +213,7 @@ export default function PaymentScreen({ route, navigation }: { route: RiderRoute
               <TouchableOpacity key={id} onPress={() => setSelectedMethod(id)} activeOpacity={0.7}>
                 <GlassCard padding={SPACING.md} glow={isSelected} style={[
                   styles.methodCard,
-                  isSelected && styles.methodCardSelected,
+                  isSelected ? styles.methodCardSelected : null,
                 ]}>
                   <View style={styles.methodRow}>
                     <View style={[
@@ -329,7 +338,7 @@ export default function PaymentScreen({ route, navigation }: { route: RiderRoute
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: SPACING.base, paddingBottom: 48 },
   header: {

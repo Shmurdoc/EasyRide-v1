@@ -7,7 +7,6 @@ namespace App\Providers;
 use App\Services\OzowService;
 use App\Services\PayFastService;
 use App\Services\Payment\CashReconciliationService;
-use App\Services\Payment\EscrowService;
 use App\Services\Payment\PaymentRouter;
 use App\Services\Payment\PayoutService;
 use App\Services\Payment\RefundService;
@@ -45,7 +44,6 @@ class PaymentServiceProvider extends ServiceProvider
 
         // New Payment\* service registrations
         $this->app->singleton(StripeService::class);
-        $this->app->singleton(EscrowService::class);
         $this->app->singleton(CashReconciliationService::class);
         $this->app->singleton(RefundService::class);
         $this->app->singleton(PayoutService::class);

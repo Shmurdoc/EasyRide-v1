@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, StatusBar,
@@ -21,6 +22,8 @@ function getStatusColor(status: string): string {
 }
 
 export default function RideDetailScreen({ navigation, route }: { navigation: RiderNav; route: RiderRoute<'RideDetail'> }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { rideId } = route.params;
   const [ride, setRide] = useState<Ride | null>(null);
   const [loading, setLoading] = useState(true);
@@ -261,6 +264,8 @@ export default function RideDetailScreen({ navigation, route }: { navigation: Ri
 }
 
 function Header({ title, onBack }: { title: string; onBack: () => void }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <View style={headerStyles.container}>
       <TouchableOpacity onPress={onBack} style={headerStyles.backBtn}>
@@ -285,7 +290,7 @@ const headerStyles = StyleSheet.create({
   title: { color: COLORS.text, fontSize: 18, fontWeight: '600' },
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   scrollContent: { padding: SPACING.base, paddingBottom: 48 },
   statusBanner: {

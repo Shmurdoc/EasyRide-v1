@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert, Text, TextInput, TouchableOpacity } from 'react-native';
-import { useAuth } from '@easyryde/shared';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert, Text, TextInput, TouchableOpacity, Linking } from 'react-native';
+import { useAuth, COLORS } from '@easyryde/shared';
+import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LoginScreen() {
+  const navigation = useNavigation<any>();
   const { login } = useAuth();
-  const [email, setEmail] = useState('driver@easyryde.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -59,7 +61,7 @@ export default function LoginScreen() {
           testID="password-input"
         />
 
-        <TouchableOpacity style={styles.forgotPassword}>
+        <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate('ForgotPassword')}>
           <Text style={styles.forgotText}>Forgot Password?</Text>
         </TouchableOpacity>
 
@@ -70,12 +72,12 @@ export default function LoginScreen() {
           activeOpacity={0.8}
           testID="login-button"
         >
-          <LinearGradient colors={['#16a34a', '#22c55e']} style={styles.gradientBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+          <LinearGradient colors={[COLORS.brand, COLORS.brandDark]} style={styles.gradientBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
             <Text style={styles.signInText}>{loading ? 'Signing In...' : 'Sign In'}</Text>
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL('https://easyryde.com/driver-apply')}>
           <Text style={styles.registerText}>
             Don't have an account? <Text style={styles.registerLink}>Apply as Driver</Text>
           </Text>
@@ -98,7 +100,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'rgba(22, 163, 74, 0.3)',
   },
   logoIcon: { fontSize: 36 },
-  title: { fontSize: 32, fontWeight: '800', textAlign: 'center', marginBottom: 8, color: '#16a34a' },
+  title: { fontSize: 32, fontWeight: '800', textAlign: 'center', marginBottom: 8, color: COLORS.brand },
   tagline: { fontSize: 16, color: '#98989d', textAlign: 'center', marginBottom: 40 },
   label: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 8 },
   input: {
@@ -106,12 +108,12 @@ const styles = StyleSheet.create({
     borderRadius: 12, color: '#fff', fontSize: 16, marginBottom: 16, minHeight: 50,
   },
   forgotPassword: { alignSelf: 'flex-end', marginBottom: 20 },
-  forgotText: { color: '#16a34a', fontSize: 14 },
+  forgotText: { color: COLORS.brand, fontSize: 14 },
   signInBtn: { borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
   disabledBtn: { opacity: 0.6 },
   gradientBtn: { padding: 16, alignItems: 'center', borderRadius: 12 },
   signInText: { fontSize: 18, fontWeight: '700', color: '#fff' },
   registerText: { textAlign: 'center', color: '#98989d', fontSize: 15 },
-  registerLink: { color: '#16a34a', fontWeight: '600' },
+  registerLink: { color: COLORS.brand, fontWeight: '600' },
   version: { textAlign: 'center', color: '#666', fontSize: 13, marginTop: 30 },
 });

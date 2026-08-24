@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# ============================================================
+# EasyRyde Pre-Commit Hook — Prevents committing real secrets
+# ============================================================
+# Install: cp .githooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Or:      git config core.hooksPath .githooks
+# ============================================================
+
+set -euo pipefail
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo "🔒 Running secret detection pre-commit hook..."
+
+# Patterns that indicate real secrets (not placeholders)
+SECRET_PATTERNS=(
+    'APP_KEY=base64:[A-Za-z0-9+/=]\{20,\}'
+    'JWT_SECRET=[A-Za-z0-9]\{32,\}'
+    'DB_PASSWORD=[^$\n]\{8,\}'
+    'STRIPE_SECRET_KEY=sk_live_'
+    'STRIPE_SECRET_KEY=sk_test_'
+    'STRIPE_WEBHOOK_SECRET=whsec_'
+    'AWS_SECRET_ACCESS_KEY=[A-Za-z0-9]\{20,\}'
+    'TWILIO_AUTH_TOKEN=[A-Za-z0-9]\{20,\}'
+    'MAIL_PASSWORD=[^$\n]\{8,\}'
+    'EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIza[A-Za-z0-9_-]\{20,\}'
+    'REDIS_PASSWORD=[^$\n]\{8,\}'
+)
+
+# Files that should NEVER be committed with real secrets
+SENSITIVE_FILES=(
+    "backend/.env"
+    "backend/.env.docker"
+    "backend/.env.testing"
+    "socket-server/.env"
+    "socket/.env"
+    "mobile/apps/driver/.env"
+    "mobile/apps/rider/.env"
+    "mobile/apps/admin/.env"
+)
+
+exit_code=0
+
+# Get staged files
+staged_files=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
+
+if [ -z "$staged_files" ]; then
+    echo "✅ No staged files to check."
+    exit 0
+fi
+
+# Check for sensitive files being committed
+for file in "${SENSITIVE_FILES[@]}"; do
+    if echo "$staged_files" | grep -q "^${file}$"; then
+        # Check if it contains real secrets (not placeholders)
+        file_content=$(git show ":${file}" 2>/dev/null || true)
+        if echo "$file_content" | grep -qP 'APP_KEY=base64:[A-Za-z0-9+/=]{20,}'; then
+            echo -e "${RED}❌ BLOCKED: ${file} contains a real APP_KEY!${NC}"
+            echo "   Generate a new key for your environment instead."
+            exit_code=1
+        fi
+        if echo "$file_content" | grep -qP 'JWT_SECRET=[A-Za-z0-9]{32,}'; then
+            echo -e "${RED}❌ BLOCKED: ${file} contains a real JWT_SECRET!${NC}"
+            echo "   Use: openssl rand -hex 32"
+            exit_code=1
+        fi
+        if echo "$file_content" | grep -qP 'STRIPE_SECRET_KEY=sk_live_'; then
+            echo -e "${RED}❌ BLOCKED: ${file} contains a LIVE Stripe key!${NC}"
+            echo "   Use test keys for development."
+            exit_code=1
+        fi
+    fi
+done
+
+# Scan all staged content for secret patterns
+for pattern in "${SECRET_PATTERNS[@]}"; do
+    matches=$(git diff --cached -U0 2>/dev/null | grep -nP "^\+.*${pattern}" || true)
+    if [ -n "$matches" ]; then
+        echo -e "${YELLOW}⚠️  WARNING: Possible real secret detected:${NC}"
+        echo "   Pattern: ${pattern}"
+        echo "$matches" | head -5
+        echo ""
+        echo "   If this is intentional, commit with --no-verify"
+        exit_code=1
+    fi
+done
+
+if [ $exit_code -eq 0 ]; then
+    echo "✅ No real secrets detected in staged changes."
+else
+    echo ""
+    echo -e "${RED}Commit blocked. Use --no-verify to bypass (not recommended).${NC}"
+fi
+
+exit $exit_code

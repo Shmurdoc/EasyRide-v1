@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Payment;
 use App\Models\Ride;
+use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -23,24 +24,26 @@ class EscrowService
 
     public function holdPayment(Ride $ride, string $method = 'wallet', array $gatewayData = []): Payment
     {
-        $existingPayment = Payment::where('ride_id', $ride->id)
-            ->whereIn('status', [Payment::STATUS_PENDING, Payment::STATUS_COMPLETED, Payment::STATUS_ESCROW_HELD])
-            ->first();
-
-        if ($existingPayment) {
-            Log::warning('EscrowService: Double-debit prevented', [
-                'ride_id' => $ride->id,
-                'existing_payment_id' => $existingPayment->id,
-                'existing_status' => $existingPayment->status,
-                'requested_method' => $method,
-            ]);
-
-            throw new \App\Exceptions\PaymentAlreadyHeldException(
-                "Payment already exists for ride {$ride->id} with status {$existingPayment->status}"
-            );
-        }
-
         return DB::transaction(function () use ($ride, $method, $gatewayData) {
+            Ride::where('id', $ride->id)->lockForUpdate()->first();
+
+            $existingPayment = Payment::where('ride_id', $ride->id)
+                ->whereIn('status', [Payment::STATUS_PENDING, Payment::STATUS_COMPLETED, Payment::STATUS_ESCROW_HELD, Payment::STATUS_PAID])
+                ->first();
+
+            if ($existingPayment) {
+                Log::warning('EscrowService: Double-debit prevented', [
+                    'ride_id' => $ride->id,
+                    'existing_payment_id' => $existingPayment->id,
+                    'existing_status' => $existingPayment->status,
+                    'requested_method' => $method,
+                ]);
+
+                throw new \App\Exceptions\PaymentAlreadyHeldException(
+                    "Payment already exists for ride {$ride->id} with status {$existingPayment->status}"
+                );
+            }
+
             $payment = $this->paymentService->processPayment($ride, $method, $gatewayData);
 
             if ($method === 'wallet') {
@@ -60,15 +63,61 @@ class EscrowService
         });
     }
 
+    /**
+     * Complete a pending gateway payment once the gateway webhook confirms the
+     * charge. Idempotent: if the payment is no longer pending (already captured,
+     * failed, refunded), it is returned unchanged so webhook replays are safe.
+     * Moves the payment to COMPLETED and escrows the driver payout in
+     * pending_balance, mirroring the wallet hold path.
+     */
+    public function completeGatewayPayment(Payment $payment, string $reference): Payment
+    {
+        return DB::transaction(function () use ($payment, $reference) {
+            $payment = Payment::where('id', $payment->id)->lockForUpdate()->first();
+
+            if (! $payment || $payment->status !== Payment::STATUS_PENDING) {
+                return $payment;
+            }
+
+            $payment->update([
+                'status' => Payment::STATUS_COMPLETED,
+                'paid_at' => now(),
+                'gateway_reference' => $reference,
+            ]);
+
+            $ride = $payment->ride;
+            if ($ride && $ride->driver) {
+                $driverWallet = $this->walletService->getOrCreateWallet($ride->driver);
+                $driverWallet->increment('pending_balance', (float) ($payment->driver_payout ?? 0));
+            }
+
+            Log::info('EscrowService: Gateway payment completed', [
+                'payment_id' => $payment->id,
+                'ride_id' => $payment->ride_id,
+                'reference' => $reference,
+            ]);
+
+            return $payment->fresh();
+        });
+    }
+
     public function releasePayment(Payment $payment): ?WalletTransaction
     {
-        if ($payment->status !== Payment::STATUS_COMPLETED) {
-            Log::warning('Escrow release: Payment not completed', ['payment_id' => $payment->id]);
-
-            return null;
-        }
-
         return DB::transaction(function () use ($payment) {
+            $payment = Payment::where('id', $payment->id)->lockForUpdate()->first();
+
+            if (! $payment || $payment->status !== Payment::STATUS_COMPLETED) {
+                Log::warning('Escrow release: Payment not completed', ['payment_id' => $payment->id]);
+
+                return null;
+            }
+
+            if ($payment->escrow_released) {
+                Log::warning('Escrow release: Already released', ['payment_id' => $payment->id]);
+
+                return null;
+            }
+
             $ride = $payment->ride;
             if (! $ride || ! $ride->driver) {
                 Log::warning('Escrow release: No driver for payment', ['payment_id' => $payment->id]);
@@ -79,7 +128,9 @@ class EscrowService
             $driverWallet = $this->walletService->getOrCreateWallet($ride->driver);
             $payoutAmount = (float) ($payment->driver_payout ?? 0);
 
-            $pendingBalance = (float) $driverWallet->pending_balance;
+            $freshDriverWallet = Wallet::where('id', $driverWallet->id)->lockForUpdate()->first();
+
+            $pendingBalance = (float) $freshDriverWallet->pending_balance;
             if ($pendingBalance < $payoutAmount) {
                 Log::warning('Escrow release: Insufficient pending balance', [
                     'pending' => $pendingBalance,
@@ -89,15 +140,19 @@ class EscrowService
                 return null;
             }
 
-            $driverWallet->decrement('pending_balance', $payoutAmount);
+            $freshDriverWallet->decrement('pending_balance', $payoutAmount);
 
-            return $this->walletService->credit(
-                $driverWallet,
+            $transaction = $this->walletService->credit(
+                $freshDriverWallet,
                 $payoutAmount,
                 'ride_earnings',
                 $ride->id,
                 "Escrow released for ride {$ride->id}",
             );
+
+            $payment->update(['escrow_released' => true, 'escrow_released_at' => now()]);
+
+            return $transaction;
         });
     }
 
@@ -117,9 +172,9 @@ class EscrowService
 
         foreach ($payments as $payment) {
             try {
-                $this->releasePayment($payment);
-                $payment->update(['escrow_released' => true, 'escrow_released_at' => now()]);
-                $released++;
+                if ($this->releasePayment($payment) !== null) {
+                    $released++;
+                }
             } catch (\Exception $e) {
                 Log::error('Escrow release failed', [
                     'payment_id' => $payment->id,

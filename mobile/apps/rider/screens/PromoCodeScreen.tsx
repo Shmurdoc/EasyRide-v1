@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, StyleSheet, Text, TextInput, TouchableOpacity, ScrollView,
@@ -11,6 +12,8 @@ import type { PromoCode } from '@easyryde/shared';
 import type { RiderNav } from '@easyryde/shared';
 
 export default function PromoCodeScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const navigation = useNavigation<RiderNav>();
   const [code, setCode] = useState('');
   const [validating, setValidating] = useState(false);
@@ -233,7 +236,7 @@ export default function PromoCodeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

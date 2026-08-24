@@ -1,3 +1,4 @@
+import { useTheme } from '@easyryde/shared';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
@@ -64,6 +65,8 @@ const CONSENT_ITEMS: { type: ConsentType; title: string; description: string; re
 ];
 
 export default function ConsentScreen({ navigation, onConsentComplete }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [consents, setConsents] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -142,7 +145,7 @@ export default function ConsentScreen({ navigation, onConsentComplete }: Props) 
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#FFAD7A" />
+        <ActivityIndicator size="large" color="#FF6A00" />
       </View>
     );
   }
@@ -150,7 +153,7 @@ export default function ConsentScreen({ navigation, onConsentComplete }: Props) 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="shield-checkmark" size={48} color="#FFAD7A" />
+        <Ionicons name="shield-checkmark" size={48} color="#FF6A00" />
         <Text style={styles.headerTitle}>Privacy & Consent</Text>
         <Text style={styles.headerSubtitle}>
           Manage your data preferences. Required consents are needed to use the app.
@@ -170,8 +173,8 @@ export default function ConsentScreen({ navigation, onConsentComplete }: Props) 
             <Switch
               value={consents[item.type] ?? false}
               onValueChange={(val) => handleToggle(item.type, val)}
-              trackColor={{ false: '#3a3a3c', true: '#FFAD7A80' }}
-              thumbColor={consents[item.type] ? '#FFAD7A' : '#f4f3f4'}
+              trackColor={{ false: '#3a3a3c', true: '#FF6A0080' }}
+              thumbColor={consents[item.type] ? '#FF6A00' : '#f4f3f4'}
               disabled={item.required}
             />
           </View>
@@ -195,7 +198,7 @@ export default function ConsentScreen({ navigation, onConsentComplete }: Props) 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#121212',
@@ -215,7 +218,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.white,
     marginTop: 12,
   },
   headerSubtitle: {
@@ -247,7 +250,7 @@ const styles = StyleSheet.create({
   consentTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.white,
   },
   required: {
     color: '#FF3B30',
@@ -264,7 +267,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   saveButton: {
-    backgroundColor: '#FFAD7A',
+    backgroundColor: '#FF6A00',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',

@@ -65,6 +65,9 @@ class PaymentService
 
             $platformFee = $this->calculatePlatformFee((float) $ride->total_fare, $ride->tenant_id);
 
+            $driverPayout = round((float) $ride->total_fare - $platformFee, 2);
+            $driverPayout = max(0, $driverPayout);
+
             $payment = Payment::create([
                 'ride_id' => $ride->id,
                 'payer_id' => $ride->rider_id,
@@ -73,7 +76,7 @@ class PaymentService
                 'gateway_reference' => $gatewayData['reference'] ?? null,
                 'amount' => $ride->total_fare,
                 'platform_fee' => $platformFee,
-                'driver_payout' => round((float) $ride->total_fare - $platformFee, 2),
+                'driver_payout' => $driverPayout,
                 'status' => $isGateway ? Payment::STATUS_PENDING : Payment::STATUS_COMPLETED,
                 'paid_at' => $isGateway ? null : now(),
                 'gateway_response' => $gatewayData,

@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Services\Payment\PayFastService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PayFastServiceTest extends TestCase
@@ -64,7 +65,7 @@ class PayFastServiceTest extends TestCase
 
     public function test_verify_itn_validates_signature_and_status(): void
     {
-        $payment = Payment::factory()->create(['id' => 1, 'status' => 'pending']);
+        $payment = Payment::factory()->create(['status' => 'pending']);
 
         $data = [
             'merchant_id' => '100001',
@@ -72,7 +73,7 @@ class PayFastServiceTest extends TestCase
             'm_payment_id' => 'PAY123',
             'amount' => '150.00',
             'item_name' => 'Test Ride',
-            'custom_int1' => '1',
+            'custom_int1' => $payment->id,
             'payment_status' => 'COMPLETE',
             'pf_payment_id' => 'pf_123',
         ];
@@ -90,7 +91,7 @@ class PayFastServiceTest extends TestCase
             'merchant_key' => 'abc123def',
             'amount' => '150.00',
             'item_name' => 'Test Ride',
-            'custom_int1' => '1',
+            'custom_int1' => Str::uuid()->toString(),
             'payment_status' => 'COMPLETE',
             'signature' => 'invalid_signature',
         ];
@@ -105,7 +106,7 @@ class PayFastServiceTest extends TestCase
             'merchant_key' => 'abc123def',
             'amount' => '150.00',
             'item_name' => 'Test Ride',
-            'custom_int1' => '999',
+            'custom_int1' => Str::uuid()->toString(),
             'payment_status' => 'COMPLETE',
         ];
 
@@ -117,14 +118,14 @@ class PayFastServiceTest extends TestCase
 
     public function test_verify_itn_returns_false_when_payment_status_not_complete(): void
     {
-        $payment = Payment::factory()->create(['id' => 1, 'status' => 'pending']);
+        $payment = Payment::factory()->create(['status' => 'pending']);
 
         $data = [
             'merchant_id' => '100001',
             'merchant_key' => 'abc123def',
             'amount' => '150.00',
             'item_name' => 'Test Ride',
-            'custom_int1' => '1',
+            'custom_int1' => $payment->id,
             'payment_status' => 'FAILED',
         ];
 
@@ -138,10 +139,10 @@ class PayFastServiceTest extends TestCase
     {
         Event::fake();
 
-        $payment = Payment::factory()->create(['id' => 1, 'status' => 'pending']);
+        $payment = Payment::factory()->create(['status' => 'pending']);
 
         $data = [
-            'custom_int1' => '1',
+            'custom_int1' => $payment->id,
             'pf_payment_id' => 'pf_123',
             'payment_status' => 'COMPLETE',
             'amount' => '150.00',
@@ -162,10 +163,10 @@ class PayFastServiceTest extends TestCase
     {
         Event::fake();
 
-        $payment = Payment::factory()->create(['id' => 2, 'status' => 'pending']);
+        $payment = Payment::factory()->create(['status' => 'pending']);
 
         $data = [
-            'custom_int1' => '2',
+            'custom_int1' => $payment->id,
             'pf_payment_id' => 'pf_456',
             'payment_status' => 'FAILED',
             'amount' => '100.00',

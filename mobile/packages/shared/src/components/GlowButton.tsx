@@ -42,11 +42,7 @@ export function GlowButton({
   }, [disabled]);
 
   const handlePressIn = () => {
-    try {
-      Vibration.vibrate(10);
-    } catch (e) {
-      console.warn('[GlowButton] Vibration.vibrate failed:', e);
-    }
+    try { Vibration.vibrate(10); } catch {}
     Animated.parallel([
       Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: true, speed: 50, bounciness: 4 }),
       Animated.timing(innerGlow, { toValue: 1, duration: 100, useNativeDriver: true }),
@@ -61,13 +57,8 @@ export function GlowButton({
   };
 
   const handlePress = React.useCallback(() => {
-    try {
-      console.log('[GlowButton] handlePress called, disabled=', disabled, 'loading=', loading);
-      if (disabled || loading) return;
-      onPress?.();
-    } catch (e) {
-      console.error('[GlowButton] handlePress crashed:', e);
-    }
+    if (disabled || loading) return;
+    onPress?.();
   }, [disabled, loading, onPress]);
 
   const sizeStyles: Record<ButtonSize, ViewStyle> = {
@@ -124,12 +115,12 @@ export function GlowButton({
           justifyContent: 'center',
         }}>
           {loading ? (
-            <ActivityIndicator size="small" color={COLORS.bg} />
+            <ActivityIndicator size="small" color={COLORS.white} />
           ) : (
             <>
               {icon}
               <Text style={[
-                { color: COLORS.bg, marginLeft: icon ? 8 : 0 },
+                { color: COLORS.white, marginLeft: icon ? 8 : 0 },
                 textSizes[size],
                 textStyle,
               ]}>

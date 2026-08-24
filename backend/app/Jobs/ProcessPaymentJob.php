@@ -60,19 +60,9 @@ class ProcessPaymentJob implements ShouldQueue
             return;
         }
 
-        $payment = $paymentService->processPayment($ride, $this->method, $this->gatewayData);
-
-        if ($payment->status === PaymentStatus::COMPLETED->value && $this->method !== 'wallet') {
-            try {
-                $escrowService->holdPayment($payment);
-            } catch (\Throwable $e) {
-                Log::error('ProcessPaymentJob: escrow hold failed', [
-                    'ride_id' => $this->rideId,
-                    'payment_id' => $payment->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        $payment = $this->method !== 'wallet'
+            ? $escrowService->holdPayment($ride, $this->method, $this->gatewayData)
+            : $paymentService->processPayment($ride, $this->method, $this->gatewayData);
 
         if ($ride->rider_id) {
             $notificationService->notify(
