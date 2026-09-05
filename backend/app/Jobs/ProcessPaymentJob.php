@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Enums\PaymentStatus;
 use App\Models\Payment;
 use App\Models\Ride;
 use App\Services\EscrowService;
@@ -51,18 +50,40 @@ class ProcessPaymentJob implements ShouldQueue
         }
 
         $existingPayment = $ride->payment;
-        if ($existingPayment && $existingPayment->status === PaymentStatus::COMPLETED->value) {
-            Log::info('ProcessPaymentJob: payment already completed', [
+        if ($existingPayment && in_array($existingPayment->status, [
+            Payment::STATUS_PENDING,
+            Payment::STATUS_COMPLETED,
+            Payment::STATUS_PAID,
+            Payment::STATUS_ESCROW_HELD,
+        ], true)) {
+            Log::info('ProcessPaymentJob: payment already exists, skipping (idempotent)', [
                 'ride_id' => $this->rideId,
                 'payment_id' => $existingPayment->id,
+                'status' => $existingPayment->status,
             ]);
 
             return;
         }
 
-        $payment = $this->method !== 'wallet'
-            ? $escrowService->holdPayment($ride, $this->method, $this->gatewayData)
-            : $paymentService->processPayment($ride, $this->method, $this->gatewayData);
+        // Deterministic idempotency key per ride: job retries (tries=3) must
+        // not mint a fresh random key per attempt or PaymentService would
+        // create a duplicate payment and double-debit the rider.
+        $gatewayData = $this->gatewayData + ['idempotency_key' => "ride:{$this->rideId}:payment"];
+
+        try {
+            $payment = $this->method !== 'wallet'
+                ? $escrowService->holdPayment($ride, $this->method, $gatewayData)
+                : $paymentService->processPayment($ride, $this->method, $gatewayData);
+        } catch (\App\Exceptions\PaymentAlreadyHeldException $e) {
+            // Lost race with a concurrent worker/request: an active payment
+            // now exists for this ride. Treat as success, do not retry.
+            Log::info('ProcessPaymentJob: payment already held by concurrent process', [
+                'ride_id' => $this->rideId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
 
         if ($ride->rider_id) {
             $notificationService->notify(

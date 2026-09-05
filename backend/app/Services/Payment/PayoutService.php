@@ -29,15 +29,9 @@ class PayoutService
                 continue;
             }
 
-            $payout = DriverPayout::create([
-                'driver_id' => $wallet->user_id,
-                'amount' => $amount,
-                'method' => 'wallet',
-                'status' => 'pending',
-            ]);
-
-            ProcessPayoutJob::dispatch($payout);
-            $count++;
+            if ($this->createPayoutIfEligible($wallet, (float) $amount)) {
+                $count++;
+            }
         }
 
         return $count;
@@ -49,14 +43,9 @@ class PayoutService
         Wallet::where('balance', '>', 200)
             ->whereHas('user', fn ($q) => $q->whereHas('driverProfile'))
             ->each(function (Wallet $wallet) use (&$count) {
-                $payout = DriverPayout::create([
-                    'driver_id' => $wallet->user_id,
-                    'amount' => $wallet->balance,
-                    'method' => 'wallet',
-                    'status' => 'pending',
-                ]);
-                ProcessPayoutJob::dispatch($payout);
-                $count++;
+                if ($this->createPayoutIfEligible($wallet, (float) $wallet->balance)) {
+                    $count++;
+                }
             });
 
         return $count;
@@ -68,16 +57,44 @@ class PayoutService
         Wallet::whereBetween('balance', [0.01, 200])
             ->whereHas('user', fn ($q) => $q->whereHas('driverProfile'))
             ->each(function (Wallet $wallet) use (&$count) {
-                $payout = DriverPayout::create([
-                    'driver_id' => $wallet->user_id,
-                    'amount' => $wallet->balance,
-                    'method' => 'wallet',
-                    'status' => 'pending',
-                ]);
-                ProcessPayoutJob::dispatch($payout);
-                $count++;
+                if ($this->createPayoutIfEligible($wallet, (float) $wallet->balance)) {
+                    $count++;
+                }
             });
 
         return $count;
+    }
+
+    /**
+     * Create a payout only if the driver has no unsettled payout. Without
+     * this guard overlapping scheduler runs (daily + weekly + manual) each
+     * mint a full-balance payout, queueing multiples of the driver's balance
+     * (pending_payout double-counting) and racing in ProcessPayoutJob.
+     */
+    private function createPayoutIfEligible(Wallet $wallet, float $amount): bool
+    {
+        if ($amount <= 0) {
+            return false;
+        }
+
+        $hasOpen = DriverPayout::where('driver_id', $wallet->user_id)
+            ->whereIn('status', ['pending', 'approved', 'processing'])
+            ->exists();
+
+        if ($hasOpen) {
+            return false;
+        }
+
+        $payout = DriverPayout::create([
+            'tenant_id' => $wallet->user?->tenant_id ?? $wallet->tenant_id,
+            'driver_id' => $wallet->user_id,
+            'amount' => $amount,
+            'method' => 'wallet',
+            'status' => 'pending',
+        ]);
+
+        ProcessPayoutJob::dispatch($payout);
+
+        return true;
     }
 }

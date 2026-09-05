@@ -1,92 +1,111 @@
 import React, { useRef } from 'react';
-import { Animated, View, StyleSheet, ViewStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import {
+  Animated,
+  View,
+  StyleSheet,
+  ViewStyle,
+  Pressable,
+} from 'react-native';
 import { useTheme } from '../theme';
-import { SPACING, RADIUS, SHADOWS, COLORS, GRADIENTS } from '../constants';
+import { SPACING, RADIUS, SHADOWS, COLORS } from '../constants';
+
+type CardVariant = 'default' | 'elevated' | 'outlined';
 
 interface CardProps {
   children: React.ReactNode;
-  variant?: 'default' | 'raised' | 'interactive' | 'glass' | 'elevated';
+  variant?: CardVariant;
   padding?: number;
+  onPress?: () => void;
   style?: ViewStyle;
+  testID?: string;
 }
 
-export function Card({ children, variant = 'default', padding = SPACING.base, style }: CardProps) {
+export function Card({
+  children,
+  variant = 'default',
+  padding = SPACING.base,
+  onPress,
+  style,
+  testID,
+}: CardProps) {
   const { colors } = useTheme();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
-    if (variant === 'interactive' || variant === 'glass') {
-      Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
-    }
+    if (!onPress) return;
+    Animated.spring(scaleAnim, {
+      toValue: 0.98,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
   };
 
   const handlePressOut = () => {
-    if (variant === 'interactive' || variant === 'glass') {
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+    if (!onPress) return;
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  const getVariantStyle = (): ViewStyle => {
+    switch (variant) {
+      case 'elevated':
+        return {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          ...SHADOWS.raised,
+        };
+      case 'outlined':
+        return {
+          backgroundColor: 'transparent',
+          borderWidth: 1,
+          borderColor: colors.border,
+        };
+      case 'default':
+      default:
+        return {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          ...SHADOWS.card,
+        };
     }
   };
 
-  if (variant === 'glass') {
+  const content = (
+    <View style={[styles.inner, { padding }, getVariantStyle(), style]}>
+      {children}
+    </View>
+  );
+
+  if (onPress) {
     return (
-      <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
-        <View
-          onStartShouldSetResponder={() => true}
-          onResponderGrant={handlePressIn}
-          onResponderRelease={handlePressOut}
-          style={[{
-            padding,
-            borderRadius: RADIUS.lg,
-            backgroundColor: COLORS.glass,
-            borderWidth: 1,
-            borderColor: COLORS.glassBorder,
-            overflow: 'hidden',
-          }, SHADOWS.moderate, style]}
+      <Animated.View
+        testID={testID}
+        style={{ transform: [{ scale: scaleAnim }] }}
+      >
+        <Pressable
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
         >
-          {children}
-        </View>
+          {content}
+        </Pressable>
       </Animated.View>
     );
   }
 
-  if (variant === 'elevated') {
-    return (
-      <View style={[{
-        padding,
-        borderRadius: RADIUS.lg,
-        overflow: 'hidden',
-      }, SHADOWS.elevated, style]}>
-        <LinearGradient
-          colors={GRADIENTS.surface as unknown as string[]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: RADIUS.lg }]}
-        />
-        <View style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: RADIUS.lg, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-        <View style={{ position: 'relative' }}>
-          {children}
-        </View>
-      </View>
-    );
-  }
-
-  const base: ViewStyle = {
-    backgroundColor: colors.surface,
-    borderRadius: RADIUS.lg,
-    padding,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  };
-
-  const variants: Record<string, ViewStyle> = {
-    default: {},
-    raised: { ...SHADOWS.moderate },
-    interactive: {},
-  };
-
-  return (
-    <View style={[base, variants[variant], style]}>
-      {children}
-    </View>
-  );
+  return <View testID={testID}>{content}</View>;
 }
+
+const styles = StyleSheet.create({
+  inner: {
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+  },
+});

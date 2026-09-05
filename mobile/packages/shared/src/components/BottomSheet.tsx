@@ -1,76 +1,94 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   Animated,
-  Modal as RNModal,
+  Modal,
   Pressable,
   View,
-  Text,
   StyleSheet,
   ViewStyle,
   Dimensions,
   PanResponder,
 } from 'react-native';
 import { useTheme } from '../theme';
-import { SPACING, RADIUS, COLORS, Z_INDEX } from '../constants';
+import { SPACING, RADIUS, COLORS } from '../constants';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-interface ModalProps {
+interface BottomSheetProps {
   visible: boolean;
   onClose: () => void;
-  title?: string;
   children: React.ReactNode;
-  snapPoint?: number;
+  snapPoints?: number[];
+  initialSnapIndex?: number;
   showHandle?: boolean;
   closeOnBackdrop?: boolean;
   style?: ViewStyle;
   testID?: string;
 }
 
-export function Modal({
+export function BottomSheet({
   visible,
   onClose,
-  title,
   children,
-  snapPoint,
+  snapPoints = [SCREEN_HEIGHT * 0.5, SCREEN_HEIGHT * 0.85],
+  initialSnapIndex = 0,
   showHandle = true,
   closeOnBackdrop = true,
   style,
   testID,
-}: ModalProps) {
-  const { colors, typography } = useTheme();
+}: BottomSheetProps) {
+  const { colors } = useTheme();
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const contentHeight = useRef(new Animated.Value(0)).current;
+  const currentSnapIndex = useRef(initialSnapIndex);
 
-  const maxHeight = snapPoint || SCREEN_HEIGHT * 0.85;
+  const targetSnapPoint = snapPoints[initialSnapIndex] || snapPoints[0];
 
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) =>
-        gestureState.dy > 10,
+        Math.abs(gestureState.dy) > 10,
       onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          translateY.setValue(gestureState.dy);
-        }
+        const minY = -(SCREEN_HEIGHT - snapPoints[snapPoints.length - 1]);
+        const maxY = 0;
+        const newY = gestureState.dy + (translateY as any)._value;
+        const clampedY = Math.max(minY, Math.min(maxY, newY));
+        translateY.setValue(clampedY);
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 120 || gestureState.vy > 0.8) {
-          onClose();
-        } else {
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            speed: 40,
-            bounciness: 6,
-          }).start();
+        const currentY = (translateY as any)._value;
+        const velocity = gestureState.vy;
+
+        let targetIndex = currentSnapIndex.current;
+
+        if (velocity < -0.5 || gestureState.dy < -50) {
+          targetIndex = Math.min(currentSnapIndex.current + 1, snapPoints.length - 1);
+        } else if (velocity > 0.5 || gestureState.dy > 50) {
+          targetIndex = Math.max(currentSnapIndex.current - 1, 0);
+          if (targetIndex === 0 && gestureState.dy > 100) {
+            onClose();
+            return;
+          }
         }
+
+        currentSnapIndex.current = targetIndex;
+        const targetY = -(SCREEN_HEIGHT - snapPoints[targetIndex]);
+
+        Animated.spring(translateY, {
+          toValue: targetY,
+          useNativeDriver: true,
+          speed: 40,
+          bounciness: 6,
+        }).start();
       },
     })
   ).current;
 
   useEffect(() => {
     if (visible) {
+      currentSnapIndex.current = initialSnapIndex;
+      const targetY = -(SCREEN_HEIGHT - targetSnapPoint);
+
       Animated.parallel([
         Animated.timing(backdropOpacity, {
           toValue: 1,
@@ -78,7 +96,7 @@ export function Modal({
           useNativeDriver: true,
         }),
         Animated.spring(translateY, {
-          toValue: 0,
+          toValue: targetY,
           useNativeDriver: true,
           speed: 40,
           bounciness: 6,
@@ -101,7 +119,7 @@ export function Modal({
   }, [visible]);
 
   return (
-    <RNModal
+    <Modal
       testID={testID}
       visible={visible}
       transparent
@@ -122,7 +140,6 @@ export function Modal({
         style={[
           styles.sheet,
           {
-            maxHeight,
             transform: [{ translateY }],
           },
           style,
@@ -132,31 +149,16 @@ export function Modal({
         <View style={[styles.content, { backgroundColor: colors.surface }]}>
           {showHandle && (
             <View style={styles.handleRow}>
-              <View style={[styles.handle, { backgroundColor: colors.textMuted }]} />
+              <View
+                style={[styles.handle, { backgroundColor: colors.textMuted }]}
+              />
             </View>
           )}
 
-          {title && (
-            <View style={styles.titleRow}>
-              <Text style={[typography.h2, { color: colors.text, flex: 1 }]}>
-                {title}
-              </Text>
-              <Pressable
-                onPress={onClose}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                style={styles.closeButton}
-              >
-                <Text style={[typography.body, { color: colors.textMuted }]}>
-                  ✕
-                </Text>
-              </Pressable>
-            </View>
-          )}
-
-          <View style={styles.body}>{children}</View>
+          {children}
         </View>
       </Animated.View>
-    </RNModal>
+    </Modal>
   );
 }
 
@@ -170,6 +172,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
     overflow: 'hidden',
@@ -178,6 +184,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
     paddingBottom: SPACING['2xl'],
+    minHeight: 200,
   },
   handleRow: {
     alignItems: 'center',
@@ -188,21 +195,5 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.sm,
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  body: {
-    paddingHorizontal: SPACING.lg,
   },
 });

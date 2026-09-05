@@ -1,10 +1,17 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Dimensions, StatusBar, Animated } from 'react-native';
+import {
+  View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity,
+  Dimensions, StatusBar, Animated,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { ADMIN_COLORS, ADMIN_RADIUS } from '../constants/theme';
+import { useTheme } from '@easyryde/shared';
+import { COLORS } from '@easyryde/shared';
+import { ADMIN_COLORS, ADMIN_GRADIENTS } from '../constants/theme';
 import { useAdminDashboard } from '../hooks/useAdminDashboard';
 import { Card } from '../components/common/Card';
 import { Avatar } from '../components/common/Avatar';
@@ -13,7 +20,8 @@ import { ProgressBar } from '../components/common/ProgressBar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PHALABORWA = { latitude: -23.9421, longitude: 31.1408 };
-const ADMIN_AVATAR = 'https://ui-avatars.com/api/?name=Thabo+Molefe&background=6366f1&color=fff&size=128';
+
+type Nav = NativeStackNavigationProp<any>;
 
 const dummyDrivers = [
   { id: 'D-4521', name: 'John Mkhonto', status: 'online', coords: { latitude: -23.9405, longitude: 31.1390 } },
@@ -43,17 +51,20 @@ const topDrivers = [
 ];
 
 const ACTIVITY_COLORS: Record<string, string> = {
-  ride_completed: ADMIN_COLORS.green,
-  driver_online: ADMIN_COLORS.blue,
-  new_user: ADMIN_COLORS.primary,
-  surge_active: ADMIN_COLORS.orange,
-  ride_request: ADMIN_COLORS.primary,
+  ride_completed: COLORS.success,
+  driver_online: COLORS.info,
+  new_user: COLORS.brand,
+  surge_active: COLORS.warning,
+  ride_request: COLORS.brand,
 };
 
-interface Props { onMenuPress?: () => void; }
+interface Props {
+  navigation?: Nav;
+}
 
-export default function AdminDashboardScreen({ onMenuPress }: Props) {
+export default function AdminDashboardScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const { data, loading, refreshing, refresh } = useAdminDashboard();
   const liveAnim = useRef(new Animated.Value(1)).current;
 
@@ -73,7 +84,6 @@ export default function AdminDashboardScreen({ onMenuPress }: Props) {
   const fleetOnline = data?.fleetStatus?.online ?? 28;
   const fleetBusy = data?.fleetStatus?.onRide ?? 14;
   const fleetOffline = data?.fleetStatus?.offline ?? 8;
-  const fleetTotal = data?.fleetStatus?.total ?? 50;
   const activeRides = data?.activeRidesList ?? [];
   const topDriversData = data?.topDrivers ?? topDrivers;
   const activityData = data?.recentActivity ?? recentActivity;
@@ -81,7 +91,7 @@ export default function AdminDashboardScreen({ onMenuPress }: Props) {
   const maxRides = Math.max(...chartData.map(d => d.rides), 1);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: COLORS.bg }]}>
       <StatusBar barStyle="light-content" />
       <View style={StyleSheet.absoluteFill}>
         <MapView
@@ -109,10 +119,10 @@ export default function AdminDashboardScreen({ onMenuPress }: Props) {
       <ScrollView
         style={styles.scrollOverlay}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#6366f1" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={COLORS.brand} />}
         showsVerticalScrollIndicator={false}
       >
-        <LinearGradient colors={['#4f46e5', '#6366f1']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <LinearGradient colors={[COLORS.brandDark, COLORS.brand]} style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <View style={styles.headerRow}>
             <View>
               <Text style={styles.greeting}>Dashboard</Text>
@@ -123,12 +133,12 @@ export default function AdminDashboardScreen({ onMenuPress }: Props) {
                 <Animated.View style={[styles.liveDot, { opacity: liveAnim }]} />
                 <Text style={styles.liveText}>LIVE</Text>
               </View>
-              <Avatar name="Thabo Molefe" size={40} imageUrl={ADMIN_AVATAR} borderColor="rgba(255,255,255,0.3)" />
+              <Avatar name="Admin" size={40} borderColor="rgba(255,255,255,0.3)" />
             </View>
           </View>
 
           <View style={styles.metricRow}>
-            <LinearGradient colors={['#6366f1', '#4f46e5']} style={styles.metricCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <LinearGradient colors={[COLORS.brand, COLORS.brandDark]} style={styles.metricCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
               <Text style={styles.metricLabel}>Today's Revenue</Text>
               <Text style={styles.metricValue}>R{revenueToday.toLocaleString()}</Text>
               <View style={styles.metricTrend}>
@@ -136,7 +146,7 @@ export default function AdminDashboardScreen({ onMenuPress }: Props) {
                 <Text style={styles.metricTrendText}>+12.5%</Text>
               </View>
             </LinearGradient>
-            <LinearGradient colors={['#6366f1', '#4f46e5']} style={styles.metricCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <LinearGradient colors={[COLORS.brand, COLORS.brandDark]} style={styles.metricCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
               <Text style={styles.metricLabel}>Total Rides</Text>
               <Text style={styles.metricValue}>{ridesToday}</Text>
               <View style={styles.metricTrend}>
@@ -150,59 +160,64 @@ export default function AdminDashboardScreen({ onMenuPress }: Props) {
         <View style={styles.content}>
           <Card>
             <View style={styles.fleetHeader}>
-              <Text style={styles.sectionTitle}>Fleet Status</Text>
+              <Text style={[styles.sectionTitle, { color: COLORS.text }]}>Fleet Status</Text>
             </View>
             <View style={styles.fleetGrid}>
-              <View style={styles.fleetItem}>
-                <Text style={[styles.fleetValue, { color: ADMIN_COLORS.greenLight }]}>{fleetOnline}</Text>
-                <Text style={styles.fleetLabel}>Active</Text>
+              <View style={[styles.fleetItem, { backgroundColor: COLORS.surfaceLight }]}>
+                <Text style={[styles.fleetValue, { color: COLORS.success }]}>{fleetOnline}</Text>
+                <Text style={[styles.fleetLabel, { color: COLORS.textMuted }]}>Online</Text>
               </View>
-              <View style={styles.fleetItem}>
-                <Text style={[styles.fleetValue, { color: ADMIN_COLORS.blue }]}>{fleetOnline}</Text>
-                <Text style={styles.fleetLabel}>Online</Text>
+              <View style={[styles.fleetItem, { backgroundColor: COLORS.surfaceLight }]}>
+                <Text style={[styles.fleetValue, { color: COLORS.brand }]}>{fleetBusy}</Text>
+                <Text style={[styles.fleetLabel, { color: COLORS.textMuted }]}>Busy</Text>
               </View>
-              <View style={styles.fleetItem}>
-                <Text style={[styles.fleetValue, { color: ADMIN_COLORS.orangeLight }]}>{fleetBusy}</Text>
-                <Text style={styles.fleetLabel}>Busy</Text>
+              <View style={[styles.fleetItem, { backgroundColor: COLORS.surfaceLight }]}>
+                <Text style={[styles.fleetValue, { color: COLORS.textMuted }]}>{fleetOffline}</Text>
+                <Text style={[styles.fleetLabel, { color: COLORS.textMuted }]}>Offline</Text>
               </View>
-              <View style={styles.fleetItem}>
-                <Text style={[styles.fleetValue, { color: ADMIN_COLORS.textMuted }]}>{fleetOffline}</Text>
-                <Text style={styles.fleetLabel}>Offline</Text>
+              <View style={[styles.fleetItem, { backgroundColor: COLORS.surfaceLight }]}>
+                <Text style={[styles.fleetValue, { color: COLORS.brand }]}>{fleetOnline + fleetBusy}</Text>
+                <Text style={[styles.fleetLabel, { color: COLORS.textMuted }]}>Active</Text>
               </View>
             </View>
           </Card>
 
           <Card>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Active Rides</Text>
-              <Text style={styles.sectionCount}>{activeRides.length} in progress</Text>
+              <Text style={[styles.sectionTitle, { color: COLORS.text }]}>Active Rides</Text>
+              <Text style={[styles.sectionCount, { color: COLORS.brand }]}>{activeRides.length} in progress</Text>
             </View>
             {(activeRides.length > 0 ? activeRides : dummyActiveRides).slice(0, 3).map((ride) => (
-              <View key={ride.id} style={styles.rideItem}>
-                <View style={styles.rideIconWrap}>
-                  <Ionicons name="car" size={16} color={ADMIN_COLORS.primary} />
+              <TouchableOpacity
+                key={ride.id}
+                style={[styles.rideItem, { backgroundColor: COLORS.surfaceLight }]}
+                onPress={() => navigation?.navigate('AdminRideDetail', { id: ride.id })}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.rideIconWrap, { backgroundColor: 'rgba(255,106,0,0.15)' }]}>
+                  <Ionicons name="car" size={16} color={COLORS.brand} />
                 </View>
                 <View style={styles.rideInfo}>
-                  <Text style={styles.ridePassenger}>{ride.passenger}</Text>
-                  <Text style={styles.rideRoute}>{ride.pickup} → {ride.dropoff}</Text>
+                  <Text style={[styles.ridePassenger, { color: COLORS.text }]}>{ride.passenger}</Text>
+                  <Text style={[styles.rideRoute, { color: COLORS.textMuted }]}>{ride.pickup} → {ride.dropoff}</Text>
                 </View>
                 <View style={styles.rideRight}>
-                  <Text style={styles.rideFare}>R{ride.fare}</Text>
+                  <Text style={[styles.rideFare, { color: COLORS.brand }]}>R{ride.fare}</Text>
                   <ProgressBar progress={ride.progress} height={4} />
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Hourly Activity</Text>
+            <Text style={[styles.sectionTitle, { color: COLORS.text }]}>Hourly Activity</Text>
             <View style={styles.chartContainer}>
               {chartData.map((d, i) => {
                 const barHeight = (d.rides / maxRides) * 100;
                 return (
                   <View key={i} style={styles.chartCol}>
-                    <View style={[styles.chartBar, { height: `${Math.max(barHeight, 4)}%` }]} />
-                    <Text style={styles.chartLabel}>{d.hour}</Text>
+                    <View style={[styles.chartBar, { height: `${Math.max(barHeight, 4)}%`, backgroundColor: COLORS.brand }]} />
+                    <Text style={[styles.chartLabel, { color: COLORS.textMuted }]}>{d.hour}</Text>
                   </View>
                 );
               })}
@@ -210,27 +225,27 @@ export default function AdminDashboardScreen({ onMenuPress }: Props) {
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <Text style={[styles.sectionTitle, { color: COLORS.text }]}>Recent Activity</Text>
             {activityData.slice(0, 4).map((activity, idx) => (
-              <View key={idx} style={styles.activityItem}>
-                <View style={[styles.activityDot, { backgroundColor: ACTIVITY_COLORS[activity.type] || ADMIN_COLORS.primary }]} />
+              <View key={idx} style={[styles.activityItem, { borderBottomColor: COLORS.border }]}>
+                <View style={[styles.activityDot, { backgroundColor: ACTIVITY_COLORS[activity.type] || COLORS.brand }]} />
                 <View style={styles.activityContent}>
-                  <Text style={styles.activityMessage}>{activity.message}</Text>
-                  <Text style={styles.activityTime}>{activity.time}</Text>
+                  <Text style={[styles.activityMessage, { color: COLORS.text }]}>{activity.message}</Text>
+                  <Text style={[styles.activityTime, { color: COLORS.textMuted }]}>{activity.time}</Text>
                 </View>
               </View>
             ))}
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>Top Drivers Today</Text>
+            <Text style={[styles.sectionTitle, { color: COLORS.text }]}>Top Drivers Today</Text>
             {topDriversData.slice(0, 3).map((driver, idx) => (
-              <View key={driver.id} style={styles.driverItem}>
-                <Text style={styles.driverRank}>#{idx + 1}</Text>
+              <View key={driver.id} style={[styles.driverItem, { borderBottomColor: COLORS.border }]}>
+                <Text style={[styles.driverRank, { color: COLORS.brand }]}>#{idx + 1}</Text>
                 <Avatar name={driver.name} size={32} />
                 <View style={styles.driverInfo}>
-                  <Text style={styles.driverName}>{driver.name}</Text>
-                  <Text style={styles.driverTrips}>{driver.trips} trips</Text>
+                  <Text style={[styles.driverName, { color: COLORS.text }]}>{driver.name}</Text>
+                  <Text style={[styles.driverTrips, { color: COLORS.textMuted }]}>{driver.trips} trips</Text>
                 </View>
                 <Badge variant={driver.status as any} label={driver.status} />
               </View>
@@ -249,18 +264,18 @@ const dummyActiveRides = [
 ];
 
 const darkMapStyle = [
-  { elementType: 'geometry', stylers: [{ color: '#0f0f11' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#0f0f11' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1a1a1e' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f0f11' }] },
+  { elementType: 'geometry', stylers: [{ color: '#0A0A0F' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#8A8A8F' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#0A0A0F' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#161618' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#8A8A8F' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0A0A0F' }] },
   { featureType: 'poi', stylers: [{ visibility: 'off' }] },
   { featureType: 'transit', stylers: [{ visibility: 'off' }] },
 ];
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: ADMIN_COLORS.background },
+  container: { flex: 1 },
   scrollOverlay: { flex: 1, position: 'relative', zIndex: 1 },
   header: { paddingBottom: 16, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, marginBottom: 16 },
@@ -277,39 +292,39 @@ const styles = StyleSheet.create({
   metricTrend: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   metricTrendText: { fontSize: 11, color: 'rgba(255,255,255,0.7)' },
   content: { padding: 16 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#ffffff', marginBottom: 12 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 12 },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionCount: { fontSize: 12, color: ADMIN_COLORS.orange, fontWeight: '600' },
+  sectionCount: { fontSize: 12, fontWeight: '600' },
   fleetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   fleetGrid: { flexDirection: 'row', gap: 8 },
-  fleetItem: { flex: 1, backgroundColor: ADMIN_COLORS.surfaceLight, borderRadius: 12, padding: 12, alignItems: 'center' },
+  fleetItem: { flex: 1, borderRadius: 12, padding: 12, alignItems: 'center' },
   fleetValue: { fontSize: 20, fontWeight: '700' },
-  fleetLabel: { fontSize: 10, color: ADMIN_COLORS.textMuted, marginTop: 2 },
-  rideItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 10, marginBottom: 8 },
-  rideIconWrap: { width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(99,102,241,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  fleetLabel: { fontSize: 10, marginTop: 2 },
+  rideItem: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 10, marginBottom: 8 },
+  rideIconWrap: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   rideInfo: { flex: 1 },
-  ridePassenger: { fontSize: 14, fontWeight: '600', color: '#ffffff' },
-  rideRoute: { fontSize: 11, color: 'rgba(255,255,255,0.45)' },
+  ridePassenger: { fontSize: 14, fontWeight: '600' },
+  rideRoute: { fontSize: 11 },
   rideRight: { alignItems: 'flex-end', width: 80 },
-  rideFare: { fontSize: 14, fontWeight: '700', color: ADMIN_COLORS.primary, marginBottom: 4 },
+  rideFare: { fontSize: 14, fontWeight: '700', marginBottom: 4 },
   chartContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, gap: 4 },
   chartCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
-  chartBar: { width: '100%', backgroundColor: ADMIN_COLORS.primary, borderRadius: 4, minHeight: 4, opacity: 0.9 },
-  chartLabel: { fontSize: 10, color: ADMIN_COLORS.textMuted, marginTop: 4 },
-  activityItem: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
+  chartBar: { width: '100%', borderRadius: 4, minHeight: 4, opacity: 0.9 },
+  chartLabel: { fontSize: 10, marginTop: 4 },
+  activityItem: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1 },
   activityDot: { width: 8, height: 8, borderRadius: 4, marginTop: 4, marginRight: 10 },
   activityContent: { flex: 1 },
-  activityMessage: { fontSize: 14, color: '#ffffff' },
-  activityTime: { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
-  driverItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
-  driverRank: { fontSize: 13, fontWeight: '700', color: ADMIN_COLORS.primary, width: 28 },
+  activityMessage: { fontSize: 14 },
+  activityTime: { fontSize: 11, marginTop: 2 },
+  driverItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1 },
+  driverRank: { fontSize: 13, fontWeight: '700', width: 28 },
   driverInfo: { flex: 1, marginLeft: 10 },
-  driverName: { fontSize: 14, fontWeight: '600', color: '#ffffff' },
-  driverTrips: { fontSize: 11, color: 'rgba(255,255,255,0.45)' },
+  driverName: { fontSize: 14, fontWeight: '600' },
+  driverTrips: { fontSize: 11 },
   markerPulse: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  markerGreen: { backgroundColor: 'rgba(22,163,74,0.25)' },
-  markerOrange: { backgroundColor: 'rgba(245,158,11,0.25)' },
+  markerGreen: { backgroundColor: 'rgba(31,157,85,0.25)' },
+  markerOrange: { backgroundColor: 'rgba(255,106,0,0.25)' },
   markerDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  markerDotGreen: { backgroundColor: '#16a34a' },
-  markerDotOrange: { backgroundColor: '#f59e0b' },
+  markerDotGreen: { backgroundColor: COLORS.success },
+  markerDotOrange: { backgroundColor: COLORS.brand },
 });

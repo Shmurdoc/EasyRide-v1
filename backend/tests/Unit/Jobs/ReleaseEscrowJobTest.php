@@ -31,7 +31,9 @@ class ReleaseEscrowJobTest extends TestCase
         $escrow = $this->createMock(EscrowService::class);
         $escrow->expects($this->once())
             ->method('releasePayment')
-            ->with($payment);
+            ->with($this->callback(
+                fn ($p): bool => $p instanceof Payment && $p->id === $payment->id
+            ));
 
         $job = new ReleaseEscrowJob($payment);
         $job->handle($escrow);

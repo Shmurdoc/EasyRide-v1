@@ -1,10 +1,18 @@
 import React, { useRef, useEffect } from 'react';
-import { Animated, TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import {
+  Animated,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  View,
+  ViewStyle,
+  TextStyle,
+} from 'react-native';
 import { useTheme } from '../theme';
-import { RADIUS, SPACING, COLORS, GRADIENTS, SHADOWS } from '../constants';
+import { RADIUS, SPACING, COLORS } from '../constants';
 
-type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger';
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps {
@@ -16,177 +24,223 @@ interface ButtonProps {
   loading?: boolean;
   glow?: boolean;
   icon?: React.ReactNode;
+  iconPosition?: 'left' | 'right';
   style?: ViewStyle;
   textStyle?: TextStyle;
+  testID?: string;
 }
 
 export function Button({
-  title, onPress, variant = 'primary', size = 'md',
-  disabled, loading, glow = false, icon, style, textStyle,
+  title,
+  onPress,
+  variant = 'primary',
+  size = 'md',
+  disabled = false,
+  loading = false,
+  glow = false,
+  icon,
+  iconPosition = 'left',
+  style,
+  textStyle,
+  testID,
 }: ButtonProps) {
   const { colors, typography } = useTheme();
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
-    if (glow && variant === 'primary' && !disabled) {
+    if (glow && variant === 'primary' && !disabled && !loading) {
       const pulse = Animated.loop(
         Animated.sequence([
-          Animated.timing(glowAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-          Animated.timing(glowAnim, { toValue: 0.3, duration: 1500, useNativeDriver: true }),
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 1400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0.3,
+            duration: 1400,
+            useNativeDriver: true,
+          }),
         ])
       );
       pulse.start();
       return () => pulse.stop();
     }
-  }, [glow, variant, disabled]);
+  }, [glow, variant, disabled, loading]);
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
   };
 
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handlePress = () => {
+    if (!disabled && !loading) onPress();
   };
 
   const sizeStyles: Record<ButtonSize, ViewStyle> = {
-    sm: { paddingVertical: 10, paddingHorizontal: 16, minHeight: 40, borderRadius: RADIUS.sm },
-    md: { paddingVertical: 14, paddingHorizontal: SPACING.base, minHeight: 48, borderRadius: RADIUS.md },
-    lg: { paddingVertical: 18, paddingHorizontal: SPACING.lg, minHeight: 56, borderRadius: RADIUS.lg },
+    sm: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      minHeight: 40,
+      borderRadius: RADIUS.sm,
+    },
+    md: {
+      paddingVertical: 14,
+      paddingHorizontal: SPACING.base,
+      minHeight: 48,
+      borderRadius: RADIUS.md,
+    },
+    lg: {
+      paddingVertical: 18,
+      paddingHorizontal: SPACING.lg,
+      minHeight: 56,
+      borderRadius: RADIUS.lg,
+    },
   };
 
   const textSizes: Record<ButtonSize, TextStyle> = {
-    sm: typography.button,
+    sm: { ...typography.button, fontSize: 13 },
     md: typography.button,
-    lg: typography.buttonLarge,
+    lg: typography.buttonLg,
   };
 
-  const glowStyle: ViewStyle = variant === 'primary' && glow ? {
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
-  } : {};
+  const getVariantStyle = (): ViewStyle => {
+    switch (variant) {
+      case 'primary':
+        return {
+          backgroundColor: COLORS.brand,
+        };
+      case 'secondary':
+        return {
+          backgroundColor: colors.glass,
+          borderWidth: 1,
+          borderColor: colors.glassBorder,
+        };
+      case 'outline':
+        return {
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderColor: COLORS.brand,
+        };
+      case 'ghost':
+        return {
+          backgroundColor: 'transparent',
+        };
+      case 'danger':
+        return {
+          backgroundColor: COLORS.error,
+        };
+      default:
+        return {};
+    }
+  };
 
-  const renderContent = () => (
-    <>
+  const getTextColor = (): string => {
+    switch (variant) {
+      case 'primary':
+        return '#FFFFFF';
+      case 'secondary':
+        return colors.text;
+      case 'outline':
+        return COLORS.brand;
+      case 'ghost':
+        return colors.text;
+      case 'danger':
+        return '#FFFFFF';
+      default:
+        return '#FFFFFF';
+    }
+  };
+
+  const glowStyle: ViewStyle =
+    variant === 'primary' && glow
+      ? {
+          shadowColor: COLORS.brand,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: glowAnim,
+          shadowRadius: 20,
+          elevation: 10,
+        }
+      : {};
+
+  const content = (
+    <View style={styles.content}>
       {loading ? (
-        <ActivityIndicator size="small" color={variant === 'primary' || variant === 'accent' || variant === 'danger' ? colors.brandContrast : colors.text} />
+        <ActivityIndicator
+          size="small"
+          color={variant === 'outline' || variant === 'ghost' ? COLORS.brand : '#FFFFFF'}
+        />
       ) : (
         <>
-          {icon && <>{icon}</>}
-          <Text style={[
-            { color: variant === 'primary' || variant === 'accent' || variant === 'danger' ? colors.brandContrast : colors.text },
-            textSizes[size],
-            icon ? { marginLeft: 8 } : {},
-            textStyle,
-          ]}>
+          {icon && iconPosition === 'left' && (
+            <View style={[styles.icon, { marginRight: SPACING.sm }]}>{icon}</View>
+          )}
+          <Text
+            style={[
+              textSizes[size],
+              { color: getTextColor(), fontWeight: '700' },
+              textStyle,
+            ]}
+          >
             {title}
           </Text>
+          {icon && iconPosition === 'right' && (
+            <View style={[styles.icon, { marginLeft: SPACING.sm }]}>{icon}</View>
+          )}
         </>
       )}
-    </>
+    </View>
   );
 
-  if (variant === 'accent') {
-    return (
-      <Animated.View style={[{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.5 : 1 }]}>
-        <TouchableOpacity
-          onPress={onPress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          disabled={disabled || loading}
-          activeOpacity={1}
-          style={[sizeStyles[size], { backgroundColor: colors.brand }, style]}
-        >
-          <Animated.View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            {renderContent()}
-          </Animated.View>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  }
-
-  if (variant === 'primary') {
-    return (
-      <Animated.View style={[{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.5 : 1 }, glowStyle]}>
-        <TouchableOpacity
-          onPress={onPress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          disabled={disabled || loading}
-          activeOpacity={1}
-          style={[sizeStyles[size], style]}
-        >
-          <LinearGradient
-            colors={GRADIENTS.primary as unknown as string[]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: sizeStyles[size].borderRadius as number }]}
-          />
-          <Animated.View style={[StyleSheet.absoluteFill, {
-            backgroundColor: COLORS.primaryGlow,
-            borderRadius: sizeStyles[size].borderRadius,
-            opacity: glowAnim,
-          }]} />
-          <Animated.View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            {renderContent()}
-          </Animated.View>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  }
-
-  if (variant === 'danger') {
-    return (
-      <Animated.View style={[{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.5 : 1 }]}>
-        <TouchableOpacity
-          onPress={onPress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          disabled={disabled || loading}
-          activeOpacity={1}
-          style={[sizeStyles[size], { backgroundColor: COLORS.error }, SHADOWS.glowError, style]}
-        >
-          <Animated.View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            {renderContent()}
-          </Animated.View>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  }
-
-  const variantStyles: Record<ButtonVariant, ViewStyle> = {
-    primary: { backgroundColor: colors.primary },
-    accent: { backgroundColor: colors.brand },
-    secondary: {
-      backgroundColor: COLORS.surface,
-      borderWidth: 1.5,
-      borderColor: COLORS.border,
-    },
-    ghost: { backgroundColor: 'transparent' },
-    danger: { backgroundColor: COLORS.error },
-  };
-
   return (
-    <Animated.View style={[{ transform: [{ scale: scaleAnim }], opacity: disabled ? 0.5 : 1 }]}>
+    <Animated.View
+      style={[
+        { transform: [{ scale: scaleAnim }], opacity: disabled ? 0.5 : 1 },
+        glowStyle,
+      ]}
+    >
       <TouchableOpacity
-        onPress={onPress}
+        testID={testID}
+        onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
-        activeOpacity={1}
-        style={[sizeStyles[size], variantStyles[variant], style]}
+        activeOpacity={0.9}
+        style={[
+          sizeStyles[size],
+          getVariantStyle(),
+          variant === 'ghost' && { paddingVertical: size === 'sm' ? 8 : 12 },
+          style,
+        ]}
       >
-        <Animated.View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-          {renderContent()}
-        </Animated.View>
+        {content}
       </TouchableOpacity>
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'http://127.0.0.1:3001';
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'http://10.0.0.20:3001';
 const PING_INTERVAL = 25000;
 const MAX_BACKOFF = 30000;
 const MAX_EVENT_HISTORY = 200;

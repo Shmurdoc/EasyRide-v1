@@ -113,7 +113,7 @@ function HomeScreenInner({ navigation }: Props) {
       const completed = response.data ?? response ?? [];
       const rideList = Array.isArray(completed) ? completed.slice(0, 3) : [];
       setRecentRides(rideList);
-      const spent = rideList.reduce((sum, r) => sum + (r.total_fare ?? 0), 0);
+      const spent = rideList.reduce((sum, r) => sum + (Number(r.total_fare) || 0), 0);
       setTotalSpent(spent);
     } catch {
       setRecentRides([]);

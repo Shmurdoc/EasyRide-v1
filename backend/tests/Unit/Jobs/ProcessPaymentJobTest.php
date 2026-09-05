@@ -72,7 +72,9 @@ class ProcessPaymentJobTest extends TestCase
         $payment = Payment::factory()->create([
             'ride_id' => $ride->id,
             'payer_id' => $rider->id,
-            'status' => 'pending',
+            // 'failed' so the job proceeds: any active status
+            // (pending/completed/paid/escrow_held) is an idempotent no-op.
+            'status' => 'failed',
         ]);
 
         $paymentService->expects($this->once())
@@ -80,7 +82,7 @@ class ProcessPaymentJobTest extends TestCase
             ->with(
                 $this->callback(fn ($r): bool => $r instanceof Ride && $r->id === $ride->id),
                 'wallet',
-                [],
+                ['idempotency_key' => "ride:{$ride->id}:payment"],
             )
             ->willReturn($payment);
 

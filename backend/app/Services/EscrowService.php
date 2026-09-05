@@ -49,7 +49,10 @@ class EscrowService
             if ($method === 'wallet') {
                 $driverWallet = $this->walletService->getOrCreateWallet($ride->driver);
 
-                $driverWallet->increment('pending_balance', (float) $payment->driver_payout);
+                // Lock the wallet row: bare increment() here lost updates
+                // against concurrent releasePayment()/dispute decrements.
+                $lockedDriverWallet = Wallet::where('id', $driverWallet->id)->lockForUpdate()->first();
+                $lockedDriverWallet->increment('pending_balance', (float) $payment->driver_payout);
             }
 
             Log::info('EscrowService: Payment held', [
@@ -88,7 +91,8 @@ class EscrowService
             $ride = $payment->ride;
             if ($ride && $ride->driver) {
                 $driverWallet = $this->walletService->getOrCreateWallet($ride->driver);
-                $driverWallet->increment('pending_balance', (float) ($payment->driver_payout ?? 0));
+                $lockedDriverWallet = Wallet::where('id', $driverWallet->id)->lockForUpdate()->first();
+                $lockedDriverWallet->increment('pending_balance', (float) ($payment->driver_payout ?? 0));
             }
 
             Log::info('EscrowService: Gateway payment completed', [
@@ -202,23 +206,33 @@ class EscrowService
         }
 
         return DB::transaction(function () use ($payment) {
+            // Lock the payment row: without it a concurrent releasePayment()
+            // credits the driver while we simultaneously hold for dispute,
+            // paying out funds that were supposed to be frozen.
+            $payment = Payment::where('id', $payment->id)->lockForUpdate()->first();
+
+            if (! $payment || $payment->status !== Payment::STATUS_COMPLETED || $payment->escrow_released) {
+                return false;
+            }
+
             $ride = $payment->ride;
             if (! $ride || ! $ride->driver) {
                 return false;
             }
 
             $driverWallet = $this->walletService->getOrCreateWallet($ride->driver);
+            $lockedWallet = Wallet::where('id', $driverWallet->id)->lockForUpdate()->first();
             $payoutAmount = (float) ($payment->driver_payout ?? 0);
-            $pendingBalance = (float) $driverWallet->pending_balance;
+            $pendingBalance = (float) $lockedWallet->pending_balance;
 
             if ($pendingBalance >= $payoutAmount) {
-                $driverWallet->decrement('pending_balance', $payoutAmount);
+                $lockedWallet->decrement('pending_balance', $payoutAmount);
                 $payment->update(['dispute_hold' => true]);
 
                 return true;
             }
 
-            $driverWallet->decrement('pending_balance', $pendingBalance);
+            $lockedWallet->decrement('pending_balance', $pendingBalance);
             $payment->update(['dispute_hold' => true, 'dispute_hold_shortfall' => $payoutAmount - $pendingBalance]);
 
             return true;

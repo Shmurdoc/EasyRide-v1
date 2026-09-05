@@ -34,14 +34,14 @@ export default function EarningsScreen() {
         tips: weekTxs.filter((t: any) => t.type === 'tip').reduce((s: number, t: any) => s + (parseFloat(t.amount) || 0), 0),
         promos: weekTxs.filter((t: any) => t.type === 'promo' || t.type === 'bonus').reduce((s: number, t: any) => s + (parseFloat(t.amount) || 0), 0),
       });
-      setEarnings({ today: data.today_earnings || 0, week: weekTotalCalc, month: monthTotal, total: data.total_earnings || 0, pendingPayout: data.pending_payout || 0, trips: data.total_trips || 0, hours: data.hours_online || 0, rating: data.rating || 4.8 });
+      setEarnings({ today: Number(data.today_earnings) || 0, week: weekTotalCalc, month: monthTotal, total: Number(data.total_earnings) || 0, pendingPayout: Number(data.pending_payout) || 0, trips: Number(data.total_trips) || 0, hours: Number(data.hours_online) || 0, rating: Number(data.rating) || 4.8 });
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const weekMap: Record<string, { earnings: number; trips: number }> = {};
       dayNames.forEach((d) => { weekMap[d] = { earnings: 0, trips: 0 }; });
       const wAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      (data.recent_transactions || []).forEach((tx: any) => { const txDate = new Date(tx.created_at); if (txDate >= wAgo && tx.type === 'credit') { const day = dayNames[txDate.getDay()]; weekMap[day].earnings += tx.amount; weekMap[day].trips += 1; } });
+      (data.recent_transactions || []).forEach((tx: any) => { const txDate = new Date(tx.created_at); if (txDate >= wAgo && tx.type === 'credit') { const day = dayNames[txDate.getDay()]; weekMap[day].earnings += parseFloat(tx.amount) || 0; weekMap[day].trips += 1; } });
       setWeeklyData(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => ({ day: d, earnings: weekMap[d].earnings, trips: weekMap[d].trips })));
-      try { const tripsData = await drivers.trips(); setRecentTrips((tripsData.data || []).slice(0, 10).map((r: any) => ({ id: r.id, date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric' }) : '', pickup: r.pickup_address || 'Pickup', dropoff: r.dropoff_address || 'Dropoff', fare: r.total_fare || 0, distance: r.distance_km ? `${r.distance_km.toFixed(1)} km` : '? km' }))); } catch { }
+      try { const tripsData = await drivers.trips(); const items = Array.isArray(tripsData) ? tripsData : (tripsData?.data || []); setRecentTrips(items.slice(0, 10).map((r: any) => ({ id: r.id, date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric' }) : '', pickup: r.pickup_address || 'Pickup', dropoff: r.dropoff_address || 'Dropoff', fare: parseFloat(r.total_fare) || 0, distance: r.distance_km ? `${parseFloat(r.distance_km).toFixed(1)} km` : '? km' }))); } catch { }
     } catch (err) { console.warn('Failed to load earnings:', err); } finally { setLoading(false); setRefreshing(false); }
   }
 

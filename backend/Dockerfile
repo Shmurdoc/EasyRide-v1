@@ -31,7 +31,7 @@ RUN rm -rf bootstrap/cache/*.php vendor/nunomaduro/collision \
     && chmod -R 777 storage/logs
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:9000/up || exit 1
+  CMD php -r 'exit(@fsockopen("127.0.0.1", 9000) ? 0 : 1);' || exit 1
 
 EXPOSE 9000
 

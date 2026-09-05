@@ -158,13 +158,26 @@ class RefundService
                 return ['success' => false, 'error' => 'No payment.'];
             }
 
+            // Validate BEFORE crediting: the previous order credited the
+            // driver first and returned a failure array on bad state, which
+            // does not roll back — minting driver earnings from nothing on
+            // already-refunded/failed payments.
             if (! in_array($payment->status, [Payment::STATUS_COMPLETED, Payment::STATUS_PAID, Payment::STATUS_ESCROW_HELD], true)) {
                 return ['success' => false, 'error' => 'No collected payment to refund.'];
             }
 
             $this->paymentService->creditDriver($ride);
 
-            return $this->processRefund($ride, 'driver_no_show');
+            $result = $this->processRefund($ride, 'driver_no_show');
+
+            // processRefund runs in a savepoint; if it reports failure the
+            // driver credit above must roll back too, so throw instead of
+            // returning the array.
+            if (! ($result['success'] ?? false)) {
+                throw new \RuntimeException($result['error'] ?? 'No-show refund failed.');
+            }
+
+            return $result;
         });
     }
 }

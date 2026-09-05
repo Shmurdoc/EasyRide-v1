@@ -1,29 +1,62 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { useTheme } from '../theme';
+import { COLORS, SPACING } from '../constants';
 
-export function OfflineBanner() {
-  const { isOnline } = useNetworkStatus();
+interface OfflineBannerProps {
+  message?: string;
+  style?: ViewStyle;
+  testID?: string;
+}
 
-  if (isOnline) return null;
+export function OfflineBanner({
+  message = "You're offline. Showing cached data.",
+  style,
+  testID,
+}: OfflineBannerProps) {
+  const { colors, typography } = useTheme();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>You're offline. Showing cached data.</Text>
+    <View
+      testID={testID}
+      style={[
+        styles.container,
+        {
+          backgroundColor: 'rgba(229, 72, 77, 0.12)',
+          borderBottomColor: 'rgba(229, 72, 77, 0.2)',
+        },
+        style,
+      ]}
+    >
+      <View style={styles.content}>
+        <View style={[styles.dot, { backgroundColor: COLORS.error }]} />
+        <Text
+          style={[
+            typography.small,
+            { color: COLORS.error, fontWeight: '600', flex: 1 },
+          ]}
+        >
+          {message}
+        </Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#EF4444',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.base,
+    borderBottomWidth: 1,
   },
-  text: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 });

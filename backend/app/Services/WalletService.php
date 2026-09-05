@@ -27,10 +27,21 @@ class WalletService
 
     public function getOrCreateWallet(User $user, string $currency = 'ZAR'): Wallet
     {
-        return Wallet::firstOrCreate(
-            ['user_id' => $user->id],
-            ['tenant_id' => $user->tenant_id, 'balance' => 0.0, 'pending_balance' => 0.0, 'currency' => $currency],
-        );
+        try {
+            return Wallet::firstOrCreate(
+                ['user_id' => $user->id],
+                ['tenant_id' => $user->tenant_id, 'balance' => 0.0, 'pending_balance' => 0.0, 'currency' => $currency],
+            );
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Lost a firstOrCreate race (wallets.user_id is unique): the
+            // concurrent transaction won, so return its row instead of 500ing
+            // mid-money-movement.
+            if ($e->getCode() === '23000') {
+                return Wallet::where('user_id', $user->id)->firstOrFail();
+            }
+
+            throw $e;
+        }
     }
 
     /**
@@ -431,9 +442,13 @@ class WalletService
     public function confirmTopUpById(Wallet $wallet, string $transactionId): bool
     {
         return DB::transaction(function () use ($wallet, $transactionId) {
+            // Row lock is load-bearing: without it two concurrent webhook
+            // deliveries both read the still-pending row (stale snapshot),
+            // then both credit the wallet -> money created from nothing.
             $transaction = WalletTransaction::where('wallet_id', $wallet->id)
                 ->where('id', $transactionId)
                 ->where('reference_type', 'pending_topup')
+                ->lockForUpdate()
                 ->first();
 
             if (! $transaction) {

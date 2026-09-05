@@ -362,7 +362,8 @@ export default function DashboardScreen({ navigation }: { navigation: DriverNav 
         </LinearGradient>
 
         <View style={styles.contentSection}>
-          <View style={[styles.toggleCard]}>            <View style={styles.toggleLeft}>
+          <View style={styles.toggleCard}>
+            <View style={styles.toggleLeft}>
               <Animated.View style={[styles.toggleIconWrap, isOnline && styles.toggleIconOnline, { transform: [{ scale: isOnline ? pulseAnim : 1 }] }]}>
                 <Ionicons name={isOnline ? 'wifi' : 'wifi-outline'} size={22} color={isOnline ? colors.white : colors.textMuted} />
               </Animated.View>

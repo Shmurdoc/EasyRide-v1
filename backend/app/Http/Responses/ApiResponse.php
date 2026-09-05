@@ -99,12 +99,22 @@ class ApiResponse
         return self::apiError(429, 'Too Many Requests', $detail);
     }
 
-    public static function paginated(LengthAwarePaginator $paginator, string $message = 'Success'): JsonResponse
+    /**
+     * @param callable(mixed): mixed|null $through Optional item transformer
+     *   (e.g. resolve each model through a JsonResource) applied to `data`
+     *   while `meta` still comes from the paginator. Keeps one envelope.
+     */
+    public static function paginated(LengthAwarePaginator $paginator, string $message = 'Success', ?callable $through = null): JsonResponse
     {
+        $items = $paginator->items();
+        if ($through !== null) {
+            $items = array_map($through, $items);
+        }
+
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $paginator->items(),
+            'data' => $items,
             'meta' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),

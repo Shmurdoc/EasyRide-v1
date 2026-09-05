@@ -8,7 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ADMIN_COLORS, ADMIN_GRADIENTS } from '../constants/theme';
+import { useTheme } from '@easyryde/shared';
+import { COLORS } from '@easyryde/shared';
+import { ADMIN_COLORS } from '../constants/theme';
 import { useSurgeZones } from '../hooks/useSurgePricing';
 import { Card } from '../components/common/Card';
 import EmptyState from '../components/common/EmptyState';
@@ -21,15 +23,22 @@ type Nav = NativeStackNavigationProp<any>;
 export default function SurgeZonesScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
+  const theme = useTheme();
   const { zones, loading, error, refreshing, refresh, add, update, remove, toggle } = useSurgeZones();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingZone, setEditingZone] = useState<SurgeZone | null>(null);
   const [form, setForm] = useState({ name: '', center_lat: '', center_lng: '', radius_meters: '', multiplier: '1.5' });
   const [saving, setSaving] = useState(false);
 
+  const getMultiplierColor = (mult: number) => {
+    if (mult >= 2.0) return COLORS.error;
+    if (mult >= 1.5) return COLORS.warning;
+    return COLORS.success;
+  };
+
   const openAdd = useCallback(() => {
     setEditingZone(null);
-    setForm({ name: '', center_lat: '', center_lng: '', radius_meters: '1000', multiplier: '1.5' });
+    setForm({ name: '', center_lat: '-23.9421', center_lng: '31.1408', radius_meters: '1000', multiplier: '1.5' });
     setModalVisible(true);
   }, []);
 
@@ -46,10 +55,7 @@ export default function SurgeZonesScreen() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!form.name.trim()) {
-      Alert.alert('Error', 'Name is required');
-      return;
-    }
+    if (!form.name.trim()) { Alert.alert('Error', 'Name is required'); return; }
     const lat = parseFloat(form.center_lat);
     const lng = parseFloat(form.center_lng);
     const radius = parseInt(form.radius_meters, 10);
@@ -91,47 +97,47 @@ export default function SurgeZonesScreen() {
   }, [toggle]);
 
   const renderItem = useCallback(({ item }: { item: SurgeZone }) => (
-    <Card style={styles.zoneCard}>
+    <Card style={[styles.zoneCard, { backgroundColor: COLORS.surface, borderColor: COLORS.border }]}>
       <View style={styles.zoneHeader}>
         <View style={styles.zoneHeaderLeft}>
-          <View style={[styles.statusDot, { backgroundColor: item.is_active ? '#16a34a' : '#666' }]} />
+          <View style={[styles.statusDot, { backgroundColor: item.is_active ? COLORS.success : COLORS.textMuted }]} />
           <View>
-            <Text style={styles.zoneName}>{item.name}</Text>
-            <Text style={styles.zoneCoords}>{item.center_lat.toFixed(4)}, {item.center_lng.toFixed(4)}</Text>
+            <Text style={[styles.zoneName, { color: COLORS.text }]}>{item.name}</Text>
+            <Text style={[styles.zoneCoords, { color: COLORS.textMuted }]}>{item.center_lat.toFixed(4)}, {item.center_lng.toFixed(4)}</Text>
           </View>
         </View>
-        <View style={[styles.multiplierBadge, { backgroundColor: item.multiplier >= 2.0 ? '#dc2626' : item.multiplier >= 1.5 ? '#f59e0b' : '#16a34a' }]}>
+        <View style={[styles.multiplierBadge, { backgroundColor: getMultiplierColor(item.multiplier) }]}>
           <Text style={styles.multiplierText}>{item.multiplier.toFixed(1)}x</Text>
         </View>
       </View>
       <View style={styles.zoneDetails}>
         <View style={styles.zoneDetailItem}>
-          <Ionicons name="resize-outline" size={14} color="rgba(255,255,255,0.5)" />
-          <Text style={styles.zoneDetailText}>{item.radius_meters}m radius</Text>
+          <Ionicons name="resize-outline" size={14} color={COLORS.textMuted} />
+          <Text style={[styles.zoneDetailText, { color: COLORS.textMuted }]}>{item.radius_meters}m radius</Text>
         </View>
         <View style={styles.zoneDetailItem}>
-          <Ionicons name={item.is_active ? 'checkmark-circle' : 'close-circle'} size={14} color={item.is_active ? '#16a34a' : '#666'} />
-          <Text style={styles.zoneDetailText}>{item.is_active ? 'Active' : 'Inactive'}</Text>
+          <Ionicons name={item.is_active ? 'checkmark-circle' : 'close-circle'} size={14} color={item.is_active ? COLORS.success : COLORS.textMuted} />
+          <Text style={[styles.zoneDetailText, { color: COLORS.textMuted }]}>{item.is_active ? 'Active' : 'Inactive'}</Text>
         </View>
       </View>
       <View style={styles.zoneActions}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => handleToggle(item)}>
-          <Ionicons name={item.is_active ? 'pause' : 'play'} size={16} color={item.is_active ? '#f59e0b' : '#16a34a'} />
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.surfaceLight }]} onPress={() => handleToggle(item)}>
+          <Ionicons name={item.is_active ? 'pause' : 'play'} size={16} color={item.is_active ? COLORS.warning : COLORS.success} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => openEdit(item)}>
-          <Ionicons name="pencil" size={16} color={ADMIN_COLORS.accent} />
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.surfaceLight }]} onPress={() => openEdit(item)}>
+          <Ionicons name="pencil" size={16} color={COLORS.brand} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item)}>
-          <Ionicons name="trash" size={16} color={ADMIN_COLORS.red} />
+        <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.surfaceLight }]} onPress={() => handleDelete(item)}>
+          <Ionicons name="trash" size={16} color={COLORS.error} />
         </TouchableOpacity>
       </View>
     </Card>
   ), [handleToggle, openEdit, handleDelete]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: COLORS.bg }]}>
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={ADMIN_GRADIENTS.header} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={[COLORS.brandDark, COLORS.brand]} style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -145,73 +151,68 @@ export default function SurgeZonesScreen() {
         </View>
       </LinearGradient>
 
-      {loading && !refreshing ? (
-        <LoadingSpinner />
-      ) : error ? (
-        <ErrorState message={error} onRetry={refresh} />
-      ) : (
+      {loading && !refreshing ? <LoadingSpinner /> : error ? <ErrorState message={error} onRetry={refresh} /> : (
         <FlatList
           data={zones}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           ListEmptyComponent={<EmptyState icon="location" message="No surge zones" subtitle="Tap + to create one" />}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={ADMIN_COLORS.accent} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={COLORS.brand} />}
           showsVerticalScrollIndicator={false}
         />
       )}
 
-      {/* Add/Edit Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}>
+          <View style={[styles.modalContent, { backgroundColor: COLORS.surface, paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editingZone ? 'Edit Zone' : 'New Zone'}</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalClose}>
-                <Ionicons name="close" size={20} color="#ffffff" />
+              <Text style={[styles.modalTitle, { color: COLORS.text }]}>{editingZone ? 'Edit Zone' : 'New Zone'}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={[styles.modalClose, { backgroundColor: COLORS.surfaceLight }]}>
+                <Ionicons name="close" size={20} color={COLORS.text} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.fieldLabel}>Zone Name</Text>
+              <Text style={[styles.fieldLabel, { color: COLORS.textMuted }]}>Zone Name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: COLORS.surfaceLight, color: COLORS.text, borderColor: COLORS.border }]}
                 value={form.name}
                 onChangeText={(t) => setForm(p => ({ ...p, name: t }))}
                 placeholder="e.g. CBD Surge"
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor={COLORS.textMuted}
               />
 
-              <Text style={styles.fieldLabel}>Center Latitude</Text>
+              <Text style={[styles.fieldLabel, { color: COLORS.textMuted }]}>Center Latitude</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: COLORS.surfaceLight, color: COLORS.text, borderColor: COLORS.border }]}
                 value={form.center_lat}
                 onChangeText={(t) => setForm(p => ({ ...p, center_lat: t }))}
                 placeholder="-23.9045"
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor={COLORS.textMuted}
                 keyboardType="numeric"
               />
 
-              <Text style={styles.fieldLabel}>Center Longitude</Text>
+              <Text style={[styles.fieldLabel, { color: COLORS.textMuted }]}>Center Longitude</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: COLORS.surfaceLight, color: COLORS.text, borderColor: COLORS.border }]}
                 value={form.center_lng}
                 onChangeText={(t) => setForm(p => ({ ...p, center_lng: t }))}
                 placeholder="29.4688"
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor={COLORS.textMuted}
                 keyboardType="numeric"
               />
 
-              <Text style={styles.fieldLabel}>Radius (meters)</Text>
+              <Text style={[styles.fieldLabel, { color: COLORS.textMuted }]}>Radius (meters)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: COLORS.surfaceLight, color: COLORS.text, borderColor: COLORS.border }]}
                 value={form.radius_meters}
                 onChangeText={(t) => setForm(p => ({ ...p, radius_meters: t }))}
                 placeholder="1000"
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor={COLORS.textMuted}
                 keyboardType="numeric"
               />
 
-              <Text style={styles.fieldLabel}>Multiplier ({form.multiplier}x)</Text>
+              <Text style={[styles.fieldLabel, { color: COLORS.textMuted }]}>Multiplier ({form.multiplier}x)</Text>
               <View style={styles.sliderRow}>
                 {[1.0, 1.2, 1.5, 1.8, 2.0, 2.5].map(m => (
                   <TouchableOpacity
@@ -240,7 +241,7 @@ export default function SurgeZonesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0f' },
+  container: { flex: 1 },
   header: { paddingBottom: 16, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -252,28 +253,28 @@ const styles = StyleSheet.create({
   zoneHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   zoneHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  zoneName: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
-  zoneCoords: { fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
+  zoneName: { fontSize: 15, fontWeight: '700' },
+  zoneCoords: { fontSize: 12, marginTop: 2 },
   multiplierBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   multiplierText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
   zoneDetails: { flexDirection: 'row', gap: 16, marginBottom: 12 },
   zoneDetailItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  zoneDetailText: { fontSize: 12, color: 'rgba(255,255,255,0.5)' },
+  zoneDetailText: { fontSize: 12 },
   zoneActions: { flexDirection: 'row', gap: 8 },
-  actionBtn: { width: 36, height: 36, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' },
+  actionBtn: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#1a1a1e', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%' },
+  modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#ffffff' },
-  modalClose: { width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.6)', marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#ffffff', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  modalTitle: { fontSize: 18, fontWeight: '700' },
+  modalClose: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 12 },
+  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, borderWidth: 1 },
   sliderRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 },
   sliderOption: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  sliderOptionActive: { backgroundColor: ADMIN_COLORS.accent, borderColor: ADMIN_COLORS.accent },
+  sliderOptionActive: { backgroundColor: COLORS.brand, borderColor: COLORS.brand },
   sliderText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
   sliderTextActive: { color: '#ffffff' },
-  saveBtn: { backgroundColor: ADMIN_COLORS.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 20 },
+  saveBtn: { backgroundColor: COLORS.brand, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 20 },
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
 });

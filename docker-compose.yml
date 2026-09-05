@@ -11,6 +11,12 @@ services:
       redis:
         condition: service_healthy
     env_file: ./backend/.env.docker
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
     volumes:
       - ./backend:/var/www
       - backend-storage:/var/www/storage

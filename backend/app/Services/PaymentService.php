@@ -52,57 +52,88 @@ class PaymentService
         $idempotencyKey = $gatewayData['idempotency_key'] ?? Str::uuid()->toString();
         $isGateway = in_array($method, ['stripe', 'payfast', 'ozow'], true);
 
-        return DB::transaction(function () use ($ride, $method, $gatewayData, $idempotencyKey, $isGateway) {
-            $existing = Payment::where('idempotency_key', $idempotencyKey)->first();
-            if ($existing) {
-                Log::info('Duplicate payment prevented by idempotency key', [
+        try {
+            return DB::transaction(function () use ($ride, $method, $gatewayData, $idempotencyKey, $isGateway) {
+                $existing = Payment::where('idempotency_key', $idempotencyKey)->first();
+                if ($existing) {
+                    Log::info('Duplicate payment prevented by idempotency key', [
+                        'idempotency_key' => $idempotencyKey,
+                        'payment_id' => $existing->id,
+                    ]);
+
+                    return $existing;
+                }
+
+                // Serialize concurrent payment attempts for the same ride.
+                // Without this lock two simultaneous /pay requests (or a job
+                // retry racing the original) both pass the check below and
+                // double-debit the rider; the DB partial unique index would
+                // then surface as a raw 500 instead of an idempotent result.
+                Ride::where('id', $ride->id)->lockForUpdate()->first();
+
+                $activePayment = Payment::where('ride_id', $ride->id)
+                    ->whereIn('status', [Payment::STATUS_PENDING, Payment::STATUS_COMPLETED, Payment::STATUS_PAID, Payment::STATUS_ESCROW_HELD])
+                    ->first();
+
+                if ($activePayment) {
+                    throw new \App\Exceptions\PaymentAlreadyHeldException(
+                        "Payment already exists for ride {$ride->id} with status {$activePayment->status}"
+                    );
+                }
+
+                $platformFee = $this->calculatePlatformFee((float) $ride->total_fare, $ride->tenant_id);
+
+                $driverPayout = round((float) $ride->total_fare - $platformFee, 2);
+                $driverPayout = max(0, $driverPayout);
+
+                $payment = Payment::create([
+                    'ride_id' => $ride->id,
+                    'payer_id' => $ride->rider_id,
+                    'method' => $method,
+                    'gateway' => $isGateway ? $method : 'wallet',
+                    'gateway_reference' => $gatewayData['reference'] ?? null,
+                    'amount' => $ride->total_fare,
+                    'platform_fee' => $platformFee,
+                    'driver_payout' => $driverPayout,
+                    'status' => $isGateway ? Payment::STATUS_PENDING : Payment::STATUS_COMPLETED,
+                    'paid_at' => $isGateway ? null : now(),
+                    'gateway_response' => $gatewayData,
                     'idempotency_key' => $idempotencyKey,
-                    'payment_id' => $existing->id,
                 ]);
 
-                return $existing;
-            }
+                if ($method === 'wallet') {
+                    $this->walletService->debit(
+                        $this->walletService->getOrCreateWallet($ride->rider),
+                        (float) $ride->total_fare,
+                        'payment',
+                        $ride->id,
+                        "Payment for ride {$ride->id}",
+                    );
+                }
 
-            $platformFee = $this->calculatePlatformFee((float) $ride->total_fare, $ride->tenant_id);
+                Log::info('Payment processed', [
+                    'payment_id' => $payment->id,
+                    'ride_id' => $ride->id,
+                    'method' => $method,
+                    'amount' => $ride->total_fare,
+                    'status' => $payment->status,
+                ]);
 
-            $driverPayout = round((float) $ride->total_fare - $platformFee, 2);
-            $driverPayout = max(0, $driverPayout);
-
-            $payment = Payment::create([
-                'ride_id' => $ride->id,
-                'payer_id' => $ride->rider_id,
-                'method' => $method,
-                'gateway' => $isGateway ? $method : 'wallet',
-                'gateway_reference' => $gatewayData['reference'] ?? null,
-                'amount' => $ride->total_fare,
-                'platform_fee' => $platformFee,
-                'driver_payout' => $driverPayout,
-                'status' => $isGateway ? Payment::STATUS_PENDING : Payment::STATUS_COMPLETED,
-                'paid_at' => $isGateway ? null : now(),
-                'gateway_response' => $gatewayData,
-                'idempotency_key' => $idempotencyKey,
-            ]);
-
-            if ($method === 'wallet') {
-                $this->walletService->debit(
-                    $this->walletService->getOrCreateWallet($ride->rider),
-                    (float) $ride->total_fare,
-                    'payment',
-                    $ride->id,
-                    "Payment for ride {$ride->id}",
+                return $payment;
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Backstop: lost the race despite the ride lock (e.g. two
+            // processes inserting simultaneously hit the partial unique index
+            // payments_ride_id_active_unique or the idempotency unique key).
+            // Convert the raw 500 into the domain exception callers handle.
+            if ($e->getCode() === '23000') {
+                throw new \App\Exceptions\PaymentAlreadyHeldException(
+                    "Payment already exists for ride {$ride->id} (concurrent insert)"
                 );
             }
 
-            Log::info('Payment processed', [
-                'payment_id' => $payment->id,
-                'ride_id' => $ride->id,
-                'method' => $method,
-                'amount' => $ride->total_fare,
-                'status' => $payment->status,
-            ]);
-
-            return $payment;
-        });
+            throw $e;
+        }
     }
 
     /**
@@ -327,32 +358,67 @@ class PaymentService
 
     public function creditDriver(Ride $ride): WalletTransaction
     {
-        $amount = (float) $ride->total_fare;
-        $platformFee = $this->calculatePlatformFee($amount, $ride->tenant_id);
-        $netAmount = $amount - $platformFee;
+        return DB::transaction(function () use ($ride) {
+            $wallet = $this->walletService->getOrCreateWallet($ride->driver);
 
-        $wallet = $this->walletService->getOrCreateWallet($ride->driver);
+            // Hold the wallet row lock across the idempotency check and the
+            // credit so two concurrent callers serialize instead of both
+            // passing the check and double-crediting.
+            \App\Models\Wallet::where('id', $wallet->id)->lockForUpdate()->first();
 
-        return $this->walletService->credit(
-            $wallet,
-            $netAmount,
-            'ride_earnings',
-            $ride->id,
-            "Earnings for ride {$ride->id} (net after fee)",
-        );
+            // Idempotency: retries (job redelivery, double-click, the no-show
+            // refund path) must not credit the driver twice for one ride.
+            $existing = WalletTransaction::where('wallet_id', $wallet->id)
+                ->where('reference_type', 'ride_earnings')
+                ->where('reference_id', $ride->id)
+                ->first();
+
+            if ($existing) {
+                Log::info('Duplicate driver credit prevented', ['ride_id' => $ride->id]);
+
+                return $existing;
+            }
+
+            $amount = (float) $ride->total_fare;
+            $platformFee = $this->calculatePlatformFee($amount, $ride->tenant_id);
+            $netAmount = $amount - $platformFee;
+
+            return $this->walletService->credit(
+                $wallet,
+                $netAmount,
+                'ride_earnings',
+                $ride->id,
+                "Earnings for ride {$ride->id} (net after fee)",
+            );
+        });
     }
 
     public function debitRider(Ride $ride): WalletTransaction
     {
-        $wallet = $this->walletService->getOrCreateWallet($ride->rider);
+        return DB::transaction(function () use ($ride) {
+            $wallet = $this->walletService->getOrCreateWallet($ride->rider);
 
-        return $this->walletService->debit(
-            $wallet,
-            (float) $ride->total_fare,
-            'ride_charge',
-            $ride->id,
-            "Charge for ride {$ride->id}",
-        );
+            \App\Models\Wallet::where('id', $wallet->id)->lockForUpdate()->first();
+
+            $existing = WalletTransaction::where('wallet_id', $wallet->id)
+                ->where('reference_type', 'ride_charge')
+                ->where('reference_id', $ride->id)
+                ->first();
+
+            if ($existing) {
+                Log::info('Duplicate rider debit prevented', ['ride_id' => $ride->id]);
+
+                return $existing;
+            }
+
+            return $this->walletService->debit(
+                $wallet,
+                (float) $ride->total_fare,
+                'ride_charge',
+                $ride->id,
+                "Charge for ride {$ride->id}",
+            );
+        });
     }
 
     /**

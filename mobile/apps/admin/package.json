@@ -1,5 +1,5 @@
 {
-  "name": "easyryde-admin",
+  "name": "@easyride/admin",
   "version": "1.0.0",
   "private": true,
   "main": "index.js",

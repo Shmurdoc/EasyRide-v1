@@ -24,7 +24,22 @@ class ReleaseEscrowJob implements ShouldQueue
     public function handle(EscrowService $escrow): void
     {
         try {
-            $escrow->releasePayment($this->payment);
+            // Refresh under no lock first: retries after a successful release
+            // must be no-ops, not exceptions that burn through tries=3 and
+            // falsely flip the payment to release_failed.
+            $fresh = Payment::find($this->payment->id);
+
+            if (! $fresh || $fresh->escrow_released || $fresh->status !== Payment::STATUS_COMPLETED) {
+                Log::info('Escrow release skipped (idempotent)', [
+                    'payment_id' => $this->payment->id,
+                    'status' => $fresh?->status,
+                    'released' => $fresh?->escrow_released,
+                ]);
+
+                return;
+            }
+
+            $escrow->releasePayment($fresh);
             Log::info('Escrow released', ['payment_id' => $this->payment->id]);
         } catch (\Exception $e) {
             Log::error('Escrow release failed', [
@@ -32,7 +47,12 @@ class ReleaseEscrowJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
             if ($this->attempts() >= $this->tries) {
-                $this->payment->update(['status' => 'release_failed']);
+                // Only poison completed payments; a pending gateway payment
+                // must stay pending so a late webhook can still complete it.
+                Payment::where('id', $this->payment->id)
+                    ->where('status', Payment::STATUS_COMPLETED)
+                    ->where('escrow_released', false)
+                    ->update(['status' => 'release_failed']);
             }
             throw $e;
         }

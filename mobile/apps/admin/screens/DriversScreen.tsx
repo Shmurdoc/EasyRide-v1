@@ -1,120 +1,151 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, RefreshControl, TouchableOpacity, StatusBar, TextInput } from 'react-native';
+import {
+  View, Text, FlatList, StyleSheet, RefreshControl, TouchableOpacity,
+  StatusBar, TextInput, Alert,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ADMIN_COLORS, ADMIN_GRADIENTS, ADMIN_RADIUS } from '../constants/theme';
+import { useTheme } from '@easyryde/shared';
+import { COLORS } from '@easyryde/shared';
+import { ADMIN_COLORS } from '../constants/theme';
 import { useAdminDrivers } from '../hooks/useAdminDrivers';
-import { SearchBar } from '../components/common/SearchBar';
+import { approveDriver, rejectDriver } from '../api/admin';
+import { Card } from '../components/common/Card';
+import { Avatar } from '../components/common/Avatar';
 import EmptyState from '../components/common/EmptyState';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorState from '../components/common/ErrorState';
-import { Avatar } from '../components/common/Avatar';
 
 type Nav = NativeStackNavigationProp<any>;
-const STATUS_FILTERS = ['all', 'online', 'busy', 'offline'];
+const STATUS_FILTERS = ['all', 'pending', 'approved', 'rejected'];
 
 export default function DriversScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
+  const theme = useTheme();
   const { drivers, loading, error, refreshing, refresh, loadMore, filter, setFilter, search, setSearch, hasMore } = useAdminDrivers();
-  const [searchOpen, setSearchOpen] = useState(false);
 
-  const handleSearchSubmit = useCallback(() => { setSearch(search); }, [search, setSearch]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online': return ADMIN_COLORS.greenLight;
-      case 'busy': return ADMIN_COLORS.orangeLight;
-      case 'offline': return ADMIN_COLORS.textMuted;
-      default: return ADMIN_COLORS.textMuted;
-    }
+  const getStatusColor = (driver: any) => {
+    const profile = driver.driverProfile;
+    if (!profile) return COLORS.textMuted;
+    if (!profile.is_approved) return COLORS.warning;
+    if (driver.is_online) return COLORS.success;
+    return COLORS.textMuted;
   };
 
-  const getBorderColor = (st: string) => {
-    if (st === 'online') return ADMIN_COLORS.green;
-    if (st === 'busy') return ADMIN_COLORS.orange;
-    return '#6b7280';
+  const getStatusLabel = (driver: any) => {
+    const profile = driver.driverProfile;
+    if (!profile) return 'UNKNOWN';
+    if (!profile.is_approved) return 'PENDING';
+    if (driver.is_online) return 'ONLINE';
+    return 'OFFLINE';
+  };
+
+  const handleApprove = async (driverId: string) => {
+    Alert.alert('Approve Driver', 'Approve this driver?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Approve', onPress: async () => {
+        try {
+          await approveDriver(driverId);
+          refresh();
+        } catch (err: any) {
+          Alert.alert('Error', err.message || 'Failed to approve');
+        }
+      }},
+    ]);
+  };
+
+  const handleReject = async (driverId: string) => {
+    Alert.alert('Reject Driver', 'Reject this driver?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Reject', style: 'destructive', onPress: async () => {
+        try {
+          await rejectDriver(driverId);
+          refresh();
+        } catch (err: any) {
+          Alert.alert('Error', err.message || 'Failed to reject');
+        }
+      }},
+    ]);
   };
 
   const renderDriver = ({ item }: { item: any }) => {
-    const status = item.driverProfile?.is_approved ? 'online' : 'offline';
-    const driverName = item.name || 'Unknown Driver';
-    const vehicleStr = item.vehicle ? `${item.vehicle.make} ${item.vehicle.model} • ${item.vehicle.license_plate}` : 'No vehicle';
-    const rating = item.driverProfile?.rating ?? 0;
-    const trips = item.driverProfile?.total_trips ?? 0;
-    const zone = item.driverProfile?.current_zone || 'CBD';
+    const statusColor = getStatusColor(item);
+    const statusLabel = getStatusLabel(item);
+    const profile = item.driverProfile;
+    const rating = profile?.rating ?? 0;
+    const trips = profile?.total_trips ?? 0;
 
     return (
-      <TouchableOpacity
-        style={styles.driverCard}
-        onPress={() => navigation.navigate('AdminDriverDetail', { id: item.id, driver: item })}
-        activeOpacity={0.7}
-      >
-        <View style={styles.driverTop}>
-          <View style={styles.driverTopLeft}>
-            <Avatar
-              name={driverName}
-              size={50}
-              imageUrl={`https://ui-avatars.com/api/?name=${driverName.replace(' ', '+')}&background=6366f1&color=fff&size=100`}
-              borderColor={getBorderColor(status)}
-            />
-            <View style={styles.driverMeta}>
-              <Text style={styles.driverName}>{driverName}</Text>
-              <Text style={styles.driverVehicle}>{vehicleStr}</Text>
+      <Card style={styles.driverCard}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('AdminDriverDetail', { id: item.id, driver: item })}
+          activeOpacity={0.7}
+        >
+          <View style={styles.driverTop}>
+            <View style={styles.driverTopLeft}>
+              <Avatar name={item.name || 'Unknown'} size={50} borderColor={statusColor} />
+              <View style={styles.driverMeta}>
+                <Text style={[styles.driverName, { color: COLORS.text }]}>{item.name}</Text>
+                <Text style={[styles.driverVehicle, { color: COLORS.textMuted }]}>
+                  {item.vehicle ? `${item.vehicle.make} ${item.vehicle.model} • ${item.vehicle.license_plate}` : 'No vehicle'}
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
+              <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
             </View>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(status)}20` }]}>
-            <Text style={[styles.statusText, { color: getStatusColor(status) }]}>{status.toUpperCase()}</Text>
-          </View>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.statsRow}>
+        <View style={[styles.statsRow, { backgroundColor: COLORS.surfaceLight }]}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{rating.toFixed(1)}</Text>
-            <Text style={styles.statLabel}>Rating</Text>
+            <Text style={[styles.statValue, { color: COLORS.brand }]}>{rating.toFixed(1)}</Text>
+            <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>Rating</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{trips}</Text>
-            <Text style={styles.statLabel}>Trips</Text>
+            <Text style={[styles.statValue, { color: COLORS.text }]}>{trips}</Text>
+            <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>Trips</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: ADMIN_COLORS.primary }]}>{zone}</Text>
-            <Text style={styles.statLabel}>Zone</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: getStatusColor(status) }]}>{status === 'online' ? 'Active' : 'Offline'}</Text>
-            <Text style={styles.statLabel}>Status</Text>
+            <Text style={[styles.statValue, { color: statusColor }]}>{statusLabel}</Text>
+            <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>Status</Text>
           </View>
         </View>
 
         <View style={styles.driverActions}>
+          {profile && !profile.is_approved && (
+            <>
+              <TouchableOpacity style={[styles.approveBtn, { backgroundColor: COLORS.success }]} onPress={() => handleApprove(item.id)}>
+                <Ionicons name="checkmark" size={16} color="#ffffff" />
+                <Text style={styles.actionBtnText}>Approve</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.rejectBtn, { backgroundColor: COLORS.error }]} onPress={() => handleReject(item.id)}>
+                <Ionicons name="close" size={16} color="#ffffff" />
+                <Text style={styles.actionBtnText}>Reject</Text>
+              </TouchableOpacity>
+            </>
+          )}
           <TouchableOpacity
-            style={styles.primaryBtn}
+            style={[styles.viewBtn, { backgroundColor: COLORS.brand }]}
             onPress={() => navigation.navigate('AdminDriverDetail', { id: item.id, driver: item })}
           >
-            <Text style={styles.primaryBtnText}>View Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.moreBtn}>
-            <Ionicons name="ellipsis-vertical" size={20} color={ADMIN_COLORS.textMuted} />
+            <Text style={styles.actionBtnText}>View Profile</Text>
           </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </Card>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: COLORS.bg }]}>
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={ADMIN_GRADIENTS.header} style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <LinearGradient colors={[COLORS.brandDark, COLORS.brand]} style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Drivers</Text>
-          <TouchableOpacity style={styles.addBtn}>
-            <Ionicons name="add" size={18} color="#ffffff" />
-            <Text style={styles.addText}>Add</Text>
-          </TouchableOpacity>
         </View>
         <View style={styles.tabRow}>
           {STATUS_FILTERS.map((tab) => (
@@ -131,16 +162,15 @@ export default function DriversScreen() {
         </View>
       </LinearGradient>
 
-      <View style={styles.searchSection}>
-        <View style={styles.searchInputWrap}>
-          <Ionicons name="search" size={18} color={ADMIN_COLORS.textMuted} />
+      <View style={[styles.searchSection, { backgroundColor: COLORS.bg }]}>
+        <View style={[styles.searchInputWrap, { backgroundColor: COLORS.surface, borderColor: COLORS.border }]}>
+          <Ionicons name="search" size={18} color={COLORS.textMuted} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: COLORS.text }]}
             value={search}
             onChangeText={setSearch}
-            onSubmitEditing={handleSearchSubmit}
             placeholder="Search drivers..."
-            placeholderTextColor={ADMIN_COLORS.textMuted}
+            placeholderTextColor={COLORS.textMuted}
             returnKeyType="search"
           />
         </View>
@@ -153,7 +183,7 @@ export default function DriversScreen() {
           renderItem={renderDriver}
           ListEmptyComponent={<EmptyState icon="people" message="No drivers found" />}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={ADMIN_COLORS.primary} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={COLORS.brand} />}
           onEndReached={() => { if (hasMore) loadMore(); }}
           onEndReachedThreshold={0.3}
           showsVerticalScrollIndicator={false}
@@ -164,35 +194,34 @@ export default function DriversScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: ADMIN_COLORS.background },
+  container: { flex: 1 },
   header: { paddingBottom: 16, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 },
   headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#ffffff' },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  addText: { fontSize: 13, color: '#ffffff', fontWeight: '600' },
   tabRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20 },
   tabBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' },
-  tabBtnActive: { backgroundColor: ADMIN_COLORS.primary },
+  tabBtnActive: { backgroundColor: '#ffffff' },
   tabText: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.5)' },
-  tabTextActive: { color: '#ffffff', fontWeight: '600' },
+  tabTextActive: { color: '#E25500', fontWeight: '600' },
   searchSection: { paddingHorizontal: 16, paddingVertical: 12 },
-  searchInputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: ADMIN_COLORS.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: ADMIN_COLORS.surfaceBorder },
-  searchInput: { flex: 1, marginLeft: 8, color: '#ffffff', fontSize: 14 },
+  searchInputWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, gap: 8 },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 14 },
   list: { padding: 16, paddingBottom: 100 },
-  driverCard: { backgroundColor: ADMIN_COLORS.surface, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: ADMIN_COLORS.surfaceBorder },
+  driverCard: { marginBottom: 12 },
   driverTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
   driverTopLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   driverMeta: { flex: 1 },
-  driverName: { fontSize: 15, fontWeight: '600', color: '#ffffff' },
-  driverVehicle: { fontSize: 12, color: ADMIN_COLORS.textMuted, marginTop: 2 },
+  driverName: { fontSize: 15, fontWeight: '600' },
+  driverVehicle: { fontSize: 12, marginTop: 2 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   statusText: { fontSize: 10, fontWeight: '700' },
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  statItem: { flex: 1, alignItems: 'center', backgroundColor: ADMIN_COLORS.surfaceLight, borderRadius: 10, padding: 10 },
-  statValue: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
-  statLabel: { fontSize: 10, color: ADMIN_COLORS.textMuted, marginTop: 2 },
+  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12, borderRadius: 10, padding: 10 },
+  statItem: { flex: 1, alignItems: 'center' },
+  statValue: { fontSize: 14, fontWeight: '700' },
+  statLabel: { fontSize: 10, marginTop: 2 },
   driverActions: { flexDirection: 'row', gap: 8 },
-  primaryBtn: { flex: 1, backgroundColor: ADMIN_COLORS.primary, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  primaryBtnText: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
-  moreBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: ADMIN_COLORS.surfaceLight, alignItems: 'center', justifyContent: 'center' },
+  approveBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 10, gap: 4 },
+  rejectBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 10, gap: 4 },
+  viewBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 10 },
+  actionBtnText: { color: '#ffffff', fontSize: 13, fontWeight: '700' },
 });

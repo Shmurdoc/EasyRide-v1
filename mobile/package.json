@@ -44,7 +44,8 @@
   },
   "overrides": {
     "jest": "29.7.0",
-    "jest-expo": "51.0.4"
+    "jest-expo": "51.0.4",
+    "react-native-screens": "3.31.1"
   },
   "dependencies": {
     "@babel/runtime": "^8.0.0",
@@ -54,7 +55,7 @@
     "md5-file": "^4.0.0",
     "nanoid": "^3.3.12",
     "react-native-maps": "^1.14.0",
-    "react-native-screens": "^3.31.0",
+    "react-native-screens": "3.31.1",
     "react-native-svg": "^15.15.5",
     "sucrase": "^3.35.1"
   }

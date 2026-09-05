@@ -11,7 +11,7 @@ use App\Models\Ride;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\WalletTransaction;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
@@ -68,6 +68,7 @@ class DriverService
         });
     }
 
+    /** @return LengthAwarePaginator<int, User> */
     public function listDrivers(string $tenantId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         return User::role('driver')
@@ -188,6 +189,22 @@ class DriverService
         ]);
     }
 
+    /**
+     * Earnings summary for the driver app.
+     *
+     * Documented shape (all money float, all counts int):
+     * [
+     *   'total_earnings' => float, 'today_earnings' => float, 'pending_payout' => float,
+     *   'total_trips' => int, 'rating' => float (0.0 if unrated), 'rating_count' => int,
+     *   'hours_online' => float (0.0 fallback: online sessions are not tracked yet),
+     *   'period' => string,
+     *   'recent_transactions' => [['id','wallet_id','type','amount'=>float,
+     *     'balance_after'=>float|null,'description','created_at'=>ISO8601|null], ...],
+     * ]
+     *
+     * NOTE: PostgreSQL decimal sums serialize as strings (e.g. "51.00"), which
+     * breaks mobile `.toFixed()` calls — every money value is cast to float here.
+     */
     public function getEarnings(User $driver, string $period = 'today'): array
     {
         $profile = $driver->driverProfile;
@@ -204,24 +221,44 @@ class DriverService
 
         $periodEarnings = (float) $query->sum('total_fare');
 
-        $pendingPayout = WalletTransaction::whereHas('wallet', fn ($q) => $q->where('user_id', $driver->id))
+        $pendingPayout = (float) WalletTransaction::whereHas('wallet', fn ($q) => $q->where('user_id', $driver->id))
             ->where('type', 'pending_payout')
             ->sum('amount');
 
         $recentTransactions = WalletTransaction::whereHas('wallet', fn ($q) => $q->where('user_id', $driver->id))
             ->latest()
             ->take(20)
-            ->get();
+            ->get()
+            ->map(fn (WalletTransaction $tx) => [
+                'id' => $tx->id,
+                'wallet_id' => $tx->wallet_id,
+                'type' => $tx->type,
+                'amount' => (float) $tx->amount,
+                'balance_after' => (float) $tx->balance_after,
+                'description' => $tx->description,
+                'created_at' => $tx->created_at?->toISOString(),
+            ])
+            ->all();
+
+        $ratingCount = (int) Rating::where('ratee_id', $driver->id)->count();
+        $rating = (float) (Rating::where('ratee_id', $driver->id)->avg('score') ?? 0.0);
 
         return [
             'total_earnings' => (float) ($profile?->total_earnings ?? 0),
             'today_earnings' => $periodEarnings,
-            'pending_payout' => (float) $pendingPayout,
+            'pending_payout' => $pendingPayout,
             'total_trips' => (int) ($profile?->total_trips ?? 0),
+            'rating' => $rating,
+            'rating_count' => $ratingCount,
+            // Online sessions are not tracked yet (no driver_online_sessions table);
+            // documented 0.0 fallback until tracking lands.
+            'hours_online' => 0.0,
+            'period' => $period,
             'recent_transactions' => $recentTransactions,
         ];
     }
 
+    /** @return LengthAwarePaginator<int, Ride> */
     public function getTrips(User $driver, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         return Ride::where('driver_id', $driver->id)
@@ -231,16 +268,26 @@ class DriverService
             ->paginate($perPage);
     }
 
+    /**
+     * Documented shape (additive; existing keys kept, normalized):
+     * ['total_rides'=>int,'completed_rides'=>int,'cancelled_rides'=>int,
+     *  'avg_rating'=>float (0.0 if unrated),'rating_count'=>int,'today_rides'=>int,
+     *  'hours_online'=>float (0.0 fallback: online sessions are not tracked yet)]
+     */
     public function getStats(User $driver): array
     {
-        $profile = $driver->driverProfile;
+        $ratingCount = (int) Rating::where('ratee_id', $driver->id)->count();
 
         return [
-            'total_rides' => Ride::where('driver_id', $driver->id)->count(),
-            'completed_rides' => Ride::where('driver_id', $driver->id)->where('status', 'completed')->count(),
-            'cancelled_rides' => Ride::where('driver_id', $driver->id)->where('status', 'cancelled')->count(),
-            'avg_rating' => \App\Models\Rating::where('ratee_id', $driver->id)->avg('score'),
-            'today_rides' => Ride::where('driver_id', $driver->id)->whereDate('created_at', today())->count(),
+            'total_rides' => (int) Ride::where('driver_id', $driver->id)->count(),
+            'completed_rides' => (int) Ride::where('driver_id', $driver->id)->where('status', 'completed')->count(),
+            'cancelled_rides' => (int) Ride::where('driver_id', $driver->id)->where('status', 'cancelled')->count(),
+            'avg_rating' => (float) (Rating::where('ratee_id', $driver->id)->avg('score') ?? 0.0),
+            'rating_count' => $ratingCount,
+            'today_rides' => (int) Ride::where('driver_id', $driver->id)->whereDate('created_at', today())->count(),
+            // Online sessions are not tracked yet (no driver_online_sessions table);
+            // documented 0.0 fallback until tracking lands.
+            'hours_online' => 0.0,
         ];
     }
 

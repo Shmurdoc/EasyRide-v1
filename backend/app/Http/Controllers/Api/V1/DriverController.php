@@ -10,6 +10,8 @@ use App\Http\Requests\Api\V1\Driver\VehicleRegisterRequest;
 use App\Http\Requests\Api\V1\Ride\UpdateLocationRequest;
 use App\Http\Requests\Api\V1\UpdateDriverProfileRequest;
 use App\Http\Responses\ApiResponse;
+use App\Http\Resources\DriverEarningsResource;
+use App\Http\Resources\TripResource;
 use App\Services\DriverService;
 use App\Services\RideService;
 use Illuminate\Http\JsonResponse;
@@ -103,13 +105,30 @@ class DriverController extends Controller
         }
     }
 
+    /**
+     * GET /api/v1/drivers/earnings
+     *
+     * Envelope: {"success":true,"message":"Earnings retrieved successfully.",
+     *   "data": DriverEarningsResource shape}.
+     * NOTE (mobile): this endpoint previously returned the raw service array
+     * with no envelope; clients must now read `data.*`.
+     */
     public function earnings(Request $request): JsonResponse
     {
         $earnings = $this->driverService->getEarnings($request->user());
 
-        return response()->json($earnings);
+        return ApiResponse::success(
+            (new DriverEarningsResource($earnings))->resolve($request),
+            'Earnings retrieved successfully.'
+        );
     }
 
+    /**
+     * GET /api/v1/drivers/trips
+     *
+     * Envelope: ApiResponse::paginated with `data` items as TripResource
+     * (total_fare / distance_km pre-cast to float).
+     */
     public function trips(Request $request): JsonResponse
     {
         $trips = $this->driverService->getTrips(
@@ -118,7 +137,11 @@ class DriverController extends Controller
             min((int) ($request->per_page ?? 15), 100),
         );
 
-        return ApiResponse::paginated($trips);
+        return ApiResponse::paginated(
+            $trips,
+            'Success',
+            fn ($trip) => (new TripResource($trip))->resolve($request)
+        );
     }
 
     public function stats(Request $request): JsonResponse
